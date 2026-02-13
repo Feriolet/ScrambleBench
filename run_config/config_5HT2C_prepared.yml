@@ -1,0 +1,29 @@
+input:
+  complex_path: ../protein_input/GPCR_5HT2C/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+  pdb_path: ../protein_input/GPCR_5HT2C/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+  sdf_path: ../protein_input/GPCR_5HT2C/gpcr_5ht2c_6bqh_ligand.sdf
+
+parameter:
+  box_size: 16
+  num_sample: 100, 200, 500
+  name: 5ht2c_prepared_0
+  protein_title: GPCR_5HT2C
+
+output:
+  output_dir: ../output_test_multiple_numsample/GPCR_5HT2C_14nov
+
+models_dir:
+  pmdm: /opt/veincent/GenAI_manuscript/models/PMDM
+  diffsbdd: /opt/veincent/GenAI_manuscript/models/DiffSBDD
+  pocket2mol: /opt/veincent/GenAI_manuscript/models/Pocket2Mol
+  pocketflow: /opt/veincent/GenAI_manuscript/models/PocketFlow
+  lingo3dmol: /opt/veincent/GenAI_manuscript/models/Lingo3DMol
+
+conda_env:
+  pmdm: benchmark_pmdm
+  diffsbdd: benchmark_diffsbdd
+  pocket2mol: benchmark_pocket2mol
+  pocketflow: benchmark_pocketflow
+  lingo3dmol: benchmark_lingo3dmol
+  
+
