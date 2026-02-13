@@ -22,9 +22,9 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
     - [Main Pipeline](#main-pipeline)
       - [0. Prepare Config File](#0-prepare-config-file)
       - [1. Run Generation](#1-run-generation)
-      - [2. Combine SDF files](#2-combine-sdf-files)
+      - [2. Combine SDF files (Model-based)](#2-combine-sdf-files-model-based)
       - [3. Preprocess SDF files](#3-preprocess-sdf-files)
-      - [4. Combined SDF files](#4-combined-sdf-files)
+      - [4. Combine SDF files (Target-based)](#4-combine-sdf-files-target-based)
       - [5. GenBench3D analysis](#5-genbench3d-analysis)
       - [6. Redocking](#6-redocking)
         - [Vina](#vina)
@@ -117,13 +117,16 @@ cp LigBoundConf* [genbench3d root dir]
 
 As I do not own the model, you can download the corresponding model in the respective owner's Github repository:
 
-```
+
 Pocket2Mol: [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
+
 PocketFlow: [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
 Lingo3DMol: inside Github repository
+
 DiffSBDD: [crossdocked_fullatom_cond.ckpt](https://zenodo.org/record/8183747/files/crossdocked_fullatom_cond.ckpt?download=1)
+
 PMDM: [500.pt](https://zenodo.org/records/10630921)
-```
+
 ## Usage
 
 The generation process is entirely dependent on the config file used. You can refer to the example of config file in `run_config` folder for reference.
@@ -186,7 +189,7 @@ PMDM: Unknown
 ./01_run_all.sh output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
 ```
 
-#### 2. Combine SDF files
+#### 2. Combine SDF files (Model-based)
 
 As some models output individuals SDF file for each ligand, we need to combine them. The default output folder in the script is called `summary` folder
 
@@ -208,7 +211,7 @@ python ./03_check_count.py -i output_test_multiple_numsample/GPCR_5HT2C_14nov_10
                            --model_list Pocket2Mol Lingo3DMol Chem42 DiffSBDD PMDM
 ```
 
-#### 4. Combined SDF files
+#### 4. Combine SDF files (Target-based)
 
 This script is mainly used for Docking analysis, which will combine all models together that targets the same protein.
 
@@ -288,7 +291,7 @@ Please refer to the [Easydock Github](https://github.com/ci-lab-cz/easydock) rep
 conda activate easydock
 
 #prepare ligand and put it in Docking/ligand_input
-easydock -i ../output_test_multiple_numsample/Docking/ligand_input/prepared_na_docking_input_ligand.sdf -o ../output_test_multiple_numsample/Docking/vina_output/gpcr_5ht2c_input_docking_vina.db -c 40 --program vina --config ../output_test_multiple_numsample/Docking/vina_input/easydock_config_5HT2C.yml --sdf
+easydock -i ../output_test_multiple_numsample/Docking/ligand_input_5ht2c_docking_input_ligand.sdf -o ../output_test_multiple_numsample/Docking/vina_output/gpcr_5ht2c_input_docking_vina.db -c 40 --program vina --config ../output_test_multiple_numsample/Docking/vina_input/easydock_config_5HT2C.yml --sdf
 ```
 
 If you want to prepare the ligand using open-source model, you can add the `--protonation` parameter.
