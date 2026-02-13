@@ -32,7 +32,9 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
       - [8. Combine Summary](#8-combine-summary)
       - [9. Plotting](#9-plotting)
     - [Diversity Plotting](#diversity-plotting)
+    - [Data Availability](#data-availability)
     - [Reproducing Figures](#reproducing-figures)
+
 ## Installation
 
 ```sh
@@ -267,7 +269,7 @@ genbench_config # line 14, your genbench/config filepath
 genbench_dir # line 15, your genbench rootdir path
 cheminformatic_input_dir # line 16, your output dirpath from step 3
 cheminformatic_input_dir # line 17, your output dirpath for this script
-schrodinger_path_exec # line 20, your schrodinger root dirpath
+schrodinger_path_exec # line 20, your Schrödinger root dirpath
 genai_model_array # line 28, your list of model name
 is_complex_forcefield_minimisation # line 31, whether you want genbench3d to perform MMFF98 minimisation for the complex protein-ligand
 is_complex_forcefield_unminimisation # line 32, whether you want genbench to skip MMFF98 minimisation for the complex protein-ligand. You can do both minimisatio and unminimisation
@@ -285,7 +287,7 @@ For docking, we currently do not have a strict pipeline for doing so. We used bo
 
 ##### Vina
 
-Please refer to the [Easydock Github](https://github.com/ci-lab-cz/easydock) repository to see how the protocol of their docking. For our case, we used the protonated protein structure prepared from Schrodinger Protein Preparation Workflow. For our ligand, we prepared it using Schrodinger LigPrep. Our general command line is something like this:
+Please refer to the [Easydock Github](https://github.com/ci-lab-cz/easydock) repository to see how the protocol of their docking. For our case, we used the protonated protein structure prepared from Schrödinger Protein Preparation Workflow. For our ligand, we prepared it using Schrödinger LigPrep. Our general command line is something like this:
 
 ```bash
 conda activate easydock
@@ -298,7 +300,7 @@ If you want to prepare the ligand using open-source model, you can add the `--pr
 
 #### 7. Pharmacophore-based screening
 
-In our manuscript, we did our pharmacophore-based screening using Schrodinger Phase. Unfortunately, we currently do not have an open-source pipeline for this. However, feel free to explore Easydock PLIF option which I might use to integrate this in v0.1
+In our manuscript, we did our pharmacophore-based screening using Schrödinger Phase. Unfortunately, we currently do not have an open-source pipeline for this. However, feel free to explore Easydock PLIF option which I might use to integrate this in v0.1
 
 #### 8. Combine Summary
 
@@ -332,8 +334,9 @@ cd ScrambleBench/script/diversity
 python analyse_tsp.py
 ```
 
+### Data Availability
+Please install the files in our [Zenodo](https://zenodo.org/records/18503149) for reproducibility.
+
 ### Reproducing Figures
 
 The main Figures of the manuscript can be reproduced by using the `07_plot_summary.py` code with the file `output_scramblebench_data_warehouse/data_warehouse.parquet` in the Zenodo file
-
-test
