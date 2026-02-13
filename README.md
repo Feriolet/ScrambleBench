@@ -110,18 +110,20 @@ pip install ray
 Please add this kernel model to the genbench folder
 
 ```bash
+tar -xvzf LigBoundConf*
 cp LigBoundConf* [genbench3d root dir]
 ```
 ## Pre-trained Model Installation
 
 As I do not own the model, you can download the corresponding model in the respective owner's Github repository:
 
+```
 Pocket2Mol: [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
 PocketFlow: [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
 Lingo3DMol: inside Github repository
 DiffSBDD: [crossdocked_fullatom_cond.ckpt](https://zenodo.org/record/8183747/files/crossdocked_fullatom_cond.ckpt?download=1)
 PMDM: [500.pt](https://zenodo.org/records/10630921)
-
+```
 ## Usage
 
 The generation process is entirely dependent on the config file used. You can refer to the example of config file in `run_config` folder for reference.
