@@ -281,7 +281,7 @@ is_cancel_protonation_by_obabel_or_adfr # line 33. GenBench can do protonation b
 
 #### 6. Redocking
 
-For docking, we currently do not have a strict pipeline for doing so. We are using both Glide SP and Vina to do docking. Make sure that you are using the combined SDF ligand generated from step 4 to do this.
+For docking, we currently do not have a strict pipeline for doing so. We used both Schrödinger's Glide SP and Autodock Vina for docking calculations. Make sure that you are using the combined SDF ligand generated from step 4 to do this.
 
 ##### Vina
 
