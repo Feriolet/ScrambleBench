@@ -1,0 +1,6 @@
+INPUT_KEY = 'input'
+MODEL_KEY = 'model'
+GENERATION_KEY = 'generation'
+GENERATION_PARAMETER_KEY = 'parameter'
+POST_GENERATION_KEY = 'post_generation'
+GENBENCH3D_KEY = 'genbench3d'

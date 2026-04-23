@@ -1,0 +1,94 @@
+input:
+  complex_path: tests/input_0/complex.pdb
+  pdb_path: tests/input_0/protein.pdb
+  sdf_path: tests/input_0/ligand.sdf
+  protein_title: generic_title
+
+model:
+  pmdm:
+    name: PMDM
+    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/PMDM
+    conda_env: benchmark_pmdm
+  
+  diffsbdd:
+    name: DiffSBDD
+    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/DiffSBDD
+    conda_env: benchmark_diffsbdd
+  
+  pocket2mol:
+    name: Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
+
+  pocketflow:
+    name: PocketFlow
+    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/PocketFlow
+    conda_env: benchmark_pocketflow
+  
+  lingo3dmol:
+    name: Lingo3DMol
+    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/Lingo3DMol
+    conda_env: benchmark_lingo3dmol
+  
+  chem42:
+    name: Chem42
+    dir: not_applicable
+    conda_env: not_applicable
+
+
+generation:
+  input: ../output_test_multiple_numsample/GPCR_5HT2C_14nov
+  output: ../output_test_multiple_numsample/GPCR_5HT2C_14nov
+  parameter:
+    box_size: 16
+    num_sample: 100, 200, 500
+    name: 5ht2c_prepared_0
+
+post_generation:
+  input: ../output_test_multiple_numsample/GPCR_5HT2C_14nov
+  output: cheminformatics_input_prepared
+  pick_last: Lingo3DMol, Pocket2Mol
+  pick_random: Chem42
+  
+genbench3d:
+  input: cheminformatics_input_prepared
+  output: cheminformatics_analysis
+  genbench_dir: /opt/veincent/GenAI_manuscript/scramblebench/models/genbench3d
+  conda_env: benchmark_genbench3d
+  schrodinger_dir: /opt/schrodinger2025-4
+  genbench_config: /opt/veincent/GenAI_manuscript/scramblebench/models/genbench3d/config/GenAI_evaluation.yaml
+  do_complex_forcefield_minimisation: True
+  do_docking_forcefield_minimisation: True
+  do_cancel_protonation_by_obabel_or_adfr: True
+
+merge_numsample:
+  input: cheminformatics_input_prepared
+  output: merged_generated_ligand
+
+redocking:
+  input: merged_generated_ligand
+  output: Docking
+  protonation: ligprep # ligprep, none, obabel
+  easydock:
+    input: Docking
+    output: vina_output
+    conda_env: benchmark_easydock
+    protein_pdbqt_fname: GENBENCH3D # or insert fname
+    config_fname:
+    docking_program: vina
+  
+  glide:
+    input: Docking
+    output: glide_output
+    grid_fname: GENBENCH3D 
+    schrodinger_dir: /opt/schrodinger2025-4
+    reward_intra_hbonds: True
+    output_type: sdf
+
+
+
+
+
+
+
+
