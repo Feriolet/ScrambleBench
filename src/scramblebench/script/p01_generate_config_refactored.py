@@ -3,7 +3,9 @@ from typing import Any, Callable
 from pathlib import Path
 from dataclasses import dataclass
 import yaml
-
+import argparse
+import logging
+import sys
 from scramblebench.script.config_preparation.config_input import InputConfig
 from scramblebench.script.config_preparation.config_model import ModelConfig
 from scramblebench.script.config_preparation.config_generation import GenerationConfig
@@ -11,6 +13,7 @@ from scramblebench.script.config_preparation.config_post_generation import PostG
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
 from scramblebench.script.config_preparation import config_constant
 
+logger = logging.getLogger(__name__)
 
 def load_config(config_fname: str) -> dict[str, Any]:
     with open(config_fname, 'r') as config_fn:
@@ -48,9 +51,38 @@ def validate_config(config_data: dict[str, Any]) -> None:
         GenBench3DConfig(config_data).validate_config()
         check_correct_input_output_folder(prestep=PostGenerationConfig(config_data),
                                         poststep=GenBench3DConfig(config_data))
-        
-if __name__ == '__main__':
-    configf = '/opt/veincent/GenAI_manuscript/ScrambleBench/src/scramblebench/test/config.yml'
-    data_input = yaml.safe_load(open(configf, 'r'))
+    
+    return True
 
-    print(validate_config(data_input))
+def write_config(config_data: dict[str, Any], output_fname: str) -> None:
+    config_output = {}
+    config_output = config_output | InputConfig(config_data).write(cutoff=10)
+
+
+    with open(output_fname, 'w') as yaml_f:
+        yaml.dump(config_output, yaml_f, sort_keys=False)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Prepare config file for ScrambleBench")
+
+    parser.add_argument("-i", "--input", help="config yaml input file", type=str, default='/mnt/sod/Veincent/manuscript/ScrambleBench/tests/config.yml')
+    parser.add_argument("-o", "--output", help="config yaml output file", type=str)
+
+    args = parser.parse_args()
+
+    logging.basicConfig(
+                        stream=sys.stdout,
+                    level=logging.INFO,
+                    format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+    
+    logging.info('Reading the config filename :)')
+    data_input = yaml.safe_load(open(args.input, 'r'))
+
+    if not args.output:
+        args.output = f'{args.input[:-4]}_clean_config.yml'
+    if Path(args.output).suffix not in ['.yaml', '.yml']:
+        raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
+
+    if validate_config(data_input):
+        write_config(data_input, args.output)
