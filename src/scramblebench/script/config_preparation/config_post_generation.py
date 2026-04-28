@@ -4,6 +4,9 @@ from scramblebench.script.config_preparation.config_model import ModelConfig
 
 from pathlib import Path
 from typing import Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PostGenerationConfig:
 
@@ -17,7 +20,7 @@ class PostGenerationConfig:
         self.pick_last_name = 'pick_last'
     
         self.input_value = post_generation_data[self.input_name]
-        print(f'{self.input_value=}')
+
         self.output_value = post_generation_data[self.output_name]
         self.pick_random_value = [model.strip() for model in post_generation_data[self.pick_random_name].split(',')]
         self.pick_last_value = [model.strip() for model in post_generation_data[self.pick_last_name].split(',')]
@@ -42,7 +45,7 @@ class PostGenerationConfig:
         validated_model = []
 
         model_reference_list = self.reference_model.get_model_list()
-        print(model_reference_list)
+        logging.info(f'Model name detected in the config file: {model_reference_list}')
         for model in self.pick_last_value:
             if model not in model_reference_list:
                 raise ValueError(f'The model {model} is not found on the {config_constant.MODEL_KEY} name parameter')

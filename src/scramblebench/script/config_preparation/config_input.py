@@ -8,9 +8,13 @@ import Bio
 import rdkit
 from Bio.PDB import PDBParser
 from rdkit import Chem
-
+import os
+from split_protein_ligand import split_pocket_ligand
 from oddt.toolkits.extras.rdkit import fixer
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 class InputConfig:
 
@@ -43,12 +47,27 @@ class InputConfig:
         return self
 
     def validate_config(self) -> None:
-        print(f'{self.complex_value=}')
+        logging.info('Validating Input Config.')
+        logging.info(f'Complex filename: {self.complex_value}')
+
         check_complex_content(self.complex_value,
                             self.pdb_value,
                             self.sdf_value)
-        
-        
+    
+    def write(self, cutoff: int = 10) -> dict[str, Any]:
+        lig_mol = Chem.SDMolSupplier(self.sdf_value)[0]
+        pocket_fname = split_pocket_ligand(self.complex_value, cutoff=cutoff)
+        pocket_coordinate = np.array(list(Chem.rdMolTransforms.ComputeCentroid(lig_mol.GetConformer(0), ignoreHs=True)))
+
+        return {'input':
+                    {'complex_path': str(Path(self.complex_value).resolve()),
+                    'pdb_path': str(Path(self.pdb_value).resolve()),
+                    'sdf_path': str(Path(self.sdf_value).resolve()),
+                    'protein_title': self.title_value,
+                    'pocket_path': str(Path(pocket_fname).resolve()),
+                    'pocket_coord': f" {','.join([str(np.round(coord, 2)) for coord in pocket_coordinate])}"}}   
+
+
 def check_pdb_path(pdb_fname: str) -> None:
     if not isinstance(pdb_fname, str):
         raise TypeError(f'{pdb_fname} is not a string!')
@@ -60,7 +79,7 @@ def check_pdb_path(pdb_fname: str) -> None:
         raise FileTypeError(f'{pdb_fname} does not end with PDB for protein')
 
 def check_complex_path(complex_fname: str) -> None:
-    print(f'{complex_fname=}')
+
     if not isinstance(complex_fname, str):
         raise TypeError(f'{complex_fname} is not a string!')
     pdb_path = Path(complex_fname)
@@ -110,8 +129,7 @@ def check_pdb_contains_residue(pdb_fname: str) -> bool:
     return False
 
 def validate_complex_and_protein_content(complex_fname: str, protein_fname: str) -> None:
-    import os
-    print(os.getcwd())
+    
     check_complex_path(complex_fname)
     check_pdb_path(protein_fname)
 

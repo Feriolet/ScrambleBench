@@ -5,6 +5,9 @@ from pathlib import Path
 from scramblebench.script.error_handler import DirNotFound
 from scramblebench.script.config_preparation import config_constant
 import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ModelStructure:
 
@@ -36,7 +39,7 @@ class ModelStructure:
 
         if not Path(self.dir_value).is_dir():
             if self.dir_value is None or self.dir_value == 'not_applicable':
-                print(f'Please note that the directory of {self.model_name_value} is left out for generation')
+                logging.warning(f'Please note that the directory of {self.model_name_value} is left out for generation')
             else:   
                 raise DirNotFound(f'Directory {self.dir_value=} does not exist')
 
@@ -86,7 +89,7 @@ def check_conda_env(conda_env: str) -> None:
 
     if not conda_env in output:
         if conda_env == 'not_applicable' or conda_env is None:
-            print('Please note that your conda is explicitly left out')
+            logging.warning('Please note that your conda is explicitly left out')
         else:
             raise ValueError(f'Conda environment {conda_env} does not exist')
     

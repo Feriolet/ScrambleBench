@@ -3,6 +3,9 @@ from scramblebench.script.config_preparation import config_constant
 from pathlib import Path
 from typing import Any
 import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GenBench3DConfig:
     def __init__(self, config_data: dict[str, Any]):
@@ -86,7 +89,7 @@ def check_conda_env(conda_env: str) -> None:
 
     if not conda_env in output:
         if conda_env == 'not_applicable' or conda_env is None:
-            print('Please note that your conda is explicitly left out')
+            logging.warning('Please note that some of your conda is explicitly left out')
         else:
             raise ValueError(f'Conda environment {conda_env} does not exist')
         
