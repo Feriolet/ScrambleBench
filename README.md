@@ -38,10 +38,17 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 ## Installation
 
 ```sh
-## Install Scramblebench 
-conda create -n scramblebench python=3.9
+
+git clone https://github.com/Feriolet/ScrambleBench
+cd ScrambleBench
+
+## Method 1: Install through environment.yaml (Recommended)
+conda env create -f environment.yaml
+
+## Method 2: Install manually 
+conda create -n scramblebench python=3.10 oddt
 conda activate scramblebench
-pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow
+pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow uv pytest pyyaml Bio pytest-xdist
 ```
 
 ## Model Repository Installation
