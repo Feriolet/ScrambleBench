@@ -45,6 +45,15 @@ class ModelStructure:
 
         check_conda_env(self.conda_env_value)
 
+    def write(self):
+        if self.dir_value is None or self.dir_value == 'not_applicable':
+            dirname = self.dir_value
+        else:
+            dirname = str(Path(self.dir_value).resolve())
+
+        return { 'name': self.model_name_value,
+                 'dir': dirname,
+                 'conda_env': self.conda_env_value}
 
 class ModelConfig:
 
@@ -75,7 +84,13 @@ class ModelConfig:
     def get_model_list(self):
         return [modelstruct.model_name_value for modelstruct in self.modelstructure_dict.values()]
 
-
+    def write(self) -> dict[str, Any]:
+        model_data = {}
+        for key, modelstruct in self.modelstructure_dict.items():
+            model_data[key] = modelstruct.write()
+            
+        return {'model': model_data}
+    
 def check_conda_env(conda_env: str) -> None:
 
     # Run 'conda env list' command and capture the output

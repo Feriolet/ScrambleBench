@@ -56,8 +56,11 @@ def validate_config(config_data: dict[str, Any]) -> None:
 
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     config_output = {}
-    config_output = config_output | InputConfig(config_data).write(cutoff=10)
 
+    logging.info('Writing Config for Input key')
+    config_output = config_output | InputConfig(config_data).write(cutoff=10)
+    logging.info('Writing Config for Model key')
+    config_output = config_output | ModelConfig(config_data).write()
 
     with open(output_fname, 'w') as yaml_f:
         yaml.dump(config_output, yaml_f, sort_keys=False)
@@ -70,8 +73,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    logging.basicConfig(
-                        stream=sys.stdout,
+    logging.basicConfig(stream=sys.stdout,
                     level=logging.INFO,
                     format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
@@ -82,6 +84,7 @@ if __name__ == '__main__':
     if not args.output:
         args.output = f'{args.input[:-4]}_clean_config.yml'
     if Path(args.output).suffix not in ['.yaml', '.yml']:
+        logging.exception('Error failed in config output filename format')
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
 
     if validate_config(data_input):
