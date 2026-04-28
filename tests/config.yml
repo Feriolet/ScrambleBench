@@ -7,27 +7,27 @@ input:
 model:
   pmdm:
     name: PMDM
-    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/PMDM
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/PMDM
     conda_env: benchmark_pmdm
   
   diffsbdd:
     name: DiffSBDD
-    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/DiffSBDD
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/DiffSBDD
     conda_env: benchmark_diffsbdd
   
   pocket2mol:
     name: Pocket2Mol
-    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Pocket2Mol
     conda_env: benchmark_pocket2mol
 
   pocketflow:
     name: PocketFlow
-    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/PocketFlow
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/PocketFlow
     conda_env: benchmark_pocketflow
   
   lingo3dmol:
     name: Lingo3DMol
-    dir: /opt/veincent/GenAI_manuscript/scramblebench/models/Lingo3DMol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Lingo3DMol
     conda_env: benchmark_lingo3dmol
   
   chem42:
@@ -53,10 +53,10 @@ post_generation:
 genbench3d:
   input: cheminformatics_input_prepared
   output: cheminformatics_analysis
-  genbench_dir: /opt/veincent/GenAI_manuscript/scramblebench/models/genbench3d
+  genbench_dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/genbench3d
   conda_env: benchmark_genbench3d
   schrodinger_dir: /opt/schrodinger2025-4
-  genbench_config: /opt/veincent/GenAI_manuscript/scramblebench/models/genbench3d/config/GenAI_evaluation.yaml
+  genbench_config: /opt/veincent/GenAI_manuscript/ScrambleBench/models/genbench3d/config/GenAI_evaluation.yaml
   do_complex_forcefield_minimisation: True
   do_docking_forcefield_minimisation: True
   do_cancel_protonation_by_obabel_or_adfr: True

@@ -29,7 +29,8 @@ pytest.cancel_protonation = 'do_cancel_protonation_by_obabel_or_adfr'
 
 @pytest.fixture(scope='function')
 def pytest_load_config():
-    config_data = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/config.yml'
+    file_dir = str(Path(__file__).resolve().parent)
+    config_data = f'{file_dir}/config.yml'
     return load_config(config_data)
 
 @dataclass
@@ -92,18 +93,19 @@ class ConfigGenBench3DKey:
 
 @pytest.fixture(scope='session')
 def input_file() -> ConfigInputFile:
+    file_dir = str(Path(__file__).resolve().parent)
     return ConfigInputFile(
-        correct_protein_pdb='tests/input_0/protein.pdb',
-        correct_complex_pdb='/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/complex.pdb',
-        correct_ligand_sdf='/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/ligand.sdf',
-        complex_without_protein_pdb = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/complex_without_protein.pdb',
-        incorrect_protein_sdf = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/incorrect_protein.sdf',
-        incorrect_protein_pdb = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/incorrect_protein.pdb',
-        incorrect_ligand_sdf = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/incorrect_ligand.sdf',
-        multiple_ligand_sdf = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/multiple_ligand.sdf',
-        translated_ligand_sdf = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/translated_ligand.sdf',
-        empty_pdb = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/empty.pdb',
-        empty_sdf = '/opt/veincent/GenAI_manuscript/ScrambleBench/tests/input_0/empty.sdf')
+        correct_protein_pdb=f'{file_dir}/input_0/protein.pdb',
+        correct_complex_pdb=f'{file_dir}/input_0/complex.pdb',
+        correct_ligand_sdf=f'{file_dir}/input_0/ligand.sdf',
+        complex_without_protein_pdb = f'{file_dir}/input_0/complex_without_protein.pdb',
+        incorrect_protein_sdf = f'{file_dir}/input_0/incorrect_protein.sdf',
+        incorrect_protein_pdb = f'{file_dir}/input_0/incorrect_protein.pdb',
+        incorrect_ligand_sdf = f'{file_dir}/input_0/incorrect_ligand.sdf',
+        multiple_ligand_sdf = f'{file_dir}/input_0/multiple_ligand.sdf',
+        translated_ligand_sdf = f'{file_dir}/input_0/translated_ligand.sdf',
+        empty_pdb = f'{file_dir}/input_0/empty.pdb',
+        empty_sdf = f'{file_dir}/input_0/empty.sdf')
 
 @pytest.fixture(scope='session')
 def input_key() -> ConfigInputKey:
