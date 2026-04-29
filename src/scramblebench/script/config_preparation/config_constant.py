@@ -1,4 +1,5 @@
 INPUT_KEY = 'input'
+INPUT_DIR_KEY = 'input_dir'
 MODEL_KEY = 'model'
 GENERATION_KEY = 'generation'
 GENERATION_PARAMETER_KEY = 'parameter'

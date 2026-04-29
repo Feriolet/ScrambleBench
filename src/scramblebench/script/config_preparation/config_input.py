@@ -9,28 +9,62 @@ import rdkit
 from Bio.PDB import PDBParser
 from rdkit import Chem
 import os
-from split_protein_ligand import split_pocket_ligand
+from scramblebench.script.split_protein_ligand import split_pocket_ligand
 from oddt.toolkits.extras.rdkit import fixer
 import numpy as np
 import logging
+import re
 
 logger = logging.getLogger(__name__)
+
 
 class InputConfig:
 
     def __init__(self, config_data: dict[str, Any]):
-        config_data = config_data[config_constant.INPUT_KEY]
 
         self.name = config_constant.INPUT_KEY
+        input_data = config_data[self.name]
+
+        self.inputstructure_dict = {input_keyname: InputStructure(structinput_data) for input_keyname, structinput_data in input_data.items()}
+
+    def __iter__(self):
+        """Returns the iterator object itself."""
+        return iter(list(self.inputstructure_dict.items()))
+    
+    def update(self, input_keyname, input_key, value):
+        try:
+            self.inputstructure_dict[input_keyname] = self.inputstructure_dict[input_keyname].update(input_key, value)
+        except KeyError:
+            raise KeyError(f'no key called {input_keyname}')
+
+        return self
+    
+    # see __iter__ method for how this is possible.
+    def validate_config(self) -> None:
+        for input in self:
+            (input[-1].validate_config()) 
+
+    def get_input_list(self):
+        return [inputstruct.input_name_value for inputstruct in self.inputstructure_dict.values()]
+
+    def write(self, cutoff:int=10) -> dict[str, Any]:
+        input_data = {}
+        for key, inputstruct in self.inputstructure_dict.items():
+            input_data[key] = inputstruct.write(cutoff=cutoff)
+            
+        return {self.name: input_data}
+    
+class InputStructure:
+
+    def __init__(self, input_dict: dict[str, Any]):
+
         self.complex_name = 'complex_path'
         self.pdb_name = 'pdb_path'
         self.sdf_name = 'sdf_path'
-        self.title_name = 'protein_title'
-    
-        self.complex_value = config_data[self.complex_name]
-        self.pdb_value = config_data[self.pdb_name]
-        self.sdf_value = config_data[self.sdf_name]
-        self.title_value = config_data[self.title_name]
+
+        self.complex_value = input_dict[self.complex_name]
+        self.pdb_value = input_dict[self.pdb_name]
+        self.sdf_value = input_dict[self.sdf_name]
 
     def update(self, key: str, value: str):
         if key == self.complex_name:
@@ -39,8 +73,6 @@ class InputConfig:
             self.pdb_value = value
         elif key == self.sdf_name:
             self.sdf_value = value
-        elif key == self.title_name:
-            self.title_value = value
         else:
             raise TypeError(f'no key called {key}')
 
@@ -48,7 +80,7 @@ class InputConfig:
 
     def validate_config(self) -> None:
         logging.info('Validating Input Config.')
-        logging.info(f'Complex filename: {self.complex_value}')
+        logging.info(f'Validating Complex Structure. Complex filename: {self.complex_value}')
 
         check_complex_content(self.complex_value,
                             self.pdb_value,
@@ -59,13 +91,94 @@ class InputConfig:
         pocket_fname = split_pocket_ligand(self.complex_value, cutoff=cutoff)
         pocket_coordinate = np.array(list(Chem.rdMolTransforms.ComputeCentroid(lig_mol.GetConformer(0), ignoreHs=True)))
 
-        return {'input':
-                    {'complex_path': str(Path(self.complex_value).resolve()),
-                    'pdb_path': str(Path(self.pdb_value).resolve()),
-                    'sdf_path': str(Path(self.sdf_value).resolve()),
-                    'protein_title': self.title_value,
-                    'pocket_path': str(Path(pocket_fname).resolve()),
-                    'pocket_coord': f" {','.join([str(np.round(coord, 2)) for coord in pocket_coordinate])}"}}   
+        return {self.complex_name: str(Path(self.complex_value).resolve()),
+                self.pdb_name: str(Path(self.pdb_value).resolve()),
+                self.sdf_name: str(Path(self.sdf_value).resolve()),
+                'pocket_path': str(Path(pocket_fname).resolve()),
+                'pocket_coord': f" {','.join([str(np.round(coord, 2)) for coord in pocket_coordinate])}"} 
+
+
+class InputDirConfig:
+
+    def __init__(self, config_data: dict[str, Any]):
+
+        self.name = config_constant.INPUT_DIR_KEY
+        input_dir_data = config_data[self.name]
+        self.dirpath_name = 'dirpath'
+        self.dirpath_value = input_dir_data[self.dirpath_name]
+
+        self.complex_name = 'complex_path'
+        self.pdb_name = 'pdb_path'
+        self.sdf_name = 'sdf_path'
+        self.input_data = InputConfig(self.search_for_filepath())
+
+        
+    def search_for_filepath(self):
+        
+        pathdir_dirname = Path(self.dirpath_value)
+        assert pathdir_dirname.resolve().is_dir()
+
+        protein_dirname_list = pathdir_dirname.iterdir()
+        protein_dict = {}
+        for protein_dirname in protein_dirname_list:
+            assert Path(protein_dirname).is_dir()
+
+            protein_name = Path(protein_dirname).stem
+            
+            protein_dict[protein_name] = {}
+
+            ### Find potential Protein PDB
+            glob_matching_fname = f'*{create_case_insensitive_regex("protein")}*.pdb'
+            regex_pattern_non_alphanumeric_left_and_right = re.compile(f'(?<![A-Za-z0-9]){create_case_insensitive_regex("protein")}(?![A-Za-z0-9])')
+
+            matched_fname_list = [fname for fname in protein_dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
+            if len(matched_fname_list) == 0:
+                logging.warning(f'No pdb file found for {protein_name}. Skipping...')
+                continue
+            elif len(matched_fname_list) > 1:
+                logging.warning(f'Multiple pdb file found for {protein_name}. Skipping...')
+                continue
+            else:
+                protein_dict[protein_name][self.pdb_name] = str(matched_fname_list[0])
+
+            ### Find potential Ligand SDF
+            glob_matching_fname = f'*{create_case_insensitive_regex("ligand")}*.sdf'
+            regex_pattern_non_alphanumeric_left_and_right = re.compile(f'(?<![A-Za-z0-9]){create_case_insensitive_regex("ligand")}(?![A-Za-z0-9])')
+
+            matched_fname_list = [fname for fname in protein_dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
+            if len(matched_fname_list) == 0:
+                logging.warning(f'No sdf file found for {protein_name}. Skipping...')
+                continue
+            elif len(matched_fname_list) > 1:
+                logging.warning(f'Multiple sdf file found for {protein_name}. Skipping...')
+                continue
+            else:
+                protein_dict[protein_name][self.sdf_name] = str(matched_fname_list[0])
+
+            ### Find potential complex PDB
+            glob_matching_fname = f'*{create_case_insensitive_regex("complex")}*.pdb'
+            regex_pattern_non_alphanumeric_left_and_right = re.compile(f'(?<![A-Za-z0-9]){create_case_insensitive_regex("complex")}(?![A-Za-z0-9])')
+
+            matched_fname_list = [fname for fname in protein_dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
+            if len(matched_fname_list) == 0:
+                logging.warning(f'No pdb file found for {protein_name}. Skipping...')
+                continue
+            elif len(matched_fname_list) > 1:
+                logging.warning(f'Multiple pdb file found for {protein_name}. Skipping...')
+                continue
+            else:
+                protein_dict[protein_name][self.complex_name] = str(matched_fname_list[0])           
+
+        return {config_constant.INPUT_KEY: protein_dict}
+    
+    def validate_config(self):
+        self.input_data.validate_config()
+    
+    def write(self, cutoff: int = 10) -> dict[str, Any]:
+        return self.input_data.write(cutoff=cutoff)
+    
+def create_case_insensitive_regex(pattern: str) -> str:
+    return f"{''.join([ '[' + char.upper() + char.lower() + ']' for char in pattern])}"
 
 
 def check_pdb_path(pdb_fname: str) -> None:

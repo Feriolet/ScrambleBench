@@ -12,8 +12,20 @@ class GenerationParameterConfig:
         self.num_sample_name = 'num_sample'
         self.title_name = 'name'
 
-        self.box_size_value = parameter_data[self.box_size_name]
-        self.num_sample_value = [int(num.strip()) for num in parameter_data[self.num_sample_name].split(',')]
+        if isinstance(parameter_data[self.box_size_name], (int, float)):
+            self.box_size_value = parameter_data[self.box_size_name]
+        elif isinstance(parameter_data[self.box_size_name], str):
+            self.box_size_value = [int(num.strip()) for num in parameter_data[self.box_size_name].split(',')]
+        else:
+            raise ValueError(f'unsupported type of {parameter_data[self.box_size_name]}: {type(parameter_data[self.box_size_name])}')
+
+        if isinstance(parameter_data[self.num_sample_name], int):
+            self.num_sample_value = parameter_data[self.num_sample_name]
+        elif isinstance(parameter_data[self.num_sample_name], str):
+            self.num_sample_value = [int(num.strip()) for num in parameter_data[self.num_sample_name].split(',')]
+        else:
+            raise ValueError(f'unsupported type of {parameter_data[self.num_sample_name]}: {type(parameter_data[self.num_sample_name])}')
+        
         self.title_value = parameter_data[self.title_name]
 
     def update(self, key: str, value: str):
@@ -34,6 +46,15 @@ class GenerationParameterConfig:
     def validate_config(self):
         assert isinstance(self.parameter_value.box_size_value, (int, float))
 
+        if isinstance(self.parameter_value.box_size_value, list):
+            if not all(isinstance(num, (int, float)) for num in self.parameter_value.box_size_value):
+                raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
+        elif isinstance(self.parameter_value.box_size_value, (int, float)):
+            pass
+        else:
+            raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
+    
+
         if isinstance(self.parameter_value.num_sample_value, list):
             if not all(isinstance(num, int) for num in self.parameter_value.num_sample_value):
                 raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
@@ -41,7 +62,12 @@ class GenerationParameterConfig:
             pass
         else:
             raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
-        
+    
+    def write(self):
+        return {self.box_size_name : self.box_size_value,
+                self.num_sample_name : self.num_sample_value,
+                self.title_name : self.title_value}
+    
 class GenerationConfig:
 
     def __init__(self, config_data: dict[str, Any]):
@@ -72,8 +98,14 @@ class GenerationConfig:
         assert isinstance(self.input_value, str)
         assert isinstance(self.output_value, str)
 
-        assert isinstance(self.parameter_value.box_size_value, (int, float))
-
+        if isinstance(self.parameter_value.box_size_value, list):
+            if not all(isinstance(num, int) for num in self.parameter_value.box_size_value):
+                raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
+        elif isinstance(self.parameter_value.box_size_value, int):
+            pass
+        else:
+            raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
+    
         if isinstance(self.parameter_value.num_sample_value, list):
             if not all(isinstance(num, int) for num in self.parameter_value.num_sample_value):
                 raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
@@ -81,7 +113,12 @@ class GenerationConfig:
             pass
         else:
             raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
-        
+    
+    def write(self):
+
+        return {config_constant.GENERATION_KEY : {self.input_name: str(Path(self.input_value).resolve()),
+                                                  self.output_name: str(Path(self.output_value).resolve()),
+                                                  config_constant.GENERATION_PARAMETER_KEY: self.parameter_value.write()}}
 
 def check_file_start_with_number(fname: str):
     try:

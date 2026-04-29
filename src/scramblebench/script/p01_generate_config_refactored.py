@@ -6,13 +6,14 @@ import yaml
 import argparse
 import logging
 import sys
-from scramblebench.script.config_preparation.config_input import InputConfig
+from copy import deepcopy
+
 from scramblebench.script.config_preparation.config_model import ModelConfig
 from scramblebench.script.config_preparation.config_generation import GenerationConfig
 from scramblebench.script.config_preparation.config_post_generation import PostGenerationConfig
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
 from scramblebench.script.config_preparation import config_constant
-
+import itertools 
 logger = logging.getLogger(__name__)
 
 def load_config(config_fname: str) -> dict[str, Any]:
@@ -37,7 +38,8 @@ def validate_config(config_data: dict[str, Any]) -> None:
 
     for config_key in compulsory_config_key_list:
         if config_key not in config_data.keys():
-            raise ValueError(f'{config_key} not in your config file. Please add it with case sensitive letters.')
+            if config_key == config_constant.INPUT_KEY and config_constant.INPUT_DIR_KEY not in config_data.keys():
+                raise ValueError(f'{config_key} not in your config file. Please add it with case sensitive letters.')
         
     InputConfig(config_data).validate_config()
     ModelConfig(config_data).validate_config()
@@ -54,23 +56,115 @@ def validate_config(config_data: dict[str, Any]) -> None:
     
     return True
 
+#https://github.com/yaml/pyyaml/issues/127
+class MyDumper(yaml.SafeDumper):
+    # HACK: insert blank lines between top-level objects
+    # inspired by https://stackoverflow.com/a/44284819/3786245
+    def write_line_break(self, data=None):
+        super().write_line_break(data)
+
+        if len(self.indents) == 1:
+            super().write_line_break()
+
+
+def deep_get(dictionary: dict, nested_key: list):
+    copied_dict = deepcopy(dictionary)
+    for key in nested_key:
+        copied_dict = copied_dict.get(key)
+
+        if copied_dict is None:
+            logging.exception(f'The dictionary {dictionary} has no value for key {key}')
+            raise KeyError(f'Key {key} not found for dictionary {dictionary}')
+        if not isinstance(copied_dict, dict) and key != nested_key[-1]:
+            logging.warning(f'Your dictionary {dictionary} overshoot the nested key. The value for {key} is not a dictionary. Ignoring subsequent keys')
+            return copied_dict
+    
+    return copied_dict
+
+#https://stackoverflow.com/questions/13687924/setting-a-value-in-a-nested-python-dictionary-given-a-list-of-indices-and-value
+def deep_assign(dictionary: dict, nested_key: list, value: Any, create_missing=False):
+    d = dictionary
+    for key in nested_key[:-1]:
+        if key in d:
+            d = d[key]
+        elif create_missing:
+            d = d.setdefault(key, {})
+        else:
+            return dictionary
+    if nested_key[-1] in d or create_missing:
+        d[nested_key[-1]] = value
+    return dictionary
+
+
+def forcetype(value: Any, dtype='int'):
+    if dtype == 'int':
+        return int(value)
+    elif dtype == 'float':
+        return float(value)
+    elif dtype == 'str':
+        return str(value)
+    elif dtype == 'dict':
+        if isinstance(value, dict):
+            return value
+        else:
+            logging.exception(f'{value} type is not dict, but instead {type(value)}')
+    else:
+        logging.exception(f'{value} has unsupported type of {dtype} requested')
+        raise ValueError(f'unsupported dtype {dtype}. Please enter int, float, or str only')
+
+
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     config_output = {}
-
+    repeat_parameter = [{'key':['input'],
+                         'type': 'dict'},
+                        {'key':['generation', 'parameter', 'num_sample'],
+                        'type': 'int'},
+                        {'key':['generation', 'parameter', 'box_size'],
+                        'type': 'float'}]
+    
     logging.info('Writing Config for Input key')
     config_output = config_output | InputConfig(config_data).write(cutoff=10)
     logging.info('Writing Config for Model key')
     config_output = config_output | ModelConfig(config_data).write()
+    logging.info('Writing Config for Generation key')
+    config_output = config_output | GenerationConfig(config_data).write()
 
-    with open(output_fname, 'w') as yaml_f:
-        yaml.dump(config_output, yaml_f, sort_keys=False)
+    for repeat_dict in repeat_parameter:
+        nested_value = deep_get(config_output, repeat_dict['key'])
+        if isinstance(nested_value, dict):
+            repeat_dict['value'] = [{key: value} for key, value in nested_value.items()]
+        else:
+            repeat_dict['value'] = nested_value
+
+    repeat_parameter = [repeat_dict for repeat_dict in repeat_parameter if isinstance(repeat_dict['value'], list)]    
+    nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
+    nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
+    nested_type_lists = [repeat_dict['type'] for repeat_dict in repeat_parameter]
+    combinatorial_value_end_list = list(itertools.product(*nested_value_lists))
+
+    for each_combination_list in combinatorial_value_end_list:
+        for key, value, dtype in zip(nested_key_lists, each_combination_list, nested_type_lists):
+            config_output = deep_assign(config_output, key, value=forcetype(value, dtype))
+
+        output_dir = Path(output_fname).parent
+        for key, val in zip(nested_key_lists, each_combination_list):
+            if isinstance(val, dict):
+                val = list(val.keys())[0]
+            output_dir = Path(output_dir) / f'{key[-1]}_{val}'
+        print(output_dir)
+        
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        with open(Path(output_dir) / Path(output_fname).name, 'w') as yaml_f:
+            yaml.dump(config_output, yaml_f, Dumper=MyDumper, sort_keys=False)
+            logging.info(f"Config saved in {Path(output_dir) / Path(output_fname).name}")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prepare config file for ScrambleBench")
 
     parser.add_argument("-i", "--input", help="config yaml input file", type=str, default='/mnt/sod/Veincent/manuscript/ScrambleBench/tests/config.yml')
     parser.add_argument("-o", "--output", help="config yaml output file", type=str)
-
+    parser.add_argument("--dirpath_input", action='store_true', help='write input key as a single directory', default=False)
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout,
@@ -81,6 +175,10 @@ if __name__ == '__main__':
     logging.info('Reading the config filename :)')
     data_input = yaml.safe_load(open(args.input, 'r'))
 
+    if args.dirpath_input:
+        from scramblebench.script.config_preparation.config_input import InputDirConfig as InputConfig
+    else:
+        from scramblebench.script.config_preparation.config_input import InputConfig
     if not args.output:
         args.output = f'{args.input[:-4]}_clean_config.yml'
     if Path(args.output).suffix not in ['.yaml', '.yml']:

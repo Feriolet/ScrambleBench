@@ -1,8 +1,14 @@
 input:
-  complex_path: tests/input_0/complex.pdb
-  pdb_path: tests/input_0/protein.pdb
-  sdf_path: tests/input_0/ligand.sdf
-  protein_title: generic_title
+  generic_title:
+    complex_path: tests/input_0/complex.pdb
+    pdb_path: tests/input_0/protein.pdb
+    sdf_path: tests/input_0/ligand.sdf
+  generic_title2:
+    complex_path: tests/input_0/complex.pdb
+    pdb_path: tests/input_0/protein.pdb
+    sdf_path: tests/input_0/ligand.sdf
+input_dir:
+  dirpath: /mnt/sod/Veincent/manuscript/ScrambleBench/example/input  
 
 model:
   pmdm:

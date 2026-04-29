@@ -51,9 +51,9 @@ class ModelStructure:
         else:
             dirname = str(Path(self.dir_value).resolve())
 
-        return { 'name': self.model_name_value,
-                 'dir': dirname,
-                 'conda_env': self.conda_env_value}
+        return { self.model_name: self.model_name_value,
+                 self.dir_name: dirname,
+                 self.conda_env_name: self.conda_env_value}
 
 class ModelConfig:
 
@@ -89,7 +89,7 @@ class ModelConfig:
         for key, modelstruct in self.modelstructure_dict.items():
             model_data[key] = modelstruct.write()
             
-        return {'model': model_data}
+        return {config_constant.MODEL_KEY: model_data}
     
 def check_conda_env(conda_env: str) -> None:
 
