@@ -18,8 +18,8 @@ class ModelStructure:
         self.conda_env_name = 'conda_env'
     
         self.model_name_value = model_dict[self.model_name]
-        self.dir_value = model_dict[self.dir_name]
-        self.conda_env_value = model_dict[self.conda_env_name]
+        self.dir_value = model_dict.get(self.dir_name)
+        self.conda_env_value = model_dict.get(self.conda_env_name)
     
     def update(self, key: str, value: str):
         if key == self.model_name:
@@ -47,7 +47,7 @@ class ModelStructure:
 
     def write(self):
         if self.dir_value is None or self.dir_value == 'not_applicable':
-            dirname = self.dir_value
+            dirname = 'not_applicable'
         else:
             dirname = str(Path(self.dir_value).resolve())
 

@@ -2,6 +2,9 @@
 from scramblebench.script.config_preparation import config_constant
 from pathlib import Path
 from typing import Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GenerationParameterConfig:
 
@@ -12,13 +15,19 @@ class GenerationParameterConfig:
         self.num_sample_name = 'num_sample'
         self.title_name = 'name'
 
-        if isinstance(parameter_data[self.box_size_name], (int, float)):
+        if parameter_data.get(self.box_size_name) is None:
+            logging.warning('Unspecified parameter box size. Setting default to 16 A')
+            self.box_size_value = 10
+        elif isinstance(parameter_data[self.box_size_name], (int, float)):
             self.box_size_value = parameter_data[self.box_size_name]
         elif isinstance(parameter_data[self.box_size_name], str):
             self.box_size_value = [int(num.strip()) for num in parameter_data[self.box_size_name].split(',')]
         else:
             raise ValueError(f'unsupported type of {parameter_data[self.box_size_name]}: {type(parameter_data[self.box_size_name])}')
-
+        
+        if parameter_data.get(self.num_sample_name) is None:
+            logging.warning('Unspecified parameter num sample. Setting default to 100')
+            self.num_sample_value = 100
         if isinstance(parameter_data[self.num_sample_name], int):
             self.num_sample_value = parameter_data[self.num_sample_name]
         elif isinstance(parameter_data[self.num_sample_name], str):
@@ -26,7 +35,7 @@ class GenerationParameterConfig:
         else:
             raise ValueError(f'unsupported type of {parameter_data[self.num_sample_name]}: {type(parameter_data[self.num_sample_name])}')
         
-        self.title_value = parameter_data[self.title_name]
+        self.title_value = parameter_data.get(self.title_name) or 'generic_title'
 
     def update(self, key: str, value: str):
         if key == self.box_size_name:

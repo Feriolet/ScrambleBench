@@ -14,7 +14,12 @@ from scramblebench.script.config_preparation.config_post_generation import PostG
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
 from scramblebench.script.config_preparation import config_constant
 import itertools 
+import subprocess
+
 logger = logging.getLogger(__name__)
+
+GENERATION_SCRIPT_PATH = Path(Path(__file__).parent / '02_run_generation.sh').resolve()
+
 
 def load_config(config_fname: str) -> dict[str, Any]:
     with open(config_fname, 'r') as config_fn:
@@ -112,14 +117,27 @@ def forcetype(value: Any, dtype='int'):
         logging.exception(f'{value} has unsupported type of {dtype} requested')
         raise ValueError(f'unsupported dtype {dtype}. Please enter int, float, or str only')
 
+def reassign_input_config(config_data):
+    'to prevent subsequent script to identify the protein name of the input key'
+
+    input_data = config_data[config_constant.INPUT_KEY]
+    assert len(list(input_data.keys())) == 1
+
+    config_data[config_constant.INPUT_KEY] = {}
+    for values in input_data.values():
+        config_data[config_constant.INPUT_KEY].update(values)
+
+    config_data[config_constant.INPUT_KEY]['name'] = list(input_data.keys())[0]
+
+    return config_data
 
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     config_output = {}
-    repeat_parameter = [{'key':['input'],
+    repeat_parameter = [{'key':[config_constant.INPUT_KEY],
                          'type': 'dict'},
-                        {'key':['generation', 'parameter', 'num_sample'],
+                        {'key':[config_constant.GENERATION_KEY, 'parameter', 'num_sample'],
                         'type': 'int'},
-                        {'key':['generation', 'parameter', 'box_size'],
+                        {'key':[config_constant.GENERATION_KEY, 'parameter', 'box_size'],
                         'type': 'float'}]
     
     logging.info('Writing Config for Input key')
@@ -142,28 +160,53 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     nested_type_lists = [repeat_dict['type'] for repeat_dict in repeat_parameter]
     combinatorial_value_end_list = list(itertools.product(*nested_value_lists))
 
+    output_dir = config_output[config_constant.GENERATION_KEY]['input']
+    yaml_list = []
     for each_combination_list in combinatorial_value_end_list:
         for key, value, dtype in zip(nested_key_lists, each_combination_list, nested_type_lists):
             config_output = deep_assign(config_output, key, value=forcetype(value, dtype))
 
-        output_dir = Path(output_fname).parent
+        config_output = reassign_input_config(config_output)
+        temp_output_dir = deepcopy(output_dir)
         for key, val in zip(nested_key_lists, each_combination_list):
             if isinstance(val, dict):
                 val = list(val.keys())[0]
-            output_dir = Path(output_dir) / f'{key[-1]}_{val}'
-        print(output_dir)
+            temp_output_dir = Path(temp_output_dir) / f'{key[-1]}_{val}'
+
         
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-        with open(Path(output_dir) / Path(output_fname).name, 'w') as yaml_f:
+        config_output[config_constant.GENERATION_KEY]['input'] = str(temp_output_dir)
+
+        temp_output_dir_generation = temp_output_dir / 'AI_Generation'
+        config_output[config_constant.GENERATION_KEY]['output'] = str(temp_output_dir)
+
+        Path(temp_output_dir_generation).mkdir(parents=True, exist_ok=True)
+        
+        yaml_fname = Path(temp_output_dir) / Path(output_fname).name
+        with open(yaml_fname, 'w') as yaml_f:
             yaml.dump(config_output, yaml_f, Dumper=MyDumper, sort_keys=False)
-            logging.info(f"Config saved in {Path(output_dir) / Path(output_fname).name}")
+            yaml_list.append(str(yaml_fname))
+            logging.info(f"Config saved in {yaml_fname}")
 
+    logging.info(f"Preparing Script for Batch Generation")
 
+    with open(Path(output_dir) / 'yaml_list.txt', 'w') as generation_fname:
+        for yaml_f in yaml_list:
+            generation_fname.write(f'{yaml_f} \n')
+
+    logging.info(f"Yaml file list saved in {str(Path(output_dir) / 'yaml_list.txt')} for job manager")
+
+    with open(Path(output_dir) / 'run_generation.sh', 'w') as bash_fname:
+        bash_fname.write('#!/bin/bash \n\n')
+        for yaml_f in yaml_list:
+            bash_fname.write(f'{GENERATION_SCRIPT_PATH} {yaml_f} \n')
+    
+    logging.info(f"Batch script saved in {str(Path(output_dir) / 'run_generation.sh')}")
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prepare config file for ScrambleBench")
 
-    parser.add_argument("-i", "--input", help="config yaml input file", type=str, default='/mnt/sod/Veincent/manuscript/ScrambleBench/tests/config.yml')
-    parser.add_argument("-o", "--output", help="config yaml output file", type=str)
+    parser.add_argument("-i", "--input", help="config yaml input file", type=str, default='/mnt/sod/Veincent/manuscript/ScrambleBench/tests/config_test_run.yml')
+    parser.add_argument("-o", "--output", help="config yaml output file prefix (i.e., not path directory)", type=str)
     parser.add_argument("--dirpath_input", action='store_true', help='write input key as a single directory', default=False)
     args = parser.parse_args()
 
@@ -184,6 +227,8 @@ if __name__ == '__main__':
     if Path(args.output).suffix not in ['.yaml', '.yml']:
         logging.exception('Error failed in config output filename format')
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
-
+    
+    args.output = Path(args.output).name
     if validate_config(data_input):
+    #if True:
         write_config(data_input, args.output)
