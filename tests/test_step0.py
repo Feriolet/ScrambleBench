@@ -114,7 +114,7 @@ def input_key() -> ConfigInputKey:
         complex_name = 'complex_path',
         pdb_name = 'pdb_path',
         sdf_name = 'sdf_path',
-        title_name = 'protein_title',
+        title_name = 'generic_title',
     )
 
 @pytest.fixture(scope='session')
@@ -160,98 +160,98 @@ def genbench3d_key() -> ConfigGenBench3DKey:
 
 class TestInputConfig:
 
-    def test_update_config_pass(self, pytest_load_config, input_key: ConfigInputKey):
-        InputConfig(pytest_load_config).update(input_key.title_name, 'test').validate_config()
+    def test_update_config_pass(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
+        InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, input_file.correct_complex_pdb).validate_config()
 
     def test_update_config_incorrect_type_error(self, pytest_load_config, input_key: ConfigInputKey):
         with pytest.raises(TypeError):
-            InputConfig(pytest_load_config).update(input_key.complex_name, 20.5).validate_config()
+            InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, 20.5).validate_config()
 
     def test_load_config_incorrect_key_error(self, pytest_load_config, input_key: ConfigInputKey):
 
         # rename old key to new invalid key
-        pytest_load_config[input_key.name]['hiiiiiii'] = pytest_load_config[input_key.name].pop(input_key.complex_name)
+        pytest_load_config[input_key.name][input_key.title_name]['hiiiiiii'] = pytest_load_config[input_key.name][input_key.title_name].pop(input_key.complex_name)
         print(pytest_load_config)
         with pytest.raises(KeyError):
             InputConfig(pytest_load_config)
 
-    def test_update_config_incorrect_key_error(self, pytest_load_config):
+    def test_update_config_incorrect_key_error(self, pytest_load_config, input_key: ConfigInputKey):
         with pytest.raises(TypeError):
-            InputConfig(pytest_load_config).update('hiiiii', 20.5).validate_config()
+            InputConfig(pytest_load_config).update(input_key.title_name, 'hiiiii', 20.5).validate_config()
 
     def test_input_file_pass(self, pytest_load_config):
         InputConfig(pytest_load_config).validate_config()
 
     def test_complex_pdb_not_found(self, pytest_load_config, input_key: ConfigInputKey):
-        data = InputConfig(pytest_load_config).update(input_key.complex_name, 'xyz1230987')
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, 'xyz1230987')
 
         with pytest.raises(FileNotFoundError):
             data.validate_config()
 
     def test_complex_pdb_wrong_format(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.complex_name, input_file.incorrect_protein_sdf)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, input_file.incorrect_protein_sdf)
 
         with pytest.raises(FileTypeError):
             data.validate_config()
 
     def test_complex_pdb_empty_ligand_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.complex_name, input_file.correct_protein_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, input_file.correct_protein_pdb)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_complex_pdb_empty_protein_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.complex_name, input_file.complex_without_protein_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, input_file.complex_without_protein_pdb)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_complex_pdb_empty_file_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.complex_name, input_file.empty_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.complex_name, input_file.empty_pdb)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
 
     def test_protein_pdb_not_found_error(self, pytest_load_config, input_key: ConfigInputKey):
-        data = InputConfig(pytest_load_config).update(input_key.pdb_name, 'xyz1230987')
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.pdb_name, 'xyz1230987')
 
         with pytest.raises(FileNotFoundError):
             data.validate_config()
 
     def test_protein_pdb_wrong_format_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.pdb_name, input_file.incorrect_protein_sdf)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.pdb_name, input_file.incorrect_protein_sdf)
 
         with pytest.raises(FileTypeError):
             data.validate_config()
 
     def test_protein_pdb_contains_ligand_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.pdb_name, input_file.correct_complex_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.pdb_name, input_file.correct_complex_pdb)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_protein_pdb_mismatch_complex_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.pdb_name, input_file.incorrect_protein_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.pdb_name, input_file.incorrect_protein_pdb)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_protein_pdb_empty_file_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.pdb_name, input_file.empty_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.pdb_name, input_file.empty_pdb)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
 
     def test_ligand_sdf_not_found_error(self, pytest_load_config, input_key: ConfigInputKey):
-        data = InputConfig(pytest_load_config).update(input_key.sdf_name, 'xyz1230987')
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.sdf_name, 'xyz1230987')
 
         with pytest.raises(FileNotFoundError):
             data.validate_config()
 
     def test_ligand_sdf_wrong_format_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.sdf_name, input_file.empty_pdb)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.sdf_name, input_file.empty_pdb)
 
         with pytest.raises(FileTypeError):
             data.validate_config()
@@ -263,25 +263,25 @@ class TestInputConfig:
     #         data.validate_config()
 
     def test_ligand_sdf_empty_file_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.sdf_name, input_file.empty_sdf)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.sdf_name, input_file.empty_sdf)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_ligands_contains_multiple_ligands_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.sdf_name, input_file.multiple_ligand_sdf)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.sdf_name, input_file.multiple_ligand_sdf)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_ligand_sdf_mismatch_complex_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.sdf_name, input_file.incorrect_ligand_sdf)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.sdf_name, input_file.incorrect_ligand_sdf)
 
         with pytest.raises(FileDataError):
             data.validate_config()
 
     def test_ligand_sdf_not_in_pocket_error(self, pytest_load_config, input_key: ConfigInputKey, input_file: ConfigInputFile):
-        data = InputConfig(pytest_load_config).update(input_key.sdf_name, input_file.translated_ligand_sdf)
+        data = InputConfig(pytest_load_config).update(input_key.title_name, input_key.sdf_name, input_file.translated_ligand_sdf)
 
         with pytest.raises(FileDataError):
             data.validate_config()
