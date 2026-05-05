@@ -207,7 +207,7 @@ In the future, we will support complex pdb only, but the file directory should s
 
 A config file and txt file containing a list of the config.yaml will be written in the folder list in value for `config[generation][input]` key.
 
-For best practice, please write the absolute pathdir, as relative pathdir is relative to the executable script. Despite this, relative pathdir is still allowed, and ScrambleBench will resolve it in the config output.
+For best practice, please write the absolute pathdir, as relative pathdir is relative to the executable path (i.e., pwd). Despite this, relative pathdir is still allowed, and ScrambleBench will resolve it in the config output.
 
 
 #### 2. Run Generation
