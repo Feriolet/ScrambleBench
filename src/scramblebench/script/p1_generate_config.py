@@ -212,6 +212,7 @@ if __name__ == '__main__':
     data_input = yaml.safe_load(open(args.input, 'r'))
 
     if args.dirpath_input:
+        logging.info('Dirpath_input mode: expecting to read directories given a directory')
         from scramblebench.script.config_preparation.config_input import InputDirConfig as InputConfig
     else:
         from scramblebench.script.config_preparation.config_input import InputConfig

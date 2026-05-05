@@ -148,9 +148,12 @@ Before running the molecule generation, it is necessary to understand the approp
 ```yaml
 input:
   protein1: # name of the protein (str)
-    complex_path: # pdb file (str). Must have protein + ligand
-    pdb_path: # pdb file (str)
+    complex_path: # pdb file (str). Must have protein + ligand inside
+    pdb_path: # pdb file (str). 
     sdf_path: # sdf file (str)
+
+input_dir:
+  dirpath: # directory path containing the folders of each protein target
 
 model: 
   pmdm: # name of the model (str)
@@ -167,6 +170,7 @@ generation:
     num_sample: # int or list of int separated by comma
     name: # job name (str)
 ```
+In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder.
 
 Multiple values for the input protein names and parameters (i.e., box_size and num_sample) are supported, which can be seen in the `example` folder.
 
@@ -174,18 +178,14 @@ Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 
 
 ```txt
 input_folder
-|
-|-- protein_1
-|     |
-|     |-- complex.pdb
-|     |-- protein.pdb
-|     |-- ligand.sdf
-|
-|-- protein_2
-      |
-      |-- complex.pdb
-      |-- protein.pdb
-      |-- ligand.sdf
+├── protein_1
+│   ├── complex.pdb
+│   ├── protein.pdb
+│   └── ligand.sdf
+└── protein_2
+    ├── complex.pdb
+    ├── protein.pdb
+    └── ligand.sdf
 ```
 
 In the future, we will support complex pdb only, but the file directory should still be the same (i.e., individual protein target has its own folder).
