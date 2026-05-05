@@ -20,8 +20,8 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
   - [Pre-trained Model Installation](#pre-trained-model-installation)
   - [Usage](#usage)
     - [Main Pipeline](#main-pipeline)
-      - [0. Prepare Config File](#0-prepare-config-file)
-      - [1. Run Generation](#1-run-generation)
+      - [1. Prepare Config File](#1-prepare-config-file)
+      - [2. Run Generation](#2-run-generation)
       - [2. Combine SDF files (Model-based)](#2-combine-sdf-files-model-based)
       - [3. Preprocess SDF files](#3-preprocess-sdf-files)
       - [4. Combine SDF files (Target-based)](#4-combine-sdf-files-target-based)
@@ -142,60 +142,64 @@ The generation process is entirely dependent on the config file used. You can re
 
 ### Main Pipeline
 
-#### 0. Prepare Config File
+#### 1. Prepare Config File
+
+Before running the molecule generation, it is necessary to understand the appropriate input for ScrambleBench. Several examples are available in the `example` folder. Briefly, the description of the yaml keys are the following:
 ```yaml
 input:
-  complex_path: path to protein-ligand complex 
-  pdb_path: path to holo protein pdb
-  sdf_path: path to ligand sdf with same coordinate with complex_path
+  protein1: # name of the protein (str)
+    complex_path: # pdb file (str). Must have protein + ligand
+    pdb_path: # pdb file (str)
+    sdf_path: # sdf file (str)
 
-parameter:
-  box_size: Pocket2Mol box size
-  num_sample: number of ligand to be generated
-  name: jobname
-  protein_title: protein name
+model: 
+  pmdm: # name of the model (str)
+    name: # name of the model (str)
+    dir: # path to model dir (str)
+    conda_env: # name of conda env (str)
 
-output:
-  output_dir: directory of output for generation
-
-models_dir:
-  pmdm: root directory of PMDM repository
-  diffsbdd: root directory of DiffSBDD repository
-  pocket2mol: root directory of Pocket2Mol repository
-  pocketflow: root directory of PocketFlow repository
-  lingo3dmol: root directory of Lingo3DMol repository
-
-conda_env:
-  pmdm: conda name for PMDM
-  diffsbdd: conda name for DiffSBDD
-  pocket2mol: conda name for Pocket2Mol
-  pocketflow: conda name for PocketFlow
-  lingo3dmol: conda name for Lingo3DMol
+generation:
+  input: # path to output yaml file
+  output: # path to generation output (default: input/AI_Generation)
+  script_filepath: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
+  parameter:
+    box_size: # int or list of float/int separated by comma
+    num_sample: # int or list of int separated by comma
+    name: # job name (str)
 ```
 
+Multiple values for the input protein names and parameters (i.e., box_size and num_sample) are supported, which can be seen in the `example` folder.
 
-
-```
-cd script
-python 00_prepare_config_file.py --config_path run_config/config_5HT2C_prepared.yml
-```
-
-A config file will be written in the `output/outputdir` folder named `run_generative_ai.yaml`
-
-#### 1. Run Generation
-
-This code will run the generation of the de novo ligand. Please look out for the config of each model to get more information of their parameters, especially their seed. In my experience, Pocket2Mol has the seed number for reproducibility purpose.
+Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. The path directory should be the following:
 
 ```txt
-Pocket2Mol:Pocket2Mol/configs/sample_for_pdb.yml
-PocketFlow: Unknown
-Lingo3DMol: Unknown
-DiffSBDD: Unknown
-PMDM: Unknown
+input_folder
+|
+|-- protein_1
+|     |
+|     |-- complex.pdb
+|     |-- protein.pdb
+|     |-- ligand.sdf
+|
+|-- protein_2
+      |
+      |-- complex.pdb
+      |-- protein.pdb
+      |-- ligand.sdf
 ```
 
+In the future, we will support complex pdb only, but the file directory should still be the same (i.e., individual protein target has its own folder).
+
+A config file and txt file containing a list of the config.yaml will be written in the folder list in value for `config[generation][input]` key.
+
+For best practice, please write the absolute pathdir, as relative pathdir is relative to the executable script. Despite this, relative pathdir is still allowed, and ScrambleBench will resolve it in the config output.
+
+
+#### 2. Run Generation
+
+The generation script allows two kinds of input: a single yaml file input or a txt file containing a list of yaml pathdir
 ```bash
-./01_run_all.sh output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
+./p2_execute_generation.py -i output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
 ```
 
 #### 2. Combine SDF files (Model-based)
