@@ -133,9 +133,9 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     config_output = {}
     repeat_parameter = [{'key':[config_constant.INPUT_KEY],
                          'type': 'dict'},
-                        {'key':[config_constant.GENERATION_KEY, 'parameter', 'num_sample'],
+                        {'key':[config_constant.GENERATION_KEY, config_constant.GENERATION_PARAMETER_KEY, 'num_sample'],
                         'type': 'int'},
-                        {'key':[config_constant.GENERATION_KEY, 'parameter', 'box_size'],
+                        {'key':[config_constant.GENERATION_KEY, config_constant.GENERATION_PARAMETER_KEY, 'box_size'],
                         'type': 'float'}]
     
     logging.debug('Writing Config for Input key')
@@ -174,7 +174,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         
         config_output[config_constant.GENERATION_KEY]['input'] = str(temp_output_dir)
 
-        temp_output_dir_generation = temp_output_dir / 'AI_Generation'
+        temp_output_dir_generation = temp_output_dir / config_constant.GENERATION_FOLDER
         config_output[config_constant.GENERATION_KEY]['output'] = str(temp_output_dir)
 
         Path(temp_output_dir_generation).mkdir(parents=True, exist_ok=True)

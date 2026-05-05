@@ -11,9 +11,6 @@ from scramblebench.script.config_preparation import config_constant
 
 logger = logging.getLogger(__name__)
 
-MODEL_CONDA_ENV = 'conda_env'
-GENERATION_SCRIPT_FILE = 'script_pathfile'
-
 def read_input(input_fname: str) -> list[str]:
     input_filepath = Path(input_fname)
     
@@ -47,7 +44,7 @@ def fetch_model(config_data):
 def validate_generation_script(config_data: dict) -> None:
 
     logging.debug('Validating the template generation (or custom) script file')
-    script_file = config_data[config_constant.GENERATION_KEY][GENERATION_SCRIPT_FILE]
+    script_file = config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_TEMPLATE_SCRIPT_FILE_KEY]
     script_pathfile = Path(script_file)
     assert script_pathfile.is_file() and script_pathfile.suffix == '.sh'
 
@@ -57,18 +54,18 @@ def validate_generation_script(config_data: dict) -> None:
 
     for model in model_for_generation_list:
         # here, we check whether the model is executed through each model conda environment
-        if config_data[model][MODEL_CONDA_ENV] is None or config_data[model][MODEL_CONDA_ENV] == 'non_applicable':
+        if config_data[model][config_constant.MODEL_CONDA_ENV_KEY] is None or config_data[model][config_constant.MODEL_CONDA_ENV_KEY] == 'non_applicable':
             logging.warning(f'{model} is detected not to be inferred.')
             continue
 
-        if f'${config_constant.MODEL_KEY}_{model}_{MODEL_CONDA_ENV}' not in script_text:
-            raise ValueError(f"We did not detect {model} for the inference in the {script_file}. We detect each model by checking the string '${config_constant.MODEL_KEY}_{model}_{MODEL_CONDA_ENV}'")
+        if f'${config_constant.MODEL_KEY}_{model}_{config_constant.MODEL_CONDA_ENV_KEY}' not in script_text:
+            raise ValueError(f"We did not detect {model} for the inference in the {script_file}. We detect each model by checking the string '${config_constant.MODEL_KEY}_{model}_{config_constant.MODEL_CONDA_ENV_KEY}'")
     
     return True
 
 
 def run_inference(yaml_file, config_data) -> None:
-    cmd = [config_data[config_constant.GENERATION_KEY][GENERATION_SCRIPT_FILE],
+    cmd = [config_data[config_constant.GENERATION_KEY][config_constant.MODEL_CONDA_ENV_KEY],
            yaml_file]
     
     subprocess.run(cmd, shell=True, capture_output=True)

@@ -164,7 +164,7 @@ model:
 generation:
   input: # path to output yaml file
   output: # path to generation output (default: input/AI_Generation)
-  script_filepath: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
+  script_pathfile: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
   parameter:
     box_size: # int or list of float/int separated by comma
     num_sample: # int or list of int separated by comma

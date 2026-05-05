@@ -6,8 +6,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-#todo: create tests for default or incorrect generation script
-GENERATION_SCRIPT_PATH = Path(Path(__file__).parent.parent / 'utils' / 'generation_template.sh').resolve()
 
 class GenerationParameterConfig:
 
@@ -88,12 +86,14 @@ class GenerationConfig:
         self.name = config_constant.GENERATION_KEY
         self.input_name = 'input'
         self.output_name = 'output'
-        self.script_name = 'script_path'
+        self.script_name = 'script_pathfile'
 
         self.input_value = config_data[self.input_name]
         self.output_value = config_data[self.output_name]
         self.parameter_value = GenerationParameterConfig(config_data)
-        self.script_value = config_data.get(self.script_name) or GENERATION_SCRIPT_PATH
+
+        #todo: create tests for default or incorrect generation script
+        self.script_value = config_data.get(self.script_name) or config_constant.GENERATION_TEMPLATE_SCRIPT_PATH
 
     def update(self, key: str, value: str):
         if key == self.input_name:
