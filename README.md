@@ -170,8 +170,21 @@ generation:
     num_sample: # int or list of int separated by comma
     name: # job name (str)
 ```
-In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder.
+In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder. 
 
+```txt
+usage: p1_generate_config.py [-h] [-i INPUT] [-o OUTPUT] [--dirpath_input]
+
+Prepare config file for ScrambleBench
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file
+  -o OUTPUT, --output OUTPUT
+                        config yaml output file prefix (i.e., not path directory)
+  --dirpath_input       write input key as a single directory
+```
 Multiple values for the input protein names and parameters (i.e., box_size and num_sample) are supported, which can be seen in the `example` folder.
 
 Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. The path directory should be the following:
@@ -197,11 +210,25 @@ For best practice, please write the absolute pathdir, as relative pathdir is rel
 
 #### 2. Run Generation
 
-The generation script allows two kinds of input: a single yaml file input or a txt file containing a list of yaml pathdir
+The generation script allows two kinds of input: a single yaml file input or a txt file containing a list of yaml pathdir. 
+
+Before generation, this script will check whether the generation script (default: `src/script/utils/generation_template.sh`) will generate molecules by the correct AI model by their conda environment (e.g., pmdm model should have a `$model_pmdm_conda_env` and pocket2mol model should have a `$model_pocket2mol_conda_env` string in the bash script).
+
+```txt
+usage: p2_execute_generation.py [-h] -i INPUT
+
+Run de novo molecule generation after p1_generate_config.py
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
+```
+
 ```bash
 ./p2_execute_generation.py -i output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
 ```
-
+------------------------------------------------------
 #### 2. Combine SDF files (Model-based)
 
 As some models output individuals SDF file for each ligand, we need to combine them. The default output folder in the script is called `summary` folder
