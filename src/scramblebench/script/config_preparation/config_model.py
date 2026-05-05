@@ -2,7 +2,7 @@
 from typing import Any
 from pathlib import Path
 
-from scramblebench.script.error_handler import DirNotFound
+from scramblebench.script.utils.error_handler import DirNotFound
 from scramblebench.script.config_preparation import config_constant
 import subprocess
 import logging

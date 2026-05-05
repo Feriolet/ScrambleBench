@@ -1,1 +1,1 @@
-python ../../src/scramblebench/script/p01_generate_config_refactored.py -i config/config_test_run.yml --dirpath_input
+python ../../src/scramblebench/script/p1_generate_config.py -i config/config_test_run.yml --dirpath_input

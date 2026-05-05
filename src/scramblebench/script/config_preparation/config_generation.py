@@ -6,6 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+#todo: create tests for default or incorrect generation script
+GENERATION_SCRIPT_PATH = Path(Path(__file__).parent.parent / 'utils' / 'generation_template.sh').resolve()
+
 class GenerationParameterConfig:
 
     def __init__(self, parameter_data: dict[str, Any]):
@@ -14,6 +17,7 @@ class GenerationParameterConfig:
         self.box_size_name = 'box_size'
         self.num_sample_name = 'num_sample'
         self.title_name = 'name'
+        self.script_name = 'script_path'
 
         if parameter_data.get(self.box_size_name) is None:
             logging.warning('Unspecified parameter box size. Setting default to 16 A')
@@ -36,6 +40,7 @@ class GenerationParameterConfig:
             raise ValueError(f'unsupported type of {parameter_data[self.num_sample_name]}: {type(parameter_data[self.num_sample_name])}')
         
         self.title_value = parameter_data.get(self.title_name) or 'generic_title'
+        self.script_value = parameter_data.get(self.script_name) or GENERATION_SCRIPT_PATH
 
     def update(self, key: str, value: str):
         if key == self.box_size_name:
@@ -72,6 +77,11 @@ class GenerationParameterConfig:
         else:
             raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
     
+        if not Path(self.script_value).is_file():
+            raise FileNotFoundError(f'{self.script_value} was not found. Please check your directory again')
+        if not Path(self.script_value).suffix == '.sh':
+            raise ValueError(f'Script generation file must be in .sh format. Instead, we detect {self.script_value}')
+
     def write(self):
         return {self.box_size_name : self.box_size_value,
                 self.num_sample_name : self.num_sample_value,

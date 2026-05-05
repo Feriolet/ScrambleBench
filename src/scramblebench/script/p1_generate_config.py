@@ -18,8 +18,6 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-GENERATION_SCRIPT_PATH = Path(Path(__file__).parent / '02_run_generation.sh').resolve()
-
 
 def load_config(config_fname: str) -> dict[str, Any]:
     with open(config_fname, 'r') as config_fn:
@@ -140,11 +138,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
                         {'key':[config_constant.GENERATION_KEY, 'parameter', 'box_size'],
                         'type': 'float'}]
     
-    logging.info('Writing Config for Input key')
+    logging.debug('Writing Config for Input key')
     config_output = config_output | InputConfig(config_data).write(cutoff=10)
-    logging.info('Writing Config for Model key')
+    logging.debug('Writing Config for Model key')
     config_output = config_output | ModelConfig(config_data).write()
-    logging.info('Writing Config for Generation key')
+    logging.debug('Writing Config for Generation key')
     config_output = config_output | GenerationConfig(config_data).write()
 
     for repeat_dict in repeat_parameter:
@@ -193,15 +191,9 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         for yaml_f in yaml_list:
             generation_fname.write(f'{yaml_f} \n')
 
-    logging.info(f"Yaml file list saved in {str(Path(output_dir) / 'yaml_list.txt')} for job manager")
+    logging.info(f"Yaml file list saved in {str(Path(output_dir) / 'yaml_list.txt')} for job manager and p2_execute_generation.py")
 
-    with open(Path(output_dir) / 'run_generation.sh', 'w') as bash_fname:
-        bash_fname.write('#!/bin/bash \n\n')
-        for yaml_f in yaml_list:
-            bash_fname.write(f'{GENERATION_SCRIPT_PATH} {yaml_f} \n')
-    
-    logging.info(f"Batch script saved in {str(Path(output_dir) / 'run_generation.sh')}")
-        
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prepare config file for ScrambleBench")
 
@@ -215,6 +207,7 @@ if __name__ == '__main__':
                     format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
     
+    logging.info('Running p1_generate_config.py')
     logging.info('Reading the config filename :)')
     data_input = yaml.safe_load(open(args.input, 'r'))
 

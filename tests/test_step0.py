@@ -14,7 +14,7 @@ from scramblebench.script.config_preparation.config_genbench3d import GenBench3D
 
 from scramblebench.script.p01_generate_config_refactored import check_correct_input_output_folder
 from scramblebench.script.p01_generate_config_refactored import load_config
-from scramblebench.script.error_handler import FileTypeError, FileDataError, DirNotFound
+from scramblebench.script.utils.error_handler import FileTypeError, FileDataError, DirNotFound
 
 
 pytest.input = 'input'

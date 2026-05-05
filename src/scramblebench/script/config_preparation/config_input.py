@@ -2,7 +2,7 @@
 from typing import Any, Optional
 from pathlib import Path
 
-from scramblebench.script.error_handler import FileDataError, FileTypeError
+from scramblebench.script.utils.error_handler import FileDataError, FileTypeError
 from scramblebench.script.config_preparation import config_constant
 import Bio
 import rdkit

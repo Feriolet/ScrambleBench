@@ -8,6 +8,7 @@ eval $(parse_yaml $1)
 
 eval "$(conda shell.bash hook)"
 
+mkdir -p $generation_output/summary
 
 # Step 1: Generating ligand through PMDM model
 # The PMDM requires the pocket generation through their own script
@@ -21,6 +22,10 @@ if [ ! -z "$model_pmdm_conda_env" ]; then
                 --pdb_path $input_pocket_path \
                 --batch_size 5 \
                 --outdir $generation_output/PMDM
+
+    ## Process PMDM
+    cat $generation_output/PMDM/generate_ref/*.sdf > $generation_output/summary/generated_$parameter_name"_ligand_PMDM_"$(date -I).sdf
+
 fi
 
 
@@ -36,6 +41,9 @@ if [ ! -z "$model_diffsbdd_conda_env" ]; then
                 --outfile $generation_output/DiffSBDD/generated_${generation_parameter_name}_DiffSBDD.sdf \
                 --ref_ligand $input_sdf_path \
                 --batch_size 50
+
+    ## Process DiffSBDD
+    cp $generation_output/DiffSBDD/*.sdf $generation_output/summary/generated_$parameter_name"_ligand_DiffSBDD_"$(date -I).sdf
 fi
 
 #Step 3: Generating ligand from Pocket2Mol
@@ -48,6 +56,11 @@ if [ ! -z "$model_pocket2mol_conda_env" ]; then
                 --config $model_pocket2mol_dir/configs/sample_for_pdb.yml \
                 --checkpoint $model_pocket2mol_dir/ckpt/pretrained_Pocket2Mol.pt \
                 --num_samples $generation_parameter_num_sample
+
+
+    ## Process Pocket2Mol
+    $DIR/combine_sdf.sh $generation_output/Pocket2Mol/*/SDF #give sdf_combined.sdf as output
+
 fi
 
 
@@ -62,6 +75,10 @@ if [ ! -z "$model_pocketflow_conda_env" ]; then
         --name $generation_parameter_name \
         -pkt $input_pocket_path \
         --root_path $generation_output/PocketFlow
+
+    ## Process PocketFlow
+    cp $generation_output/PocketFlow/*/*/generated.sdf $generation_output/summary/generated_$parameter_name"_ligand_PocketFlow_"$(date -I).sdf
+
 fi
 
 ## Step 5: Generating ligand from Lingo3DMol
@@ -78,5 +95,10 @@ if [ ! -z "$model_lingo3dmol_conda_env" ]; then
     --gennums $generation_parameter_num_sample \
     --contact_path $model_lingo3dmol_dir/checkpoint/contact.pkl \
     --caption_path $model_lingo3dmol_dir/checkpoint/gen_mol.pkl
+
+    ## Process Lingo3DMol
+    $DIR/combine_mol.sh $generation_output/Lingo3DMol_0/*/
+    cp $generation_output/Lingo3DMol_0/*/sdf_combined.sdf $generation_output/summary/generated_$parameter_name"_ligand_Lingo3DMol_"$(date -I).sdf
+
 fi
 
