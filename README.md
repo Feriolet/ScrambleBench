@@ -170,8 +170,7 @@ generation:
     num_sample: # int or list of int separated by comma
     name: # job name (str)
 ```
-In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder. Additionally, if you use `input_dir` key, there **MUST** be a **SINGLE** file of protein.pdb, complex.pdb, and ligand.sdf with the string 'protein', 'complex', and 'ligand', respectively, so that the script can detect which one is which. For example, the script will detect 'gpcr_ligand.sdf' as ligand file, but not 'gpcr.sdf', because there is no 'ligand' string in the file.
-
+In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder. 
 
 ```txt
 usage: p1_generate_config.py [-h] [-i INPUT] [-o OUTPUT] [--dirpath_input]
@@ -188,7 +187,9 @@ options:
 ```
 Multiple values for the input protein names and parameters (i.e., box_size and num_sample) are supported, which can be seen in the `example` folder.
 
-Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. The path directory should be the following:
+Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. If you use `input_dir` key, there **MUST** be a **SINGLE** file of protein.pdb, complex.pdb, and ligand.sdf with the string 'protein', 'complex', and 'ligand', respectively, so that the script can detect which one is which. For example, the script will detect 'gpcr_ligand.sdf' as ligand file, but not 'gpcr.sdf', because there is no 'ligand' string in the file.
+
+The path directory should be the following:
 
 ```txt
 input_folder
