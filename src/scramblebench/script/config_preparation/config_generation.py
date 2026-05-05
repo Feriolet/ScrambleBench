@@ -17,7 +17,6 @@ class GenerationParameterConfig:
         self.box_size_name = 'box_size'
         self.num_sample_name = 'num_sample'
         self.title_name = 'name'
-        self.script_name = 'script_path'
 
         if parameter_data.get(self.box_size_name) is None:
             logging.warning('Unspecified parameter box size. Setting default to 16 A')
@@ -40,7 +39,6 @@ class GenerationParameterConfig:
             raise ValueError(f'unsupported type of {parameter_data[self.num_sample_name]}: {type(parameter_data[self.num_sample_name])}')
         
         self.title_value = parameter_data.get(self.title_name) or 'generic_title'
-        self.script_value = parameter_data.get(self.script_name) or GENERATION_SCRIPT_PATH
 
     def update(self, key: str, value: str):
         if key == self.box_size_name:
@@ -76,11 +74,6 @@ class GenerationParameterConfig:
             pass
         else:
             raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
-    
-        if not Path(self.script_value).is_file():
-            raise FileNotFoundError(f'{self.script_value} was not found. Please check your directory again')
-        if not Path(self.script_value).suffix == '.sh':
-            raise ValueError(f'Script generation file must be in .sh format. Instead, we detect {self.script_value}')
 
     def write(self):
         return {self.box_size_name : self.box_size_value,
@@ -95,10 +88,12 @@ class GenerationConfig:
         self.name = config_constant.GENERATION_KEY
         self.input_name = 'input'
         self.output_name = 'output'
-    
+        self.script_name = 'script_path'
+
         self.input_value = config_data[self.input_name]
         self.output_value = config_data[self.output_name]
         self.parameter_value = GenerationParameterConfig(config_data)
+        self.script_value = config_data.get(self.script_name) or GENERATION_SCRIPT_PATH
 
     def update(self, key: str, value: str):
         if key == self.input_name:
@@ -133,10 +128,16 @@ class GenerationConfig:
         else:
             raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
     
+        if not Path(self.script_value).is_file():
+            raise FileNotFoundError(f'{self.script_value} was not found. Please check your directory again')
+        if not Path(self.script_value).suffix == '.sh':
+            raise ValueError(f'Script generation file must be in .sh format. Instead, we detect {self.script_value}')
+
     def write(self):
 
         return {config_constant.GENERATION_KEY : {self.input_name: str(Path(self.input_value).resolve()),
                                                   self.output_name: str(Path(self.output_value).resolve()),
+                                                  self.script_name: str(Path(self.script_value).resolve()),
                                                   config_constant.GENERATION_PARAMETER_KEY: self.parameter_value.write()}}
 
 def check_file_start_with_number(fname: str):
