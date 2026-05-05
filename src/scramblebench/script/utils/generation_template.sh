@@ -21,10 +21,10 @@ if [ ! -z "$model_pmdm_conda_env" ]; then
                 --sampling_type generalized \
                 --pdb_path $input_pocket_path \
                 --batch_size 5 \
-                --outdir $generation_output/PMDM
+                --outdir $generation_output/$model_pmdm_name
 
     ## Process PMDM
-    cat $generation_output/PMDM/generate_ref/*.sdf > $generation_output/summary/generated_$parameter_name"_ligand_PMDM_"$(date -I).sdf
+    cat $generation_output/$model_pmdm_name/generate_ref/*.sdf > $generation_output/summary/generated_$parameter_name"_ligand_"$model_pmdm_name"_"$(date -I).sdf
 
 fi
 
@@ -33,7 +33,7 @@ fi
 if [ ! -z "$model_diffsbdd_conda_env" ]; then
     conda activate $model_diffsbdd_conda_env
     # cd $exec_directory_diffsbdd
-    mkdir -p $generation_output/DiffSBDD
+    mkdir -p $generation_output/$model_diffsbdd_name
     time python $model_diffsbdd_dir/generate_ligands.py \
                 $model_diffsbdd_dir/checkpoints/crossdocked_fullatom_cond.ckpt \
                 --n_samples $generation_parameter_num_sample \
@@ -43,7 +43,7 @@ if [ ! -z "$model_diffsbdd_conda_env" ]; then
                 --batch_size 50
 
     ## Process DiffSBDD
-    cp $generation_output/DiffSBDD/*.sdf $generation_output/summary/generated_$parameter_name"_ligand_DiffSBDD_"$(date -I).sdf
+    cp $generation_output/$model_diffsbdd_name/*.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_diffsbdd_name"_"$(date -I).sdf
 fi
 
 #Step 3: Generating ligand from Pocket2Mol
@@ -52,14 +52,14 @@ if [ ! -z "$model_pocket2mol_conda_env" ]; then
     time python -u $model_pocket2mol_dir/sample_for_pdb.py --pdb_path $input_complex_path \
                 --center "$input_pocket_coord" \
                 --bbox_size $generation_parameter_box_size \
-                --outdir $generation_output/Pocket2Mol \
+                --outdir $generation_output/$model_pocket2mol_name \
                 --config $model_pocket2mol_dir/configs/sample_for_pdb.yml \
                 --checkpoint $model_pocket2mol_dir/ckpt/pretrained_Pocket2Mol.pt \
                 --num_samples $generation_parameter_num_sample
 
 
     ## Process Pocket2Mol
-    $DIR/combine_sdf.sh $generation_output/Pocket2Mol/*/SDF #give sdf_combined.sdf as output
+    $DIR/combine_sdf.sh $generation_output/$model_pocket2mol_name/*/SDF #give sdf_combined.sdf as output
 
 fi
 
@@ -74,10 +74,10 @@ if [ ! -z "$model_pocketflow_conda_env" ]; then
         --with_print True \
         --name $generation_parameter_name \
         -pkt $input_pocket_path \
-        --root_path $generation_output/PocketFlow
+        --root_path $generation_output/$model_pocketflow_name
 
     ## Process PocketFlow
-    cp $generation_output/PocketFlow/*/*/generated.sdf $generation_output/summary/generated_$parameter_name"_ligand_PocketFlow_"$(date -I).sdf
+    cp $generation_output/$model_pocketflow_name/*/*/generated.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_pocketflow_name"_"$(date -I).sdf
 
 fi
 
@@ -88,7 +88,7 @@ if [ ! -z "$model_lingo3dmol_conda_env" ]; then
     time python $model_lingo3dmol_dir/inference/inference_avoid_clash.py \
     --cuda '0' --cuda_list 0 \
     --input_list $model_lingo3dmol_dir/datasets/lingo3dmol_dataset \
-    --savedir $generation_output/Lingo3DMol_ \
+    --savedir $generation_output/$model_lingo3dmol_name"_" \
     --frag_len_add 15 \
     --max_run_hours 3 \
     --gen_frag_set 40 \
@@ -98,7 +98,7 @@ if [ ! -z "$model_lingo3dmol_conda_env" ]; then
 
     ## Process Lingo3DMol
     $DIR/combine_mol.sh $generation_output/Lingo3DMol_0/*/
-    cp $generation_output/Lingo3DMol_0/*/sdf_combined.sdf $generation_output/summary/generated_$parameter_name"_ligand_Lingo3DMol_"$(date -I).sdf
+    cp $generation_output/$model_lingo3dmol_name"_0"/*/sdf_combined.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_lingo3dmol_name"_"$(date -I).sdf
 
 fi
 
