@@ -1,0 +1,26 @@
+input:
+  complex_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/GPCR_DRD2/gpcr_drd2_6luq_complex_autoprepared.pdb
+  pdb_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/GPCR_DRD2/gpcr_drd2_6luq_protein_autoprepared.pdb
+  sdf_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/GPCR_DRD2/gpcr_drd2_6luq_ligand.sdf
+  pocket_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/GPCR_DRD2/gpcr_drd2_6luq_complex_autopreparedcut10/gpcr_drd2_6luq_complex_autopreparedcut10_pocket_withH.pdb
+  pocket_coord: ' 9.23,6.77,-9.29'
+  name: generic_title2
+
+model:
+  diffsbdd:
+    name: DiffSBDD
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/DiffSBDD
+    conda_env: benchmark_diffsbdd
+  pocket2mol:
+    name: Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
+
+generation:
+  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50
+  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/AI_Generation
+  script_pathfile: /mnt/sod/Veincent/manuscript/ScrambleBench/src/scramblebench/script/utils/generation_template.sh
+  parameter:
+    box_size: 16
+    num_sample: 50
+    name: 5ht2c_prepared_0

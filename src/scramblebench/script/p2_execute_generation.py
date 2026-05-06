@@ -6,7 +6,7 @@ import argparse
 import logging
 import sys
 import subprocess
-
+import os
 from scramblebench.script.config_preparation import config_constant
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,9 @@ def read_input(input_fname: str) -> list[str]:
         input_content = input_filepath.read_text().splitlines()
 
         for yaml_file in input_content:
-            yaml_filepath = Path(yaml_file)
+            yaml_file = yaml_file.strip()
+            yaml_filepath = Path(yaml_file).resolve()
+
             if not yaml_filepath.is_file():
                 raise FileNotFoundError(f'The file {yaml_file} is not found. Please check your directory')
     
@@ -54,7 +56,7 @@ def validate_generation_script(config_data: dict) -> None:
 
     for model in model_for_generation_list:
         # here, we check whether the model is executed through each model conda environment
-        if config_data[model][config_constant.MODEL_CONDA_ENV_KEY] is None or config_data[model][config_constant.MODEL_CONDA_ENV_KEY] == 'non_applicable':
+        if config_data[config_constant.MODEL_KEY][model][config_constant.MODEL_CONDA_ENV_KEY] is None or config_data[config_constant.MODEL_KEY][model][config_constant.MODEL_CONDA_ENV_KEY] == 'non_applicable':
             logging.warning(f'{model} is detected not to be inferred.')
             continue
 
@@ -64,22 +66,36 @@ def validate_generation_script(config_data: dict) -> None:
     return True
 
 
-def run_inference(yaml_file, config_data) -> None:
-    cmd = [config_data[config_constant.GENERATION_KEY][config_constant.MODEL_CONDA_ENV_KEY],
+def run_inference(yaml_file, config_data, log_status=False) -> None:
+    cmd = ['/bin/bash', config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_TEMPLATE_SCRIPT_FILE_KEY],
            yaml_file]
     
-    subprocess.run(cmd, shell=True, capture_output=True)
+    cmd = ' '.join(map(str, cmd))
+    if log_status:
+        log_msg = subprocess.run(cmd, shell=True, check=True, text=True, env=os.environ, capture_output=True)
+        logging.info(log_msg)
+    else:
+        subprocess.run(cmd, shell=True, check=True, text=True, env=os.environ)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run de novo molecule generation after p1_generate_config.py")
 
     parser.add_argument("-i", "--input", help="config yaml input file or txt file containing yaml filepath", required=True, type=str)
+    parser.add_argument('--log', help="config yaml input file or txt file containing yaml filepath", type=str)
     args = parser.parse_args()
 
-    logging.basicConfig(stream=sys.stdout,
-                    level=logging.INFO,
-                    format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
+    log_inference_status = False
+    if args.log:
+        logging.basicConfig(filename=args.log,
+                        level=logging.INFO,
+                        format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+        log_inference_status = True
+    else:
+        logging.basicConfig(stream=sys.stdout,
+                        level=logging.INFO,
+                        format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     
     logging.info('Running p2_execute_generation.py')
     logging.info('Reading the config filename :)')

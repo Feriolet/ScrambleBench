@@ -60,7 +60,7 @@ if [ ! -z "$model_pocket2mol_conda_env" ]; then
 
     ## Process Pocket2Mol
     $DIR/combine_sdf.sh $generation_output/$model_pocket2mol_name/*/SDF #give sdf_combined.sdf as output
-
+    cp $generation_output/$model_pocket2mol_name/*/SDF/sdf_combined.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_pocket2mol_name"_"$(date -I).sdf
 fi
 
 

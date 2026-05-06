@@ -175,7 +175,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         config_output[config_constant.GENERATION_KEY]['input'] = str(temp_output_dir)
 
         temp_output_dir_generation = temp_output_dir / config_constant.GENERATION_FOLDER
-        config_output[config_constant.GENERATION_KEY]['output'] = str(temp_output_dir)
+        config_output[config_constant.GENERATION_KEY]['output'] = str(temp_output_dir_generation)
 
         Path(temp_output_dir_generation).mkdir(parents=True, exist_ok=True)
         
