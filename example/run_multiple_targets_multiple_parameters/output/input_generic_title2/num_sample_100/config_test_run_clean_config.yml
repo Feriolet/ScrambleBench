@@ -24,3 +24,10 @@ generation:
     box_size: 16
     num_sample: 100
     name: 5ht2c_prepared_0
+    repeat_parameter:
+      num_sample: generation,parameter,num_sample
+
+post_generation:
+  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/AI_Generation
+  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/cheminformatics_input_prepared
+  pick_last: Pocket2Mol

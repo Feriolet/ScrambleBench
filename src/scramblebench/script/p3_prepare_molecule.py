@@ -103,7 +103,7 @@ def deep_get(dictionary: dict, nested_key: list):
     return copied_dict
 
 
-def prepare_mol(mol_l: list[Chem.Mol], 
+def process_mol(mol_l: list[Chem.Mol], 
                 model_name: str,
                 config_data: dict[str, Any]) -> list[Chem.Mol]:
     """Check if the generated ligand is below or equal to num_sample parameter (default 100).
@@ -121,7 +121,7 @@ def prepare_mol(mol_l: list[Chem.Mol],
     """
 
     num_sample = config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['num_sample']
-    repeat_parameeter_dict = config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['repeat_parameter']
+    repeat_parameter_dict = config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['repeat_parameter']
     model_pick_last_str = config_data[config_constant.POST_GENERATION_KEY].get('pick_last')
     model_pick_random_str = config_data[config_constant.POST_GENERATION_KEY].get('pick_random')
 
@@ -143,13 +143,19 @@ def prepare_mol(mol_l: list[Chem.Mol],
     protein_name = config_data[config_constant.INPUT_KEY]['name']
 
     for index, m in enumerate(mol_l):
-        m.SetProp('_Name', f'{model_name}_num{num_sample}_{index}')
         m.SetProp('GenAI_Model', model_name)
         m.SetProp('Protein', protein_name)
 
-    for key, key_config_path in repeat_parameeter_dict.items():
-        value = deep_get(config_data, key_config_path.split(','))
-        m.SetProp(key, str(value))
+        additional_name_string = ''
+        for key, key_config_path in repeat_parameter_dict.items():
+            value = deep_get(config_data, key_config_path.split(','))
+            additional_name_string += f'{key}_{value}'
+            m.SetProp(key, str(value))
+
+        if additional_name_string:
+            m.SetProp('_Name', f'{model_name}_{index}_{additional_name_string}')
+        else:
+            m.SetProp('_Name', f'{model_name}_{index}')
 
     return mol_l
 
@@ -169,7 +175,7 @@ def prepare_molecule(config_data):
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / file_name
         mol_l = validate_mol_list(Chem.SDMolSupplier(fname))
-        mol_l = prepare_mol(mol_l, model, config_data=config_data)
+        mol_l = process_mol(mol_l, model, config_data=config_data)
 
         with Chem.SDWriter(output_file) as w:
             for mol in mol_l:
