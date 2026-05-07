@@ -144,6 +144,8 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     config_output = config_output | ModelConfig(config_data).write()
     logging.debug('Writing Config for Generation key')
     config_output = config_output | GenerationConfig(config_data).write()
+    logging.debug('Writing Config for Generation key')
+    config_output = config_output | PostGenerationConfig(config_data).write()
 
     for repeat_dict in repeat_parameter:
         nested_value = deep_get(config_output, repeat_dict['key'])
@@ -152,20 +154,30 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         else:
             repeat_dict['value'] = nested_value
 
-    repeat_parameter = [repeat_dict for repeat_dict in repeat_parameter if isinstance(repeat_dict['value'], list)]    
+    repeat_parameter = [repeat_dict for repeat_dict in repeat_parameter if isinstance(repeat_dict['value'], list)]   
+
+    config_output[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['repeat_parameter'] = {}
+    for parameter in repeat_parameter:
+        parameter = parameter['key']
+        if parameter[-1] == config_constant.INPUT_KEY:
+            continue
+        # add repeat parameter key in config_generation.py
+        config_output[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['repeat_parameter'][parameter[-1]] = ','.join(parameter) 
+
     nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
     nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
     nested_type_lists = [repeat_dict['type'] for repeat_dict in repeat_parameter]
     combinatorial_value_end_list = list(itertools.product(*nested_value_lists))
 
-    output_dir = config_output[config_constant.GENERATION_KEY]['input']
+    generation_output_dir = config_output[config_constant.GENERATION_KEY]['input']
+    post_generation_output_dir = config_output[config_constant.POST_GENERATION_KEY]['output']
     yaml_list = []
     for each_combination_list in combinatorial_value_end_list:
         for key, value, dtype in zip(nested_key_lists, each_combination_list, nested_type_lists):
             config_output = deep_assign(config_output, key, value=forcetype(value, dtype))
 
         config_output = reassign_input_config(config_output)
-        temp_output_dir = deepcopy(output_dir)
+        temp_output_dir = generation_output_dir
         for key, val in zip(nested_key_lists, each_combination_list):
             if isinstance(val, dict):
                 val = list(val.keys())[0]
@@ -176,9 +188,13 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
         temp_output_dir_generation = temp_output_dir / config_constant.GENERATION_FOLDER
         config_output[config_constant.GENERATION_KEY]['output'] = str(temp_output_dir_generation)
-
+        config_output[config_constant.POST_GENERATION_KEY]['input'] = str(temp_output_dir_generation)
         Path(temp_output_dir_generation).mkdir(parents=True, exist_ok=True)
-        
+
+        output_dir_post_generation = temp_output_dir / post_generation_output_dir
+        config_output[config_constant.POST_GENERATION_KEY]['output'] = str(output_dir_post_generation)
+        Path(output_dir_post_generation).mkdir(parents=True, exist_ok=True)
+
         yaml_fname = Path(temp_output_dir) / Path(output_fname).name
         with open(yaml_fname, 'w') as yaml_f:
             yaml.dump(config_output, yaml_f, Dumper=MyDumper, sort_keys=False)
@@ -187,11 +203,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
     logging.info(f"Preparing Script for Batch Generation")
 
-    with open(Path(output_dir) / 'yaml_list.txt', 'w') as generation_fname:
+    with open(Path(generation_output_dir) / 'yaml_list.txt', 'w') as generation_fname:
         for yaml_f in yaml_list:
             generation_fname.write(f'{yaml_f} \n')
 
-    logging.info(f"Yaml file list saved in {str(Path(output_dir) / 'yaml_list.txt')} for job manager and p2_execute_generation.py")
+    logging.info(f"Yaml file list saved in {str(Path(generation_output_dir) / 'yaml_list.txt')} for job manager and p2_execute_generation.py")
 
 
 if __name__ == '__main__':

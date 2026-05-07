@@ -24,7 +24,7 @@ if [ ! -z "$model_pmdm_conda_env" ]; then
                 --outdir $generation_output/$model_pmdm_name
 
     ## Process PMDM
-    cat $generation_output/$model_pmdm_name/generate_ref/*.sdf > $generation_output/summary/generated_$parameter_name"_ligand_"$model_pmdm_name"_"$(date -I).sdf
+    cat $generation_output/$model_pmdm_name/generate_ref/*.sdf > $generation_output/summary/generated_$protein_name"_ligand_"$model_pmdm_name"_"$(date -I).sdf
 
 fi
 
@@ -43,7 +43,7 @@ if [ ! -z "$model_diffsbdd_conda_env" ]; then
                 --batch_size 50
 
     ## Process DiffSBDD
-    cp $generation_output/$model_diffsbdd_name/*.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_diffsbdd_name"_"$(date -I).sdf
+    cp $generation_output/$model_diffsbdd_name/*.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_diffsbdd_name"_"$(date -I).sdf
 fi
 
 #Step 3: Generating ligand from Pocket2Mol
@@ -60,7 +60,7 @@ if [ ! -z "$model_pocket2mol_conda_env" ]; then
 
     ## Process Pocket2Mol
     $DIR/combine_sdf.sh $generation_output/$model_pocket2mol_name/*/SDF #give sdf_combined.sdf as output
-    cp $generation_output/$model_pocket2mol_name/*/SDF/sdf_combined.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_pocket2mol_name"_"$(date -I).sdf
+    cp $generation_output/$model_pocket2mol_name/*/SDF/sdf_combined.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_pocket2mol_name"_"$(date -I).sdf
 fi
 
 
@@ -77,7 +77,7 @@ if [ ! -z "$model_pocketflow_conda_env" ]; then
         --root_path $generation_output/$model_pocketflow_name
 
     ## Process PocketFlow
-    cp $generation_output/$model_pocketflow_name/*/*/generated.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_pocketflow_name"_"$(date -I).sdf
+    cp $generation_output/$model_pocketflow_name/*/*/generated.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_pocketflow_name"_"$(date -I).sdf
 
 fi
 
@@ -98,7 +98,7 @@ if [ ! -z "$model_lingo3dmol_conda_env" ]; then
 
     ## Process Lingo3DMol
     $DIR/combine_mol.sh $generation_output/Lingo3DMol_0/*/
-    cp $generation_output/$model_lingo3dmol_name"_0"/*/sdf_combined.sdf $generation_output/summary/generated_$parameter_name"_ligand_"$model_lingo3dmol_name"_"$(date -I).sdf
+    cp $generation_output/$model_lingo3dmol_name"_0"/*/sdf_combined.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_lingo3dmol_name"_"$(date -I).sdf
 
 fi
 

@@ -7,5 +7,5 @@ class FileTypeError(TypeError):
 class FileDataError(Exception):
     pass
 
-class DirNotFound(Exception):
+class DirNotFoundError(Exception):
     pass

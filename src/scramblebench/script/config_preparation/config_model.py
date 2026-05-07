@@ -2,7 +2,7 @@
 from typing import Any
 from pathlib import Path
 
-from scramblebench.script.utils.error_handler import DirNotFound
+from scramblebench.script.utils.error_handler import DirNotFoundError
 from scramblebench.script.config_preparation import config_constant
 import subprocess
 import logging
@@ -41,7 +41,7 @@ class ModelStructure:
             if self.dir_value is None or self.dir_value == 'not_applicable':
                 logging.warning(f'Please note that the directory of {self.model_name_value} is left out for generation')
             else:   
-                raise DirNotFound(f'Directory {self.dir_value=} does not exist')
+                raise DirNotFoundError(f'Directory {self.dir_value=} does not exist')
 
         check_conda_env(self.conda_env_value)
 

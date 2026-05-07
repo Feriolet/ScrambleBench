@@ -77,6 +77,7 @@ def run_inference(yaml_file, config_data, log_status=False) -> None:
     else:
         subprocess.run(cmd, shell=True, check=True, text=True, env=os.environ)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run de novo molecule generation after p1_generate_config.py")
 

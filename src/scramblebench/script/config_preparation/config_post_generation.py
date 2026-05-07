@@ -27,7 +27,7 @@ class PostGenerationConfig:
 
         if post_generation_data.get(self.pick_random_name):
             self.pick_random_value = [model.strip() for model in post_generation_data.get(self.pick_random_name).split(',')]
-        if post_generation_data.get(self.pick_last_value):
+        if post_generation_data.get(self.pick_last_name):
             self.pick_last_value = [model.strip() for model in post_generation_data.get(self.pick_last_name).split(',')]
 
         self.reference_model = ModelConfig(config_data)
@@ -74,8 +74,25 @@ class PostGenerationConfig:
         assert isinstance(self.input_value, str)
         assert isinstance(self.output_value, str)
 
-        self.validate_model_pick()
+        if '/' in self.input_value:
+            raise ValueError('Input value should be a prefix, not a path directory (e.g., "input" is okay, but not "hello/input")')
+        if '/' in self.output_value:
+            raise ValueError('Output value should be a prefix, not a path directory (e.g., "input" is okay, but not "hello/input")')
         
+        self.validate_model_pick()
+
+    def write(self):
+
+        post_generation_dict_data = {self.input_name: str(self.input_value),
+                                     self.output_name: str(self.output_value)}
+        
+        if self.pick_last_value:
+            post_generation_dict_data[self.pick_last_name] = ','.join(self.pick_last_value)
+        if self.pick_random_value:
+            post_generation_dict_data[self.pick_random_name] = ','.join(self.pick_random_value)
+
+        return {config_constant.POST_GENERATION_KEY : post_generation_dict_data}
+    
 def check_file_start_with_number(fname: str):
     try:
         float(Path(fname).name[0])
