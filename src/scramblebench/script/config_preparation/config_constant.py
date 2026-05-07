@@ -6,7 +6,8 @@ MODEL_KEY = 'model'
 GENERATION_KEY = 'generation'
 GENERATION_PARAMETER_KEY = 'parameter'
 POST_GENERATION_KEY = 'post_generation'
-GENBENCH3D_KEY = 'genbench3d'
+ANALYSIS_KEY = 'analysis'
+ANALYSIS_GENBENCH3D_KEY = 'genbench3d'
 
 ## Generation
 GENERATION_FOLDER = 'AI_Generation'

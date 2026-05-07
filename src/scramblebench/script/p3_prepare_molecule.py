@@ -103,6 +103,39 @@ def deep_get(dictionary: dict, nested_key: list):
     return copied_dict
 
 
+def neutralize_atoms(mol):
+    pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
+    at_matches = mol.GetSubstructMatches(pattern)
+    at_matches_list = [y[0] for y in at_matches]
+    if len(at_matches_list) > 0:
+        for at_idx in at_matches_list:
+            atom = mol.GetAtomWithIdx(at_idx)
+            chg = atom.GetFormalCharge()
+            hcount = atom.GetTotalNumHs()
+            atom.SetFormalCharge(0)
+            atom.SetNumExplicitHs(hcount - chg)
+            atom.UpdatePropertyCache()
+    return mol
+
+
+def compute_uniqueness_percentage(mol_l) -> float:
+    total_mol = len(mol_l)
+    temp_mol_l = [deepcopy(mol) for mol in mol_l]
+    temp_mol_l = validate_mol_list(temp_mol_l)
+
+    smi_l = [Chem.MolToSmiles(neutralize_atoms(mol)) for mol in temp_mol_l]
+    
+    return len(set(smi_l)) / total_mol
+
+
+def compute_validity2d_percentage(mol_l) -> float:
+    total_mol = len(list(mol_l))
+    temp_mol_l = [deepcopy(mol) for mol in mol_l]
+    temp_mol_l = validate_mol_list(temp_mol_l)
+
+    return len(temp_mol_l) / total_mol
+
+
 def process_mol(mol_l: list[Chem.Mol], 
                 model_name: str,
                 config_data: dict[str, Any]) -> list[Chem.Mol]:
@@ -174,8 +207,11 @@ def prepare_molecule(config_data):
         output_dir = Path(post_generation_output_root_dirpath) / model
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / file_name
-        mol_l = validate_mol_list(Chem.SDMolSupplier(fname))
-        mol_l = process_mol(mol_l, model, config_data=config_data)
+        mol_l = Chem.SDMolSupplier(fname)
+        uniqueness = compute_uniqueness_percentage(mol_l)
+        validity = compute_validity2d_percentage(mol_l=mol_l)
+        print(f'{uniqueness=}, {validity=}')
+        mol_l = process_mol(validate_mol_list(mol_l), model, config_data=config_data)
 
         with Chem.SDWriter(output_file) as w:
             for mol in mol_l:

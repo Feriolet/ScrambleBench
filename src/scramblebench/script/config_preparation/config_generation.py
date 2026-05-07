@@ -54,24 +54,24 @@ class GenerationParameterConfig:
         return self
 
     def validate_config(self):
-        assert isinstance(self.parameter_value.box_size_value, (int, float))
+        assert isinstance(self.box_size_value, (int, float))
 
-        if isinstance(self.parameter_value.box_size_value, list):
-            if not all(isinstance(num, (int, float)) for num in self.parameter_value.box_size_value):
-                raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
-        elif isinstance(self.parameter_value.box_size_value, (int, float)):
+        if isinstance(self.box_size_value, list):
+            if not all(isinstance(num, (int, float)) for num in self.box_size_value):
+                raise ValueError(f'{self.box_size_value} needs to be an integer or list of integers')
+        elif isinstance(self.box_size_value, (int, float)):
             pass
         else:
-            raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
+            raise ValueError(f'{self.box_size_value} needs to be an integer or list of integers')
     
 
-        if isinstance(self.parameter_value.num_sample_value, list):
-            if not all(isinstance(num, int) for num in self.parameter_value.num_sample_value):
-                raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
-        elif isinstance(self.parameter_value.num_sample_value, int):
+        if isinstance(self.num_sample_value, list):
+            if not all(isinstance(num, int) for num in self.num_sample_value):
+                raise ValueError(f'{self.num_sample_value} needs to be an integer or list of integers')
+        elif isinstance(self.num_sample_value, int):
             pass
         else:
-            raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
+            raise ValueError(f'{self.num_sample_value} needs to be an integer or list of integers')
 
     def write(self):
         return {self.box_size_name : self.box_size_value,
@@ -112,22 +112,8 @@ class GenerationConfig:
         assert isinstance(self.input_value, str)
         assert isinstance(self.output_value, str)
 
-        if isinstance(self.parameter_value.box_size_value, list):
-            if not all(isinstance(num, int) for num in self.parameter_value.box_size_value):
-                raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
-        elif isinstance(self.parameter_value.box_size_value, int):
-            pass
-        else:
-            raise ValueError(f'{self.parameter_value.box_size_value} needs to be an integer or list of integers')
-    
-        if isinstance(self.parameter_value.num_sample_value, list):
-            if not all(isinstance(num, int) for num in self.parameter_value.num_sample_value):
-                raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
-        elif isinstance(self.parameter_value.num_sample_value, int):
-            pass
-        else:
-            raise ValueError(f'{self.parameter_value.num_sample_value} needs to be an integer or list of integers')
-    
+        self.parameter_value.validate_config()
+        
         if not Path(self.script_value).is_file():
             raise FileNotFoundError(f'{self.script_value} was not found. Please check your directory again')
         if not Path(self.script_value).suffix == '.sh':

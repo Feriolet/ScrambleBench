@@ -12,6 +12,7 @@ from scramblebench.script.config_preparation.config_model import ModelConfig
 from scramblebench.script.config_preparation.config_generation import GenerationConfig
 from scramblebench.script.config_preparation.config_post_generation import PostGenerationConfig
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
+from scramblebench.script.config_preparation.config_analysis import AnalysisConfig
 from scramblebench.script.config_preparation import config_constant
 import itertools 
 import subprocess
@@ -146,6 +147,8 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     config_output = config_output | GenerationConfig(config_data).write()
     logging.debug('Writing Config for Generation key')
     config_output = config_output | PostGenerationConfig(config_data).write()
+    logging.debug('Writing Config for Generation key')
+    config_output = config_output | AnalysisConfig(config_data).write()
 
     for repeat_dict in repeat_parameter:
         nested_value = deep_get(config_output, repeat_dict['key'])
