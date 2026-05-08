@@ -17,8 +17,8 @@ model:
     conda_env: benchmark_pocket2mol
 
 generation:
-  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50
-  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/AI_Generation
+  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output
+  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output
   script_pathfile: /mnt/sod/Veincent/manuscript/ScrambleBench/src/scramblebench/script/utils/generation_template.sh
   parameter:
     box_size: 16
@@ -28,6 +28,37 @@ generation:
       num_sample: generation,parameter,num_sample
 
 post_generation:
-  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/AI_Generation
+  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/output
   output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/cheminformatics_input_prepared
   pick_last: Pocket2Mol
+
+analysis:
+  genbench3d:
+    input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/cheminformatics_input_prepared
+    output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/cheminformatics_analysis
+    conda_env: benchmark_genbench3d
+    genbench_dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/genbench3d
+    schrodinger_dir: /opt/schrodinger2025-4
+    genbench_config: /opt/veincent/GenAI_manuscript/ScrambleBench/models/genbench3d/config/GenAI_evaluation.yaml
+    do_complex_forcefield_minimisation: true
+    do_docking_forcefield_minimisation: true
+    skip_genbench3d_protonation: true
+  redocking:
+    protonation:
+      input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/cheminformatics_input_prepared
+      output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/docking
+      env: benchmark_easydock
+      method: molgpka
+    docking:
+      easydock:
+        input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/docking
+        output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/vina_output
+        conda_env: benchmark_easydock
+        docking_program: vina
+        protonation: null
+        config_fname: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/config/easydock_config_5HT2C.yml
+      glide:
+        input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/cheminformatics_input_prepared
+        output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/glide_output
+        schrodinger_dir: /opt/schrodinger2025-4
+        protonation: ligprep

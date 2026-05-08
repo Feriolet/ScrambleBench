@@ -15,6 +15,7 @@ class GenerationParameterConfig:
         self.box_size_name = 'box_size'
         self.num_sample_name = 'num_sample'
         self.title_name = 'name'
+        self.repeat_parameter_name = 'repeat_parameter'
 
         if parameter_data.get(self.box_size_name) is None:
             logging.warning('Unspecified parameter box size. Setting default to 16 A')
@@ -23,6 +24,8 @@ class GenerationParameterConfig:
             self.box_size_value = parameter_data[self.box_size_name]
         elif isinstance(parameter_data[self.box_size_name], str):
             self.box_size_value = [int(num.strip()) for num in parameter_data[self.box_size_name].split(',')]
+        elif isinstance(parameter_data[self.box_size_name], list):
+            self.box_size_value = parameter_data[self.box_size_name]
         else:
             raise ValueError(f'unsupported type of {parameter_data[self.box_size_name]}: {type(parameter_data[self.box_size_name])}')
         
@@ -33,10 +36,13 @@ class GenerationParameterConfig:
             self.num_sample_value = parameter_data[self.num_sample_name]
         elif isinstance(parameter_data[self.num_sample_name], str):
             self.num_sample_value = [int(num.strip()) for num in parameter_data[self.num_sample_name].split(',')]
+        elif isinstance(parameter_data[self.num_sample_name], list):
+            self.num_sample_value = parameter_data[self.num_sample_name]
         else:
             raise ValueError(f'unsupported type of {parameter_data[self.num_sample_name]}: {type(parameter_data[self.num_sample_name])}')
         
         self.title_value = parameter_data.get(self.title_name) or 'generic_title'
+        self.repeat_parameter_value = parameter_data.get(self.repeat_parameter_name) or {}
 
     def update(self, key: str, value: str):
         if key == self.box_size_name:
@@ -48,6 +54,9 @@ class GenerationParameterConfig:
                 raise ValueError(f'num sample should be integer or list of integer, not {value}')
         elif key in self.title_name:
             self.title_value[key] = value
+        
+        elif key in self.repeat_parameter_name:
+            self.repeat_parameter_value = value
         else:
             raise TypeError(f'no key called {key}')
 
@@ -74,9 +83,10 @@ class GenerationParameterConfig:
             raise ValueError(f'{self.num_sample_value} needs to be an integer or list of integers')
 
     def write(self):
-        return {self.box_size_name : self.box_size_value,
-                self.num_sample_name : self.num_sample_value,
-                self.title_name : self.title_value}
+        return {config_constant.GENERATION_PARAMETER_KEY: {self.box_size_name : self.box_size_value,
+                                                           self.num_sample_name : self.num_sample_value,
+                                                           self.title_name : self.title_value,
+                                                           self.repeat_parameter_name: self.repeat_parameter_value}}
     
 class GenerationConfig:
 
@@ -123,8 +133,8 @@ class GenerationConfig:
 
         return {config_constant.GENERATION_KEY : {self.input_name: str(Path(self.input_value).resolve()),
                                                   self.output_name: str(Path(self.output_value).resolve()),
-                                                  self.script_name: str(Path(self.script_value).resolve()),
-                                                  config_constant.GENERATION_PARAMETER_KEY: self.parameter_value.write()}}
+                                                  self.script_name: str(Path(self.script_value).resolve())} | 
+                                                  self.parameter_value.write()}
 
 def check_file_start_with_number(fname: str):
     try:

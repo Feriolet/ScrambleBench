@@ -5,7 +5,7 @@ from rdkit.Chem import rdmolops
 from oddt.toolkits.extras.rdkit import fixer
 from openbabel import pybel
 import argparse
-
+from pathlib import Path
 '''
 obtain pocket and ligand from the complex file
 '''
@@ -15,11 +15,13 @@ def split_pocket_ligand(path,cutoff=20):
     pdb_code = os.path.basename(path)[:-4]+f'cut{cutoff}'
     root = os.path.join(root,pdb_code)
     os.makedirs(root, exist_ok=True)
+    inter_pdb_file = f"{root}/{pdb_code}_pocket_withH.pdb"
+    if Path(inter_pdb_file).is_file():
+        return inter_pdb_file
     complex_ = Chem.MolFromPDBFile(path, sanitize=False)
     try:
         pocket, ligand = fixer.ExtractPocketAndLigand(complex_, cutoff=cutoff)
         #### write pocket flie
-        inter_pdb_file = f"{root}/{pdb_code}_pocket_withH.pdb"
         Chem.MolToPDBFile(pocket, inter_pdb_file)
         # remove hydrogen and protonation
         os.system(f"obabel {inter_pdb_file} -d -O {root}/{pdb_code}_pocket.pdb")

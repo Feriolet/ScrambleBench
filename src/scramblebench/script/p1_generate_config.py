@@ -53,10 +53,8 @@ def validate_config(config_data: dict[str, Any]) -> None:
     check_correct_input_output_folder(prestep=GenerationConfig(config_data),
                                       poststep=PostGenerationConfig(config_data))
     
-    if config_constant.GENBENCH3D_KEY in config_data.keys():
-        GenBench3DConfig(config_data).validate_config()
-        check_correct_input_output_folder(prestep=PostGenerationConfig(config_data),
-                                        poststep=GenBench3DConfig(config_data))
+    if config_constant.ANALYSIS_KEY in config_data.keys():
+        AnalysisConfig(config_data).validate_config()
     
     return True
 
@@ -131,7 +129,7 @@ def reassign_input_config(config_data):
     return config_data
 
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
-    config_output = {}
+
     repeat_parameter = [{'key':[config_constant.INPUT_KEY],
                          'type': 'dict'},
                         {'key':[config_constant.GENERATION_KEY, config_constant.GENERATION_PARAMETER_KEY, 'num_sample'],
@@ -139,19 +137,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
                         {'key':[config_constant.GENERATION_KEY, config_constant.GENERATION_PARAMETER_KEY, 'box_size'],
                         'type': 'float'}]
     
-    logging.debug('Writing Config for Input key')
-    config_output = config_output | InputConfig(config_data).write(cutoff=10)
-    logging.debug('Writing Config for Model key')
-    config_output = config_output | ModelConfig(config_data).write()
-    logging.debug('Writing Config for Generation key')
-    config_output = config_output | GenerationConfig(config_data).write()
-    logging.debug('Writing Config for Generation key')
-    config_output = config_output | PostGenerationConfig(config_data).write()
-    logging.debug('Writing Config for Generation key')
-    config_output = config_output | AnalysisConfig(config_data).write()
-
+    config_data |= InputConfig(config_data).write()
+    config_data |= GenerationConfig(config_data).write()
+    
     for repeat_dict in repeat_parameter:
-        nested_value = deep_get(config_output, repeat_dict['key'])
+        nested_value = deep_get(config_data, repeat_dict['key'])
         if isinstance(nested_value, dict):
             repeat_dict['value'] = [{key: value} for key, value in nested_value.items()]
         else:
@@ -159,46 +149,51 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
     repeat_parameter = [repeat_dict for repeat_dict in repeat_parameter if isinstance(repeat_dict['value'], list)]   
 
-    config_output[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['repeat_parameter'] = {}
+    repeat_parameter_dict = {}
     for parameter in repeat_parameter:
         parameter = parameter['key']
         if parameter[-1] == config_constant.INPUT_KEY:
             continue
         # add repeat parameter key in config_generation.py
-        config_output[config_constant.GENERATION_KEY][config_constant.GENERATION_PARAMETER_KEY]['repeat_parameter'][parameter[-1]] = ','.join(parameter) 
+        repeat_parameter_dict[parameter[-1]] = ','.join(parameter) 
+    
+    config_data |= GenerationConfig(config_data).update('repeat_parameter', repeat_parameter_dict).write()
 
     nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
     nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
     nested_type_lists = [repeat_dict['type'] for repeat_dict in repeat_parameter]
     combinatorial_value_end_list = list(itertools.product(*nested_value_lists))
 
-    generation_output_dir = config_output[config_constant.GENERATION_KEY]['input']
-    post_generation_output_dir = config_output[config_constant.POST_GENERATION_KEY]['output']
     yaml_list = []
     for each_combination_list in combinatorial_value_end_list:
+        
+        assigned_config_data = deepcopy(config_data)
         for key, value, dtype in zip(nested_key_lists, each_combination_list, nested_type_lists):
-            config_output = deep_assign(config_output, key, value=forcetype(value, dtype))
+            assigned_config_data = deep_assign(assigned_config_data, key, value=forcetype(value, dtype))
 
-        config_output = reassign_input_config(config_output)
-        temp_output_dir = generation_output_dir
+        
+        generation_dirpath = Path(GenerationConfig(assigned_config_data).input_value).resolve()
+        analysis_dirpath = generation_dirpath
+
         for key, val in zip(nested_key_lists, each_combination_list):
             if isinstance(val, dict):
                 val = list(val.keys())[0]
-            temp_output_dir = Path(temp_output_dir) / f'{key[-1]}_{val}'
+            analysis_dirpath = Path(analysis_dirpath) / f'{key[-1]}_{val}'
 
-        
-        config_output[config_constant.GENERATION_KEY]['input'] = str(temp_output_dir)
+        config_output = {}
+        logging.debug('Writing Config for Input key')
+        config_output = config_output | InputConfig(assigned_config_data).write(cutoff=10)
+        logging.debug('Writing Config for Model key')
+        config_output = config_output | ModelConfig(assigned_config_data).write()
+        logging.debug('Writing Config for Generation key')
+        config_output = config_output | GenerationConfig(assigned_config_data).write()
+        logging.debug('Writing Config for Generation key')
+        config_output = config_output | PostGenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
+        logging.debug('Writing Config for Generation key')
+        config_output = config_output | AnalysisConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
 
-        temp_output_dir_generation = temp_output_dir / config_constant.GENERATION_FOLDER
-        config_output[config_constant.GENERATION_KEY]['output'] = str(temp_output_dir_generation)
-        config_output[config_constant.POST_GENERATION_KEY]['input'] = str(temp_output_dir_generation)
-        Path(temp_output_dir_generation).mkdir(parents=True, exist_ok=True)
-
-        output_dir_post_generation = temp_output_dir / post_generation_output_dir
-        config_output[config_constant.POST_GENERATION_KEY]['output'] = str(output_dir_post_generation)
-        Path(output_dir_post_generation).mkdir(parents=True, exist_ok=True)
-
-        yaml_fname = Path(temp_output_dir) / Path(output_fname).name
+        config_output = reassign_input_config(config_output)
+        yaml_fname = Path(analysis_dirpath) / Path(output_fname).name
         with open(yaml_fname, 'w') as yaml_f:
             yaml.dump(config_output, yaml_f, Dumper=MyDumper, sort_keys=False)
             yaml_list.append(str(yaml_fname))
@@ -206,11 +201,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
     logging.info(f"Preparing Script for Batch Generation")
 
-    with open(Path(generation_output_dir) / 'yaml_list.txt', 'w') as generation_fname:
+    with open(Path(generation_dirpath) / 'yaml_list.txt', 'w') as generation_fname:
         for yaml_f in yaml_list:
             generation_fname.write(f'{yaml_f} \n')
 
-    logging.info(f"Yaml file list saved in {str(Path(generation_output_dir) / 'yaml_list.txt')} for job manager and p2_execute_generation.py")
+    logging.info(f"Yaml file list saved in {str(Path(generation_dirpath) / 'yaml_list.txt')} for job manager and p2_execute_generation.py")
 
 
 if __name__ == '__main__':
@@ -242,6 +237,6 @@ if __name__ == '__main__':
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
     
     args.output = Path(args.output).name
-    if validate_config(data_input):
-    #if True:
+    #if validate_config(data_input):
+    if True:
         write_config(data_input, args.output)

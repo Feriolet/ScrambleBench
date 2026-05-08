@@ -26,6 +26,7 @@ def read_input(input_fname: str) -> list[str]:
     
     if input_filepath.suffix.lower() in ['.yaml', '.yml']:
         return [input_filepath.resolve()]
+    
     elif input_filepath.suffix.lower() in ['.txt', '.text']:
         logging.debug(f'Input is in suffix {input_filepath.suffix}. Reading content to fetch yaml files.')
         yaml_file_list = []
@@ -194,7 +195,20 @@ def process_mol(mol_l: list[Chem.Mol],
 
 
 def validate_mol_list(mol_list: list[Chem.Mol]) -> list[Chem.Mol]:
-    return [mol for mol in mol_list if mol and Chem.MolToSmiles(mol) != '' and mol.GetNumAtoms() > 1]
+    # only filter valid and unique molecule
+    validated_mol_l = []
+    validated_smi_l = []
+    for mol in mol_list:
+        if not mol:
+            continue
+
+        smi = Chem.MolToSmiles(neutralize_atoms(mol))
+
+        if smi != '' and mol.GetNumAtoms() > 1 and smi not in validated_smi_l:
+            validated_mol_l.append(mol)
+            validated_smi_l.append(smi)
+    
+    return validated_mol_l
 
 
 def prepare_molecule(config_data):

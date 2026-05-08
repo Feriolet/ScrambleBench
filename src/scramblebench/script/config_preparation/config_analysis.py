@@ -4,6 +4,7 @@ from pathlib import Path
 from scramblebench.script.utils.error_handler import FileDataError, FileTypeError
 from scramblebench.script.config_preparation import config_constant
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
+from scramblebench.script.config_preparation.config_redocking import RedockingConfig
 
 import Bio
 import rdkit
@@ -26,18 +27,23 @@ class AnalysisConfig:
         self.name = config_constant.ANALYSIS_KEY
         analysis_data = config_data[self.name]
 
-        self.genbench_name = config_constant.ANALYSIS_GENBENCH3D_KEY
-        self.genbench_value = GenBench3DConfig(analysis_data[self.genbench_name])
-
+        self.valid_key_list = []
+        if config_constant.ANALYSIS_GENBENCH3D_KEY in analysis_data.keys():
+            self.valid_key_list.append(GenBench3DConfig(analysis_data))
+        if config_constant.ANALYSIS_REDOCKING_KEY in analysis_data.keys():
+            self.valid_key_list.append(RedockingConfig(analysis_data))
 
     def update(self, key, value):
-        if key == self.genbench_name:
-            self.genbench_value = self.genbench_value.update(value)
+        pass
 
     def validate_config(self):
+        for config in self.valid_key_list:
+            config.validate_config()
 
-        self.genbench_value.validate_config()
+    def write(self, prefix_dir=None):
+        
+        data = {}
+        for config in self.valid_key_list:
+            data = data | config.write(prefix_dir)
 
-    def write(self):
-
-        return {config_constant.ANALYSIS_KEY   : {self.genbench_name: self.genbench_value.write()}}
+        return {self.name  : data}

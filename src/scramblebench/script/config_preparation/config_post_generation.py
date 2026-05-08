@@ -74,14 +74,27 @@ class PostGenerationConfig:
         assert isinstance(self.input_value, str)
         assert isinstance(self.output_value, str)
 
-        if '/' in self.input_value:
-            raise ValueError('Input value should be a prefix, not a path directory (e.g., "input" is okay, but not "hello/input")')
-        if '/' in self.output_value:
-            raise ValueError('Output value should be a prefix, not a path directory (e.g., "input" is okay, but not "hello/input")')
-        
         self.validate_model_pick()
 
-    def write(self):
+    def update_input_output(self, prefix_dir):
+        if '/' in self.input_value[0]:
+            logging.warning('prefix dir for generation is provide. Ignoring absolute path provided by input key and only take the last dir')
+            self.input_value = Path(prefix_dir) / Path(self.input_value).name
+        else:
+            self.input_value = Path(prefix_dir) / self.input_value
+        
+        if '/' in self.output_value[0]:
+            logging.warning('prefix dir for generation is provide. Ignoring absolute path provided by output key and only take the last dir')
+            self.output_value = Path(prefix_dir) / Path(self.output_value).name
+        else:
+            self.output_value = Path(prefix_dir) / self.output_value  
+
+    def write(self, prefix_dir=None):
+
+        post_generation_dict_data = {}
+
+        if prefix_dir:
+            self.update_input_output(prefix_dir=prefix_dir)
 
         post_generation_dict_data = {self.input_name: str(self.input_value),
                                      self.output_name: str(self.output_value)}
