@@ -24,7 +24,7 @@ class GenBench3DConfig:
         self.output_value = config_data[self.output_name]
         self.genbench_dir_value = config_data[self.genbench_dir_name]
         self.conda_env_value = config_data[self.conda_env_name]
-        self.schrodinger_dir_value = config_data[self.schrodinger_dir_name]
+        self.schrodinger_dir_value = config_data.get(self.schrodinger_dir_name)
         self.genbench_config_value = config_data[self.genbench_config_name]
         self.do_complex_forcefield_minimisation_value = config_data[self.do_complex_forcefield_minimisation_name]
         self.do_docking_forcefield_minimisation_value = config_data[self.do_docking_forcefield_minimisation_name]
@@ -66,8 +66,9 @@ class GenBench3DConfig:
         
         if not Path(self.genbench_dir_value).is_dir():
             raise ValueError(f'{self.genbench_dir_value} is not a directory. Please recheck your genbench input')
-        if not Path(self.schrodinger_dir_value).is_dir():
-            raise ValueError(f'{self.schrodinger_dir_value} is not a directory. Please recheck your schrodinger input')
+        if self.schrodinger_dir_value:
+            if not (Path(self.schrodinger_dir_value).is_dir() and 'schrodinger' in self.schrodinger_dir_value):
+                raise ValueError(f'{self.schrodinger_dir_value} is not a directory. Please recheck your schrodinger input')
         if not Path(self.genbench_config_value).is_file():
             raise ValueError(f'{self.genbench_config_value} is not a file. Please recheck your config input')
         if not isinstance(self.do_complex_forcefield_minimisation_value, bool):
@@ -90,7 +91,7 @@ class GenBench3DConfig:
         else:
             self.output_value = Path(prefix_dir) / self.output_value  
 
-    def write(self, prefix_dir):
+    def write(self, prefix_dir=None):
         if prefix_dir:
             self.update_input_output(prefix_dir=prefix_dir)
             

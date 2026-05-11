@@ -36,10 +36,10 @@ analysis:
   genbench3d:
     input: cheminformatics_input_prepared
     output: cheminformatics_analysis
-    genbench_dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/genbench3d
+    genbench_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
     conda_env: benchmark_genbench3d
     schrodinger_dir: /opt/schrodinger2025-4
-    genbench_config: /opt/veincent/GenAI_manuscript/ScrambleBench/models/genbench3d/config/GenAI_evaluation.yaml
+    genbench_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
     do_complex_forcefield_minimisation: True
     do_docking_forcefield_minimisation: True
     skip_genbench3d_protonation: True

@@ -129,8 +129,19 @@ class GenerationConfig:
         if not Path(self.script_value).suffix == '.sh':
             raise ValueError(f'Script generation file must be in .sh format. Instead, we detect {self.script_value}')
 
-    def write(self):
 
+    def update_output(self, prefix_dir):
+
+        if '/' in self.output_value[0]:
+            logging.warning('prefix dir for generation is provide. Ignoring absolute path provided by output key and only take the last dir')
+            self.output_value = Path(prefix_dir) / Path(self.output_value).name
+        else:
+            self.output_value = Path(prefix_dir) / self.output_value  
+
+    def write(self, prefix_dir= None):
+        if prefix_dir:
+            self.update_output(prefix_dir=prefix_dir)
+            
         return {config_constant.GENERATION_KEY : {self.input_name: str(Path(self.input_value).resolve()),
                                                   self.output_name: str(Path(self.output_value).resolve()),
                                                   self.script_name: str(Path(self.script_value).resolve())} | 
