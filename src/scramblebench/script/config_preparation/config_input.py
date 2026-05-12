@@ -61,10 +61,16 @@ class InputStructure:
         self.complex_name = 'complex_path'
         self.pdb_name = 'pdb_path'
         self.sdf_name = 'sdf_path'
+        self.protein_name = 'name'
+        self.pocket_path_name = 'pocket_path'
+        self.pocket_coord_name = 'pocket_coord'
 
         self.complex_value = input_dict[self.complex_name]
         self.pdb_value = input_dict[self.pdb_name]
         self.sdf_value = input_dict[self.sdf_name]
+        self.protein_value = input_dict.get(self.protein_name)
+        self.pocket_path_value = input_dict.get(self.pocket_path_name)
+        self.pocket_coord_value = input_dict.get(self.pocket_coord_name)
 
     def update(self, key: str, value: str):
         if key == self.complex_name:
@@ -88,14 +94,23 @@ class InputStructure:
     
     def write(self, cutoff: int = 10) -> dict[str, Any]:
         lig_mol = Chem.SDMolSupplier(self.sdf_value)[0]
-        pocket_fname = split_pocket_ligand(self.complex_value, cutoff=cutoff)
-        pocket_coordinate = np.array(list(Chem.rdMolTransforms.ComputeCentroid(lig_mol.GetConformer(0), ignoreHs=True)))
 
-        return {self.complex_name: str(Path(self.complex_value).resolve()),
+        if not self.pocket_path_value:
+            self.pocket_path_value = split_pocket_ligand(self.complex_value, cutoff=cutoff)
+        
+        if not self.pocket_coord_value:
+            self.pocket_coord_value = np.array(list(Chem.rdMolTransforms.ComputeCentroid(lig_mol.GetConformer(0), ignoreHs=True)))
+
+        data = {self.complex_name: str(Path(self.complex_value).resolve()),
                 self.pdb_name: str(Path(self.pdb_value).resolve()),
                 self.sdf_name: str(Path(self.sdf_value).resolve()),
-                'pocket_path': str(Path(pocket_fname).resolve()),
-                'pocket_coord': f" {','.join([str(np.round(coord, 2)) for coord in pocket_coordinate])}"} 
+                self.pocket_path_name: str(Path(self.pocket_path_value).resolve()),
+                self.pocket_coord_name: f" {','.join([str(np.round(coord, 2)) for coord in self.pocket_coord_value])}"} 
+        
+        if self.protein_value:
+            data[self.protein_name] = self.protein_value
+
+        return data
 
 
 class InputDirConfig:

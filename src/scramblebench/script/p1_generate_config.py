@@ -13,6 +13,7 @@ from scramblebench.script.config_preparation.config_generation import Generation
 from scramblebench.script.config_preparation.config_post_generation import PostGenerationConfig
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
 from scramblebench.script.config_preparation.config_analysis import AnalysisConfig
+from scramblebench.script.config_preparation.config_parameter import ParameterConfig
 from scramblebench.script.config_preparation import config_constant
 import itertools 
 import subprocess
@@ -189,9 +190,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         config_output = config_output | ModelConfig(assigned_config_data).write()
         logging.debug('Writing Config for Generation key')
         config_output = config_output | GenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
-        logging.debug('Writing Config for Generation key')
+        logging.debug('Writing Config for Parameter key')
+        config_output = config_output | ParameterConfig().create(config_data=config_output).write()
+        logging.debug('Writing Config for PostGeneration key')
         config_output = config_output | PostGenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
-        logging.debug('Writing Config for Generation key')
+        logging.debug('Writing Config for Analysis key')
         config_output = config_output | AnalysisConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
 
         config_output = reassign_input_config(config_output)

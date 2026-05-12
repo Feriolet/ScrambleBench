@@ -193,6 +193,7 @@ class EasyDockConfig:
         self.docking_name = 'docking_program'
         self.protonation_name = 'protonation'
         self.config_name = 'config_fname'
+        self.protein_preparation_name = 'protein_preparation'
 
         self.input_value = easydock_data[self.input_name]
         self.output_value = easydock_data[self.output_name]
@@ -200,6 +201,7 @@ class EasyDockConfig:
         self.docking_value = easydock_data[self.docking_name]
         self.protonation_value = easydock_data.get(self.protonation_name) or None
         self.config_value = easydock_data[self.config_name]
+        self.protein_preparation_value = easydock_data.get(self.protein_preparation_name) or 'adfr'
 
     def update(self, key, value):
         pass
@@ -290,7 +292,7 @@ class GlideConfig:
 
     def validate_config(self):
 
-        SCHRODINGER_PROTONATION_PROGRAM = ['ligprep', None]
+        SCHRODINGER_PROTONATION_PROGRAM = ['ligprep', True, False, None]
 
         check_file_start_with_number(self.input_value)
         check_file_start_with_number(self.output_value)
@@ -307,8 +309,8 @@ class GlideConfig:
             raise ValueError(f'We did not found the schrodinger directory in {str(schrodinger_dirpath)}')
         
         if self.protonation_value:
-            if not isinstance(self.protonation_value, str):
-                raise TypeError(f'Please put protonation method as string, not {type(self.input_value)}')
+            if not isinstance(self.protonation_value, (bool, str)):
+                raise TypeError(f'Please put protonation method as string or boolean, not {type(self.input_value)}')
             if self.protonation_value.lower() not in SCHRODINGER_PROTONATION_PROGRAM:
                 raise ValueError(f'{self.protonation_value} is not supported by easydock')
 
