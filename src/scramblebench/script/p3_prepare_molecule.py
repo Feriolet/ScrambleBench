@@ -10,59 +10,14 @@ import os
 import re
 from scramblebench.script.config_preparation import config_constant
 from scramblebench.script.utils.error_handler import DirNotFoundError
+from scramblebench.script.utils.process_data import read_input, fetch_model_folder_name, find_file_name_through_regex
 import rdkit
 from rdkit import Chem
 import numpy as np
 from copy import deepcopy
-
-
+from collections import defaultdict
+import json
 logger = logging.getLogger(__name__)
-
-def read_input(input_fname: str) -> list[str]:
-    input_filepath = Path(input_fname)
-    
-    if not input_filepath.is_file():
-        raise FileNotFoundError(f'The file {input_fname} is not found. Please check your directory')
-    
-    if input_filepath.suffix.lower() in ['.yaml', '.yml']:
-        return [input_filepath.resolve()]
-    
-    elif input_filepath.suffix.lower() in ['.txt', '.text']:
-        logging.debug(f'Input is in suffix {input_filepath.suffix}. Reading content to fetch yaml files.')
-        yaml_file_list = []
-        input_content = input_filepath.read_text().splitlines()
-
-        for yaml_file in input_content:
-            yaml_file = yaml_file.strip()
-            yaml_filepath = Path(yaml_file).resolve()
-
-            if not yaml_filepath.is_file():
-                raise FileNotFoundError(f'The file {yaml_file} is not found. Please check your directory')
-    
-            if yaml_filepath.suffix.lower() not in ['.yaml', '.yml']:
-                raise ValueError(f'Incorrect file {yaml_file}. We only support yaml file (i.e., .yaml or .yml). Please use the p1_generate_config.py to prepare your config file.')
-
-            yaml_file_list.append(yaml_file)
-
-        return yaml_file_list
-    
-
-def fetch_model_folder_name(config_data):
-    MODEL_IDENTIFIER_KEY = 'name'
-    return [  model_values[MODEL_IDENTIFIER_KEY] for model_values in config_data[config_constant.MODEL_KEY].values()]
-
-
-def create_case_insensitive_regex(pattern: str) -> str:
-    return f"{''.join([ '[' + char.upper() + char.lower() + ']' for char in pattern])}"
-
-
-def find_file_name_through_regex(character, file_format, dirname):
-    assert file_format[0] == '.'
-
-    glob_matching_fname = f'*{create_case_insensitive_regex(character)}*{file_format}'
-    regex_pattern_non_alphanumeric_left_and_right = re.compile(f'(?<![A-Za-z0-9]){create_case_insensitive_regex(character)}(?![A-Za-z0-9])')
-
-    return [fname for fname in dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
 
 
 def fetch_valid_generated_molecule_file(config_data) -> dict[str, str]:
@@ -216,6 +171,8 @@ def prepare_molecule(config_data):
     valid_molecule_file_dict = fetch_valid_generated_molecule_file(config_data=config_data)
     post_generation_config_data = config_data[config_constant.POST_GENERATION_KEY]
     post_generation_output_root_dirpath = post_generation_config_data['output']
+    json_dir = Path(post_generation_output_root_dirpath).parent
+    json_content = defaultdict(dict)
     for model, fname in valid_molecule_file_dict.items():
         file_name = Path(fname).stem + '_prepared.sdf'
         output_dir = Path(post_generation_output_root_dirpath) / model
@@ -223,7 +180,10 @@ def prepare_molecule(config_data):
         output_file = output_dir / file_name
         mol_l = Chem.SDMolSupplier(fname)
         uniqueness = compute_uniqueness_percentage(mol_l)
+        json_content[model]['total_mol'] = len(mol_l)
+        json_content[model]['uniqueness'] = uniqueness
         validity = compute_validity2d_percentage(mol_l=mol_l)
+        json_content[model]['validity2d'] = validity
         print(f'{uniqueness=}, {validity=}')
         mol_l = process_mol(validate_mol_list(mol_l), model, config_data=config_data)
 
@@ -233,6 +193,8 @@ def prepare_molecule(config_data):
 
         logging.info(f'Prepared molecule saved in {output_file}')
 
+    with open(Path(json_dir) / 'data.json', 'w') as file:
+        json.dump(json_content, file, indent=4)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prepare generated molecules for downstream analysis")

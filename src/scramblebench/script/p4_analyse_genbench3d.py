@@ -15,9 +15,55 @@ import rdkit
 from rdkit import Chem
 import numpy as np
 from copy import deepcopy
-
-
+import json
+from collections import defaultdict
+from enum import Enum, IntEnum
+from multiprocessing import Lock, Pool
 logger = logging.getLogger(__name__)
+
+
+class CheckpointStatus(Enum):
+    COMPLETED = "COMPLETED"
+    PENDING = "PENDING"
+    FAILED = "FAILED"
+
+
+class CheckpointManager():
+
+    def __init__(self):
+        self.checkpoint_fname = 'checkpoint.json'
+        self.state = None
+
+    def from_dict(self, state_dict):
+
+        assert isinstance(state_dict, dict)
+        self.state = state_dict
+    
+        return self
+    
+    def from_json(self, json_fname):
+
+        assert Path(json_fname).is_file() and Path(json_fname).suffix == '.json'
+        self.checkpoint_fname = json_fname
+        self.state = self.load_state()
+
+        return self
+    
+    def load_state(self):
+        with open(self.checkpoint_fname, 'r') as checkpoint_f:
+            return json.load(checkpoint_f)
+        
+    def save_state(self, checkpoint_fname=None):
+        if checkpoint_fname:
+            assert Path(checkpoint_fname).suffix == '.json'
+            checkpoint_destination = checkpoint_fname
+        else:
+            checkpoint_destination = self.checkpoint_fname
+
+        with open(checkpoint_destination, 'w') as checkpoint_f:
+            json.dump(self.state, checkpoint_f, indent=4)
+    
+        return self
 
 
 def fetch_valid_prepared_molecule_file(config_data) -> dict[str, str]:
@@ -76,9 +122,10 @@ def prepare_genbench3d_input(input_data, genbench3d_data):
     return input_pdb, input_sdf
 
 
-def run_genbench3d(config_data):
+def prepare_genbench3d_cmd(config_data):
     genbench_data = config_genbench3d.GenBench3DConfig(config_data[config_constant.ANALYSIS_KEY])
     input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
+
     valid_molecule_file_dict = fetch_valid_prepared_molecule_file(config_data=config_data)
     genbench_output_dirpath = Path(genbench_data.output_value)
     genbench_data.validate_config()
@@ -104,8 +151,30 @@ def run_genbench3d(config_data):
     if genbench_data.do_complex_forcefield_minimisation_name:
         complex_minimisation.append('minimised')
 
+    checkpoint_filepath = Path(genbench_output_dirpath) / 'genbench3d_checkpoint.json'
+    checkpoint_manager = CheckpointManager()
+    if not checkpoint_filepath.is_file():
+        checkpoint = defaultdict(dict)
+        for model in valid_molecule_file_dict:
+            for minimisation in complex_minimisation:
+                checkpoint[model][minimisation] = CheckpointStatus.PENDING.value
+
+        checkpoint_manager = checkpoint_manager.from_dict(checkpoint)
+        checkpoint_manager.checkpoint_fname = checkpoint_filepath
+    else:
+        checkpoint_manager = checkpoint_manager.from_json(checkpoint_filepath)
+
+    cmd_list = []
     for model, fname in valid_molecule_file_dict.items():
         for minimisation in complex_minimisation:
+            cmd_data = {}
+            cmd_data['minimisation'] = minimisation
+            cmd_data['model'] = model
+            if checkpoint_manager.state[model][minimisation] == CheckpointStatus.COMPLETED.value:
+                logging.info(f'{fname} {model} has been completed with {minimisation} config. Skipping...')
+                continue
+
+
             model_cmd = deepcopy(cmd)
             fname_stem = Path(fname).stem
 
@@ -124,9 +193,39 @@ def run_genbench3d(config_data):
             vina_output.mkdir(parents=True, exist_ok=True)
             model_cmd += ['--output_vina_dir', str(vina_output)]
 
-            print(' '.join(model_cmd))
-            subprocess.run(model_cmd, capture_output=True, text=True)
-    
+            cmd_data['cmd'] = model_cmd
+            cmd_list.append(cmd_data)
+
+    return cmd_list, checkpoint_filepath
+
+
+def run_single_genbench3d(cmd_data):
+    try:
+        model = cmd_data['model']
+        minimisation = cmd_data['minimisation']
+        cmd = cmd_data['cmd']
+        logging.info(f"Running Genbench. cmd: {' '.join(cmd)}")
+        subprocess.run(cmd, capture_output=True, text=True)
+
+        return CheckpointStatus.COMPLETED.value, model, minimisation
+
+    except (subprocess.CalledProcessError, PermissionError, KeyboardInterrupt) as e:
+        return CheckpointStatus.FAILED.value, model, minimisation
+
+def run_genbench3d(config_data):
+    cmd_list, checkpoint_fname = prepare_genbench3d_cmd(config_data=config_data)
+    checkpoint_manager = CheckpointManager().from_json(checkpoint_fname)
+
+    MAX_CPU_USED = 5
+    CPU_BUFFER = 5
+    num_cpu_available = len(os.sched_getaffinity(0)) - CPU_BUFFER
+
+    used_cpu = max(1, min(MAX_CPU_USED, num_cpu_available))
+    with Pool(used_cpu) as pool:
+        for genbench_status, model, minimisation in pool.imap_unordered(run_single_genbench3d, cmd_list):
+            checkpoint_manager.state[model][minimisation] = genbench_status
+            checkpoint_manager.save_state()
+
 
 
 if __name__ == '__main__':
@@ -147,5 +246,6 @@ if __name__ == '__main__':
     yaml_file_list = read_input(args.input)
 
     for yaml_file in yaml_file_list:
+        checkpoint_json = Path(yaml_file).parent
         data_input = yaml.safe_load(open(yaml_file, 'r'))
         run_genbench3d(config_data=data_input)

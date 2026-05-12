@@ -158,6 +158,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         repeat_parameter_dict[parameter[-1]] = ','.join(parameter) 
     
     config_data |= GenerationConfig(config_data).update('repeat_parameter', repeat_parameter_dict).write()
+    config_data |= PostGenerationConfig(config_data).update('input', 'AI_Generation').write()
 
     nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
     nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
@@ -180,13 +181,14 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
                 val = list(val.keys())[0]
             analysis_dirpath = Path(analysis_dirpath) / f'{key[-1]}_{val}'
 
+
         config_output = {}
         logging.debug('Writing Config for Input key')
         config_output = config_output | InputConfig(assigned_config_data).write(cutoff=10)
         logging.debug('Writing Config for Model key')
         config_output = config_output | ModelConfig(assigned_config_data).write()
         logging.debug('Writing Config for Generation key')
-        config_output = config_output | GenerationConfig(assigned_config_data).write()
+        config_output = config_output | GenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
         logging.debug('Writing Config for Generation key')
         config_output = config_output | PostGenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
         logging.debug('Writing Config for Generation key')
