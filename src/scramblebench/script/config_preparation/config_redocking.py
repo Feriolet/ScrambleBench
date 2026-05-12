@@ -211,6 +211,7 @@ class EasyDockConfig:
         EASYDOCK_PROTONATION_PROGRAM = ['molgpka', 'unipka', 'chemaxon', None]
         EASYDOCK_DOCKING_PROGRAM = ['vina', 'gnina', 'smina', 'vina-gpu', 'qvina', 'server']
 
+        SUPPORTED_PROTEIN_PREPARATION_PROGRAM = ['adfr', 'obabel']
         check_file_start_with_number(self.input_value)
         check_file_start_with_number(self.output_value)
 
@@ -227,6 +228,9 @@ class EasyDockConfig:
         if config_filepath.suffix not in ['.yaml', '.yml']:
             raise ValueError(f'{str(config_filepath)} should have a .yaml or .yml suffix, not {config_filepath.suffix}')
 
+        if self.protein_preparation_value:
+            if self.protein_preparation_value not in SUPPORTED_PROTEIN_PREPARATION_PROGRAM and 'schrodinger' not in self.protein_preparation_value:
+                raise ValueError(f'{self.protein_preparation_value} is not supported by scramblebench')
         if self.protonation_value:
             if not isinstance(self.protonation_value, str):
                 raise TypeError(f'Please put protonation method as string, not {type(self.input_value)}')
