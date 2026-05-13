@@ -47,7 +47,6 @@ class ParameterConfig:
 
         for key, value in parameter_dict.items():
             value = value.split(',')
-            print(f'{value=}')
             self.parameter_dict[key] = self.deep_get(config_data, value)
     
         return self

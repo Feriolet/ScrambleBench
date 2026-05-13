@@ -46,9 +46,9 @@ cd ScrambleBench
 conda env create -f environment.yaml
 
 ## Method 2: Install manually 
-conda create -n scramblebench python=3.10 oddt
+conda create -n scramblebench python=3.10 oddt openbabel
 conda activate scramblebench
-pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow uv pytest pyyaml Bio pytest-xdist
+pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow uv pytest openmm pdbfixer pyyaml Bio pytest-xdist
 ```
 
 ## Model Repository Installation

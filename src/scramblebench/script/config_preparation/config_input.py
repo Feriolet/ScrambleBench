@@ -104,12 +104,18 @@ class InputStructure:
         data = {self.complex_name: str(Path(self.complex_value).resolve()),
                 self.pdb_name: str(Path(self.pdb_value).resolve()),
                 self.sdf_name: str(Path(self.sdf_value).resolve()),
-                self.pocket_path_name: str(Path(self.pocket_path_value).resolve()),
-                self.pocket_coord_name: f" {','.join([str(np.round(coord, 2)) for coord in self.pocket_coord_value])}"} 
-        
+                self.pocket_path_name: str(Path(self.pocket_path_value).resolve())}
+    
+        if isinstance(self.pocket_coord_value, str) and len(self.pocket_coord_value.split(',')) == 3:
+            data[self.pocket_coord_name] = self.pocket_coord_value
+        elif isinstance(self.pocket_coord_value, (list, np.ndarray)):
+            data[self.pocket_coord_name] = ','.join([str(np.round(coord, 2)) for coord in self.pocket_coord_value])
+        else:
+            raise ValueError(f'{self.pocket_coord_value}')
         if self.protein_value:
             data[self.protein_name] = self.protein_value
 
+        print()
         return data
 
 

@@ -7,18 +7,17 @@ import logging
 import sys
 import subprocess
 import os
-import re
+
 from scramblebench.script.config_preparation import config_constant, config_genbench3d, config_input
 from scramblebench.script.utils.error_handler import DirNotFoundError
 from scramblebench.script.utils.process_data import read_input, fetch_model_folder_name, find_file_name_through_regex
-import rdkit
-from rdkit import Chem
-import numpy as np
+
 from copy import deepcopy
 import json
 from collections import defaultdict
-from enum import Enum, IntEnum
-from multiprocessing import Lock, Pool
+from enum import Enum
+from multiprocessing import Pool
+
 logger = logging.getLogger(__name__)
 
 
@@ -225,7 +224,6 @@ def run_genbench3d(config_data):
         for genbench_status, model, minimisation in pool.imap_unordered(run_single_genbench3d, cmd_list):
             checkpoint_manager.state[model][minimisation] = genbench_status
             checkpoint_manager.save_state()
-
 
 
 if __name__ == '__main__':

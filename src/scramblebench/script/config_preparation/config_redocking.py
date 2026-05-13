@@ -194,6 +194,7 @@ class EasyDockConfig:
         self.protonation_name = 'protonation'
         self.config_name = 'config_fname'
         self.protein_preparation_name = 'protein_preparation'
+        self.protein_preparation_executable_name = 'protein_preparation_executable'
 
         self.input_value = easydock_data[self.input_name]
         self.output_value = easydock_data[self.output_name]
@@ -202,6 +203,7 @@ class EasyDockConfig:
         self.protonation_value = easydock_data.get(self.protonation_name) or None
         self.config_value = easydock_data[self.config_name]
         self.protein_preparation_value = easydock_data.get(self.protein_preparation_name) or 'adfr'
+        self.protein_preparation_executable_value = easydock_data.get(self.protein_preparation_executable_name) or None
 
     def update(self, key, value):
         pass
@@ -211,7 +213,7 @@ class EasyDockConfig:
         EASYDOCK_PROTONATION_PROGRAM = ['molgpka', 'unipka', 'chemaxon', None]
         EASYDOCK_DOCKING_PROGRAM = ['vina', 'gnina', 'smina', 'vina-gpu', 'qvina', 'server']
 
-        SUPPORTED_PROTEIN_PREPARATION_PROGRAM = ['adfr', 'obabel']
+        SUPPORTED_PROTEIN_PREPARATION_PROGRAM = ['adfr', 'obabel', 'schrodinger']
         check_file_start_with_number(self.input_value)
         check_file_start_with_number(self.output_value)
 
@@ -229,8 +231,12 @@ class EasyDockConfig:
             raise ValueError(f'{str(config_filepath)} should have a .yaml or .yml suffix, not {config_filepath.suffix}')
 
         if self.protein_preparation_value:
-            if self.protein_preparation_value not in SUPPORTED_PROTEIN_PREPARATION_PROGRAM and 'schrodinger' not in self.protein_preparation_value:
+            if self.protein_preparation_value not in SUPPORTED_PROTEIN_PREPARATION_PROGRAM:
                 raise ValueError(f'{self.protein_preparation_value} is not supported by scramblebench')
+        if self.protein_preparation_executable_value:
+            if not Path(self.protein_preparation_executable_value).is_file():
+                raise FileNotFoundError(f'{self.protein_preparation_executable_value} is not found')
+
         if self.protonation_value:
             if not isinstance(self.protonation_value, str):
                 raise TypeError(f'Please put protonation method as string, not {type(self.input_value)}')
@@ -262,14 +268,25 @@ class EasyDockConfig:
         if prefix_dir:
             self.update_input_output(prefix_dir)
         
-        return {self.name   : {self.input_name: str(self.input_value),
+        data =  {self.input_name: str(self.input_value),
                                self.output_name: str(self.output_value),
                                self.environment_name: str(self.environment_value),
                                self.docking_name: str(self.docking_value),
                                self.protonation_name: self.protonation_value,
-                               self.config_name: str(Path(self.config_value).resolve())}}
+                               self.config_name: str(Path(self.config_value).resolve())}
 
+        if not self.protein_preparation_executable_value:
+            if not self.protein_preparation_value:
+                self.protein_preparation_value = 'adfr'
+                self.protein_preparation_executable_value = str(Path(__file__).parent.parent / 'utils/prepare_receptor')
+            else:
+                self.protein_preparation_executable_value = str(Path(__file__).parent.parent / 'utils/prepare_receptor')
+        
+        data[self.protein_preparation_name] = self.protein_preparation_value
+        data[self.protein_preparation_executable_name] = self.protein_preparation_executable_value
 
+        return {self.name : data}
+    
 
 class GlideConfig:
 
@@ -283,6 +300,7 @@ class GlideConfig:
         self.dir_name = 'schrodinger_dir'
         self.reward_intra_hbonds_name = 'reward_intra_hbonds'
         self.protonation_name = 'protonation'
+        self.protein_preparation_name = 'protein_preparation'
   
 
         self.input_value = glide_data[self.input_name]
@@ -290,6 +308,7 @@ class GlideConfig:
         self.dir_value = glide_data[self.dir_name]
         self.reward_intra_hbonds_value = glide_data.get(self.reward_intra_hbonds_name) or False
         self.protonation_value = glide_data.get(self.protonation_name) or None
+        self.protein_preparation_value = glide_data.get(self.protein_preparation_name) or None
 
     def update(self, key, value):
         pass
@@ -297,6 +316,7 @@ class GlideConfig:
     def validate_config(self):
 
         SCHRODINGER_PROTONATION_PROGRAM = ['ligprep', True, False, None]
+        SCHRODINGER_PROTEIN_PREPARATION_PROGRAM = ['protwizard', True, False, None]
 
         check_file_start_with_number(self.input_value)
         check_file_start_with_number(self.output_value)
@@ -314,10 +334,16 @@ class GlideConfig:
         
         if self.protonation_value:
             if not isinstance(self.protonation_value, (bool, str)):
-                raise TypeError(f'Please put protonation method as string or boolean, not {type(self.input_value)}')
+                raise TypeError(f'Please put protonation method as string or boolean, not {type(self.protonation_value)}')
             if self.protonation_value.lower() not in SCHRODINGER_PROTONATION_PROGRAM:
                 raise ValueError(f'{self.protonation_value} is not supported by easydock')
 
+        if self.protein_preparation_value:
+            if not isinstance(self.protein_preparation_value, (bool, str)):
+                raise TypeError(f'Please put protonation method as string or boolean, not {type(self.protein_preparation_value)}')
+            if self.protein_preparation_value.lower() not in SCHRODINGER_PROTEIN_PREPARATION_PROGRAM:
+                raise ValueError(f'{self.protein_preparation_value} is not supported by easydock')
+            
         if self.reward_intra_hbonds_value is not None:
             assert isinstance(self.reward_intra_hbonds_value, bool)
 
@@ -342,7 +368,8 @@ class GlideConfig:
         data = {self.input_name: str(self.input_value),
                 self.output_name: str(self.output_value),
                 self.dir_name: str(Path(self.dir_value).resolve()),
-                self.protonation_name: self.protonation_value}
+                self.protonation_name: self.protonation_value,
+                self.protein_preparation_name: self.protein_preparation_value}
         
         if self.reward_intra_hbonds_value:
             data[self.reward_intra_hbonds_name] = self.reward_intra_hbonds_value

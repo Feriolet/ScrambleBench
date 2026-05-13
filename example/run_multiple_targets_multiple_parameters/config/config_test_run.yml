@@ -67,7 +67,7 @@ analysis:
         schrodinger_dir: /opt/schrodinger2025-4
         reward_intra_hbonds: null
         protonation: ligprep
-  
+        protein_preparation: protwizard
   plif:
     method: schrodinger2025
     input:

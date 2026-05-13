@@ -1,0 +1,6 @@
+exhaustiveness: 10
+n_poses: 5
+ncpu: 5
+protein: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/GPCR_DRD2/gpcr_drd2_6luq_protein_autoprepared.pdbqt
+protein_setup: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/GPCR_DRD2/generic_title2_grid.txt
+seed: 42
