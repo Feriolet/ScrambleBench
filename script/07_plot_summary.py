@@ -417,21 +417,33 @@ def plot_redocking_score(wrapped_dataframe: SummaryDataFrameWrapper, property_li
     for i, (docking_property, ax) in enumerate(zip(property_list, np.ravel(axs)[:4])):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            ax = pt.RainCloud(hue=wrapped_dataframe.genai_model.name, # type: ignore
-                            y=docking_property, 
-                            x=wrapped_dataframe.protein_name.name, # type: ignore
-                            palette=COLORBLIND_PALETTE,  
-                            data=wrapped_dataframe.to_dataframe(), 
-                            bw = 0.2,  
-                            pointplot = True,
-                            width_viol = 0.5, 
-                            ax = ax, 
-                            orient = 'v', 
-                            move = 0.2, 
-                            alpha = .7,  
-                            dodge = True, 
-                            box_zorder = 2, 
-                            linewidth=2)   
+
+            ax = sns.violinplot(data=wrapped_dataframe.to_dataframe(),
+                                x=wrapped_dataframe.protein_name.name,
+                                y=docking_property,
+                                palette=COLORBLIND_PALETTE,
+                                hue=wrapped_dataframe.genai_model.name,
+                                width=0.5,
+                                bw= 0.2,
+                                ax=ax,
+                                orient= 'v', 
+                                dodge= True,
+                                linewidth=2)
+            # ax = pt.RainCloud(hue=wrapped_dataframe.genai_model.name, # type: ignore
+            #                 y=docking_property, 
+            #                 x=wrapped_dataframe.protein_name.name, # type: ignore
+            #                 palette=COLORBLIND_PALETTE,  
+            #                 data=wrapped_dataframe.to_dataframe(), 
+            #                 bw = 0.2,  
+            #                 pointplot = True,
+            #                 width_viol = 0.5, 
+            #                 ax = ax, 
+            #                 orient = 'v', 
+            #                 move = 0.2, 
+            #                 alpha = .7,  
+            #                 dodge = True, 
+            #                 box_zorder = 2, 
+            #                 linewidth=2)   
             if reference_score:
                 ax.plot(reference_array[i], marker='*', linestyle='None', markersize=20, color='black') # linestyle='None' prevents drawing lines
             handles, labels = ax.get_legend_handles_labels()
@@ -458,21 +470,33 @@ def plot_physicochemical_property(wrapped_dataframe: SummaryDataFrameWrapper, pr
     for physicochemical_property, ax in zip(property_list, np.ravel(axs)[:4]):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            ax = pt.RainCloud(hue=wrapped_dataframe.genai_model.name, # type: ignore
-                            y=physicochemical_property, 
-                            x=wrapped_dataframe.protein_name.name, # type: ignore
-                            palette=COLORBLIND_PALETTE,  
-                            data=wrapped_dataframe.to_dataframe(), 
-                            bw = 0.2,  
-                            pointplot = True,
-                            width_viol = 0.5, 
-                            ax = ax, 
-                            orient = 'v', 
-                            move = 0.2, 
-                            alpha = .7,  
-                            dodge = True, 
-                            box_zorder = 2, 
-                            linewidth=2)   
+
+            ax = sns.violinplot(data=wrapped_dataframe.to_dataframe(),
+                    x=wrapped_dataframe.protein_name.name,
+                    y=physicochemical_property,
+                    palette=COLORBLIND_PALETTE,
+                    hue=wrapped_dataframe.genai_model.name,
+                    width=0.5,
+                    bw= 0.2,
+                    ax=ax,
+                    orient= 'v', 
+                    dodge= True,
+                    linewidth=2)
+            # ax = pt.RainCloud(hue=wrapped_dataframe.genai_model.name, # type: ignore
+            #                 y=physicochemical_property, 
+            #                 x=wrapped_dataframe.protein_name.name, # type: ignore
+            #                 palette=COLORBLIND_PALETTE,  
+            #                 data=wrapped_dataframe.to_dataframe(), 
+            #                 bw = 0.2,  
+            #                 pointplot = True,
+            #                 width_viol = 0.5, 
+            #                 ax = ax, 
+            #                 orient = 'v', 
+            #                 move = 0.2, 
+            #                 alpha = .7,  
+            #                 dodge = True, 
+            #                 box_zorder = 2, 
+            #                 linewidth=2)   
             
             handles, labels = ax.get_legend_handles_labels()
             ax.get_legend().remove()
@@ -574,7 +598,7 @@ def plot_find_flipped_orientation_freq(wrapped_dataframe: SummaryDataFrameWrappe
 if __name__ == '__main__':
     summary_fname = '/opt/veincent/GenAI_manuscript/scramblebench/script/save_all_feature.parquet'
 
-    is_plot_physicochemical_property = False
+    is_plot_physicochemical_property = True
     is_plot_redocked_score = True
     is_find_best_molecule = False
 
@@ -646,7 +670,7 @@ if __name__ == '__main__':
                                                                                                       wrapped_df.FF_unminimised_vina_inplace_docking_score.name,
                                                                                                       wrapped_df.FF_minimised_glide_mininplace_docking_score.name]]
             docking_prop_list = list(set(docking_prop_list) - set(ff_unminimised_prop_list))
-
+            print(f'{docking_prop_list=}')
             docking_wrapped_df_by_prot = wrapped_df_docking.filter_exact_feature(wrapped_df_docking.protein_name, protein_list)
 
             docking_wrapped_df_by_prot.protein_name = pd.Categorical(docking_wrapped_df_by_prot.protein_name, categories=protein_list, ordered=True)
@@ -712,12 +736,11 @@ if __name__ == '__main__':
                 docking_wrapped_df_by_protlig_numsample.calculate_redocking_centroid_distance(docking_wrapped_df_by_protlig_numsample.input_mol_block_glide,
                                                                                                     docking_wrapped_df_by_protlig_numsample.redocked_glide_mol_block)
 
-                plot_find_flipped_orientation_freq(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample, 
-                                                   centroi_distance_column_name=docking_wrapped_df_by_protlig_numsample.centroid_distance_docking_glide,
-                                                   rmsd_column_name=docking_wrapped_df_by_protlig_numsample.redocked_glide_rms,
-                                                   output_prefix=f'{protein_family}_flipped_orientation')
-                if unique_num_sample == 500 and protein_family == 'Kinase':
-                    sys.exit(0)
+                # plot_find_flipped_orientation_freq(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample, 
+                #                                    centroi_distance_column_name=docking_wrapped_df_by_protlig_numsample.centroid_distance_docking_glide,
+                #                                    rmsd_column_name=docking_wrapped_df_by_protlig_numsample.redocked_glide_rms,
+                #                                    output_prefix=f'{protein_family}_flipped_orientation')
+
                 # plot_glide_undocked_freq(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample, column_name = docking_wrapped_df_by_protlig_numsample.FF_unminimised_glide_inplace_docking_score,
                 #                          output_prefix=f'{protein_family}_fully_unminimised')
                 # plot_glide_undocked_freq(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample, column_name = docking_wrapped_df_by_protlig_numsample.FF_unminimised_glide_mininplace_docking_score,
@@ -725,9 +748,14 @@ if __name__ == '__main__':
                 # plot_glide_undocked_freq(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample, column_name = docking_wrapped_df_by_protlig_numsample.FF_minimised_glide_mininplace_docking_score,
                 #                          output_prefix=f'{protein_family}_fully_minimised')
                 
-                # plot_redocking_score(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample,
-                #                     property_list=docking_prop_list,
-                #                     output_prefix=f'{protein_family}', reference_score=control_redocking_score[index])
+                allowed_docking_prop_list = [docking_wrapped_df_by_protlig_numsample.redocked_glide_docking_score.name,
+                                             docking_wrapped_df_by_protlig_numsample.redocked_vina_docking_score.name,
+                                             docking_wrapped_df_by_protlig_numsample.redocked_glide_rms.name,
+                                             docking_wrapped_df_by_protlig_numsample.redocked_vina_rms.name]
+                
+                plot_redocking_score(wrapped_dataframe=docking_wrapped_df_by_protlig_numsample,
+                                    property_list=allowed_docking_prop_list,
+                                    output_prefix=f'{protein_family}', reference_score=control_redocking_score[index])
         
         if is_find_best_molecule:
             combined_df = pd.DataFrame()
