@@ -6,18 +6,13 @@ import argparse
 import logging
 import sys
 import subprocess
-import os
 import json
-from scramblebench.script.config_preparation import config_constant, config_genbench3d, config_input, config_redocking, config_parameter, config_diversity
+from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, fetch_model_folder_name, find_file_name_through_regex
-from scramblebench.script.utils.prepare_protein import VinaProtein, GlideProtein
+from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex
 
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import pandas as pd
-import seaborn as sns
+
 import tempfile
 from copy import deepcopy
 from collections import defaultdict
