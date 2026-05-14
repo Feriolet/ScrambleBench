@@ -115,9 +115,9 @@ if __name__ == "__main__":
     input_dirname = 'cheminformatics_input_prepared'
     output_suffix = 'SixProteinBenchmark_DiversityAnalysis_average_Tanimoto'
     is_calculate_hamdiv_mces = False
-    is_calculate_hamdiv_ecfp = False
+    is_calculate_hamdiv_ecfp = True
     is_calculate_generic_bm = False
-    is_calculate_average_tanimoto_distance_ecfp = True
+    is_calculate_average_tanimoto_distance_ecfp = False
     
     # Start script
     # Tanimoto_array_type = list[np.ndarray]
@@ -243,7 +243,10 @@ if __name__ == "__main__":
                 style='Model',
                 markers=True,
                 markersize=10,
-                palette= COLOR_PALLETE)
+                palette= COLOR_PALLETE,
+                errorbar=("sd", 2),
+                err_style='bars')
+
             axes[i].set_title(protein)
             axes[i].set_ylim(bottom=0)
 
@@ -263,7 +266,10 @@ if __name__ == "__main__":
                 style='Model',
                 markers=True,
                 markersize=10,
-                palette= COLOR_PALLETE)
+                palette= COLOR_PALLETE,
+                errorbar=("sd", 2),
+                err_style='bars')
+            
             axes[i].set_title(protein)
             axes[i].set_ylim(bottom=0)
 
