@@ -158,9 +158,12 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         # add repeat parameter key in config_generation.py
         repeat_parameter_dict[parameter[-1]] = ','.join(parameter) 
     
-    config_data |= GenerationConfig(config_data).update('repeat_parameter', repeat_parameter_dict).write()
+    generation_data = GenerationConfig(config_data)
+    generation_dirpath = Path(generation_data.input_value).resolve()
+    
+    config_data |= generation_data.update('output', 'AI_Generation').update('repeat_parameter', repeat_parameter_dict).write()
     config_data |= PostGenerationConfig(config_data).update('input', 'AI_Generation').write()
-
+    
     nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
     nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
     nested_type_lists = [repeat_dict['type'] for repeat_dict in repeat_parameter]
@@ -173,15 +176,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         for key, value, dtype in zip(nested_key_lists, each_combination_list, nested_type_lists):
             assigned_config_data = deep_assign(assigned_config_data, key, value=forcetype(value, dtype))
 
-        
-        generation_dirpath = Path(GenerationConfig(assigned_config_data).input_value).resolve()
         analysis_dirpath = generation_dirpath
-
         for key, val in zip(nested_key_lists, each_combination_list):
             if isinstance(val, dict):
                 val = list(val.keys())[0]
             analysis_dirpath = Path(analysis_dirpath) / f'{key[-1]}_{val}'
-
 
         config_output = {}
         logging.debug('Writing Config for Input key')
