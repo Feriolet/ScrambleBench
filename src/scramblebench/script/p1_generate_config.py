@@ -197,6 +197,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         logging.debug('Writing Config for Analysis key')
         config_output = config_output | AnalysisConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
 
+
         config_output = reassign_input_config(config_output)
         yaml_fname = Path(analysis_dirpath) / Path(output_fname).name
         with open(yaml_fname, 'w') as yaml_f:
@@ -242,6 +243,5 @@ if __name__ == '__main__':
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
     
     args.output = Path(args.output).name
-    #if validate_config(data_input):
-    if True:
+    if validate_config(data_input):
         write_config(data_input, args.output)

@@ -15,10 +15,6 @@ from scramblebench.script.utils.prepare_protein import VinaProtein, GlideProtein
 
 
 from copy import deepcopy
-import json
-from collections import defaultdict
-from enum import Enum
-from multiprocessing import Pool
 import tempfile
 
 import rdkit
@@ -93,7 +89,8 @@ def run_ligprep_protonation(schrodinger_dir, output_dir, valid_molecule_file_dic
             with open(ligprep_inp, 'w') as ligprep_fname:
                 ligprep_fname.write(ligprep_inp_data)
             
-            model_cmd += ['-inp', ligprep_inp, '-NJOBS', '1', '-JOBNAME', f'ligprep_{Path(tempfile_dir).name}', '-HOST', 'localhost:1', '-WAIT']
+            protonation_cpu = str(fetch_ligprep_cpu(schrodinger_dir=schrodinger_dir))
+            model_cmd += ['-inp', ligprep_inp, '-NJOBS', protonation_cpu, '-JOBNAME', f'ligprep_{Path(tempfile_dir).name}', '-HOST', f'localhost:{protonation_cpu}', '-WAIT']
 
             logging.info(f'Ligprep is running with input: {fname}, output: {ligprep_output_fname}, cmd: {model_cmd}')
             subprocess.run(model_cmd, text=True)
@@ -101,7 +98,6 @@ def run_ligprep_protonation(schrodinger_dir, output_dir, valid_molecule_file_dic
 
     os.chdir(current_dir)
     
-
 
 def run_easydock_protonation(protonation_data, valid_molecule_file_dict):
 
@@ -241,6 +237,33 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
             subprocess.run(['cp', temp_output_easydock_sdf, output_easydock_sdf], text=True)
 
 
+def fetch_glide_sp_cpu(schrodinger_dir):
+
+    cmd = [f'{schrodinger_dir}/run', 'lictool', 'status']
+
+    schrodinger_license_strings = subprocess.run(cmd, capture_output=True, text=True).stdout
+    glide_sp_license_available = int(schrodinger_license_strings.split('GLIDE_SP_DOCKING')[-1].split('\n')[0].split('licenses available')[0].split('Total of')[-1])
+
+    MAX_CPU_USED = 50
+    CPU_BUFFER = 5
+    GLIDE_SP_LICENSE_PER_CPU = 4
+
+    return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU) - CPU_BUFFER, MAX_CPU_USED))
+
+
+def fetch_ligprep_cpu(schrodinger_dir):
+
+    cmd = [f'{schrodinger_dir}/run', 'lictool', 'status']
+
+    schrodinger_license_strings = subprocess.run(cmd, capture_output=True, text=True).stdout
+    glide_sp_license_available = int(schrodinger_license_strings.split('LIGPREP_MAIN')[-1].split('\n')[0].split('licenses available')[0].split('Total of')[-1])
+
+    MAX_CPU_USED = 50
+    GLIDE_SP_LICENSE_PER_CPU = 1
+
+    return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU), MAX_CPU_USED))
+
+
 def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data, input_data):
 
     grid_filepath = GlideProtein(pdb_filepath=input_data.pdb_value,
@@ -295,7 +318,7 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
                     glide_inp_f.write(glide_inp)
 
                 cmd = [f"{docking_data.dir_value}/glide", tempfile_dir2_path / f'{jobname}.inp', '-OVERWRITE', 
-                    '-adjust', '-HOST', 'localhost:6', '-TMPLAUNCHDIR', '-WAIT']
+                    '-adjust', '-HOST', f'localhost:{fetch_glide_sp_cpu(docking_data.dir_value)}', '-TMPLAUNCHDIR', '-WAIT']
 
 
                 temp_glide_sdf_output = f'{jobname}_lib.sdfgz' 

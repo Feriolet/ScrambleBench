@@ -73,8 +73,16 @@ analysis:
     input:
 
   diversity:
-    metric: mces
-    method: hamdiv
+    input: cheminformatics_input_prepared
+    output: diversity
+    conda_env: python_tsp
+    method:
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: mces
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm
 
 report:
   2d: True

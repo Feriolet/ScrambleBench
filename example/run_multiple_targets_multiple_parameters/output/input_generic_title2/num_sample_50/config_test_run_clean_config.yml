@@ -73,3 +73,14 @@ analysis:
         schrodinger_dir: /opt/schrodinger2025-4
         protonation: ligprep
         protein_preparation: protwizard
+  diversity:
+    input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/cheminformatics_input_prepared
+    output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/diversity
+    conda_env: python_tsp
+    method:
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: mces
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm

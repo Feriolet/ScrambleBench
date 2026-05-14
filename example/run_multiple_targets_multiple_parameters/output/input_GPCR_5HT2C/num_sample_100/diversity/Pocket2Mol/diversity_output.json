@@ -1,0 +1,19 @@
+{
+    "Pocket2Mol": [
+        {
+            "method": "HamDiv ECFP",
+            "score": 63.782651665611624,
+            "time": 4.0122294425964355
+        },
+        {
+            "method": "HamDiv MCES",
+            "score": 27.350263968917215,
+            "time": 5.405097246170044
+        },
+        {
+            "method": "generic_bm",
+            "score": 9,
+            "time": 0.06488347053527832
+        }
+    ]
+}
