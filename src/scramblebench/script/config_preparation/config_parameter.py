@@ -15,6 +15,7 @@ class ParameterConfig:
 
         self.protein_name = 'protein_name'
         self.model_list_name = 'model_list'
+        self.num_sample_name = 'num_sample'
         self.repeat_parameter_name = 'repeat_parameter'
 
         self.protein_value = None
@@ -26,7 +27,7 @@ class ParameterConfig:
             self.protein_value = parameter_data[self.protein_name]
             self.model_list_value = parameter_data[self.model_list_name]
             self.repeat_parameter_dict = parameter_data[self.repeat_parameter_name]
-
+            self.num_sample_value = parameter_data[self.num_sample_name]
 
     def create(self, config_data: dict[str, Any]):
 
@@ -42,6 +43,8 @@ class ParameterConfig:
         parameter_data = config_generation.GenerationConfig(config_data=config_data).parameter_value
         parameter_dict = parameter_data.repeat_parameter_value
 
+        self.num_sample_value = parameter_data.num_sample_value
+        
         self.repeat_parameter_name = parameter_data.repeat_parameter_name
         self.parameter_dict = {}
 

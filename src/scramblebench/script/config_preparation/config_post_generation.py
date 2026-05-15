@@ -1,7 +1,7 @@
 
 from scramblebench.script.config_preparation import config_constant
 from scramblebench.script.config_preparation.config_model import ModelConfig
-
+from scramblebench.script.config_preparation.config_parameter import ParameterConfig
 from pathlib import Path
 from typing import Any
 import logging
@@ -30,7 +30,7 @@ class PostGenerationConfig:
         if post_generation_data.get(self.pick_last_name):
             self.pick_last_value = [model.strip() for model in post_generation_data.get(self.pick_last_name).split(',')]
 
-        self.reference_model = ModelConfig(config_data)
+        self.reference_model = ParameterConfig(config_data)
 
     def update(self, key: str, value: str):
         if key == self.input_name:
@@ -49,7 +49,7 @@ class PostGenerationConfig:
     def validate_model_pick(self):
         validated_model = []
 
-        model_reference_list = self.reference_model.get_model_list()
+        model_reference_list = self.reference_model.model_list_value
         logging.info(f'Model name detected in the config file: {model_reference_list}')
         if self.pick_last_value:
             for model in self.pick_last_value:

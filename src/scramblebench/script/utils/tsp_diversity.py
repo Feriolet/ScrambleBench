@@ -45,6 +45,13 @@ def calculate_single_rascal_similarity(mol_tuple):
     except IndexError:
         return Chem.MolFromSmarts('')
 
+def create_self_diversity_generator(query_library):
+
+    total_library_compound = len(query_library)
+    for i in range(total_library_compound):
+        for j in range(i + 1, total_library_compound):
+            yield query_library[i], query_library[j]
+
 
 def calculate_single_ecfp_similarity(mol_tuple):
         ref_mol, mol = mol_tuple
@@ -65,6 +72,7 @@ def dist_array(smiles = None, mols = None, hamdiv_method = 'ECFP', ncpu = 1):
     '''
 
     if hamdiv_method == 'MCES':
+        
         comparison_list = []
         for i in range(l):
             for j in range(i + 1, l):
@@ -84,14 +92,12 @@ def dist_array(smiles = None, mols = None, hamdiv_method = 'ECFP', ncpu = 1):
         return dist_matrix
     
     elif hamdiv_method == 'ECFP':
-        comparison_list = []
-        for i in range(l):
-            for j in range(i + 1, l):
-                comparison_list.append((mols[i], mols[j]))
 
         dist_matrix = np.zeros((l,l))
+
         with Pool(ncpu) as p:
-            ecfp_list = p.map(calculate_single_ecfp_similarity, comparison_list, chunksize=10)
+            ecfp_list = list(p.imap(calculate_single_ecfp_similarity, tqdm(create_self_diversity_generator(mols), total=len(mols)**2/2),
+                                    chunksize=min(1000, max(1, len(mols) // ncpu))))
 
         ecfp_index = 0
         for i in range(l):
@@ -101,7 +107,6 @@ def dist_array(smiles = None, mols = None, hamdiv_method = 'ECFP', ncpu = 1):
                 dist_matrix[j, i] = dist_matrix[i, j]
             
         return dist_matrix
-
 
 
 def diversity_all(smiles = None, mols = None, dists = None, mode = "HamDiv", args = None, disable = False,

@@ -3,6 +3,8 @@ import numpy as np
 import os
 import pandas as pd
 import seaborn as sns
+import sys
+
 
 from tsp_diversity import diversity_all
 from glob import glob
@@ -13,7 +15,9 @@ from typing import Union, Optional, Any
 import argparse
 from pathlib import Path
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 COLOR_PALLETE = ["#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","#999999"]
 
@@ -63,7 +67,10 @@ if __name__ == "__main__":
     parser.add_argument("--distance", help="distance metric for diversity analysis", type=str)
     parser.add_argument("--diversity", help="diversity metric for diversity analysis", required=True, type=str)
 
-
+    logging.basicConfig(stream=sys.stdout,
+                    level=logging.INFO,
+                    format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
     args = parser.parse_args()
 
     if not Path(args.input).is_file():
@@ -79,9 +86,10 @@ if __name__ == "__main__":
 
     distance_metric = args.distance
     diversity_metric = args.diversity
-
+    print('fhii')
     if diversity_metric == 'hamdiv' and distance_metric in ['ecfp', 'mces']:
         start = time()
+        print(f'{len(mol_l)=}, {distance_metric.upper()=}, {calculate_cpu()=}')
         result = diversity_all(mols=mol_l, mode='HamDiv', hamdiv_method=distance_metric.upper(), ncpu=calculate_cpu())
         diversity_time = time() - start
         method = f'HamDiv {distance_metric.upper()}'

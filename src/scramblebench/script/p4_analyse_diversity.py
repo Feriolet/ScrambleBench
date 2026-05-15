@@ -67,6 +67,7 @@ def run_diversity(config_data):
             logging.info(f'Diversity analysis is done using {fname}. Skipping...')
             continue
 
+        print(f'{diversity_model_output_fname=}')
         for method in diversity_data.method_value:
             diversity = method[diversity_data.method_diversity_name]
             distance = method[diversity_data.method_distance_name]
@@ -81,7 +82,7 @@ def run_diversity(config_data):
                 if distance:
                     model_cmd += ['--distance', distance]
 
-                print(f'{model_cmd=}')
+                print(f'{" ".join(model_cmd)=}')
                 subprocess.run(model_cmd, text=True)
 
                 with open(temp_output, 'r') as diversity_f:

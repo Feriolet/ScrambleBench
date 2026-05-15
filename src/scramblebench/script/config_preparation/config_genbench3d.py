@@ -26,9 +26,9 @@ class GenBench3DConfig:
         self.conda_env_value = config_data[self.conda_env_name]
         self.schrodinger_dir_value = config_data.get(self.schrodinger_dir_name)
         self.genbench_config_value = config_data[self.genbench_config_name]
-        self.do_complex_forcefield_minimisation_value = config_data[self.do_complex_forcefield_minimisation_name]
-        self.do_docking_forcefield_minimisation_value = config_data[self.do_docking_forcefield_minimisation_name]
-        self.do_cancel_protonation_by_genbench_value = config_data[self.do_cancel_protonation_by_genbench_name]
+        self.do_complex_forcefield_minimisation_value = config_data.get(self.do_complex_forcefield_minimisation_name) or False
+        self.do_docking_forcefield_minimisation_value = config_data.get(self.do_docking_forcefield_minimisation_name) or False
+        self.do_cancel_protonation_by_genbench_value = config_data.get(self.do_cancel_protonation_by_genbench_name) or False
 
     def update(self, key: str, value: str):
         if key == self.input_name:

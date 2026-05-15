@@ -35,9 +35,13 @@ def read_input(input_fname: str) -> list[str]:
 
 
 def fetch_model_folder_name(config_data):
-    MODEL_IDENTIFIER_KEY = 'name'
-    return [  model_values[MODEL_IDENTIFIER_KEY] for model_values in config_data[config_constant.MODEL_KEY].values()]
+    try:
+        MODEL_IDENTIFIER_KEY = 'name'
+        return [  model_values[MODEL_IDENTIFIER_KEY] for model_values in config_data[config_constant.MODEL_KEY].values()]
 
+    except KeyError:
+        MODEL_IDENTIFIER_KEY = 'model_list'
+        return config_data[config_constant.PARAMETER_KEY][MODEL_IDENTIFIER_KEY]
 
 def create_case_insensitive_regex(pattern: str) -> str:
     return f"{''.join([ '[' + char.upper() + char.lower() + ']' for char in pattern])}"
