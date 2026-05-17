@@ -8,5 +8,6 @@ Because no protein input was gathered, analysis using these input could not be s
 ### Analysis
 
 ```bash
-
+chmod +x ./run_scramblebench.sh
+./run_scramblebench.sh
 ```
