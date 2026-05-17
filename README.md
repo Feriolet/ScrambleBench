@@ -67,12 +67,14 @@ cd models
 
 We are not installing the qvina environment for our study.
 The mol.yml is changed to included --extra-link-url and --find-links for pytorch
-In case torch can not be imported, may need to delete the libcudart.so.11.0 in the torch/lib if libcudart.so.11.8.*.* is also present in the torch/lib.
+In case torch can not be imported, may need to delete the conda/env/pmdm/lib/libcudart.so.11.0 i if libcudart.so.11.8.*.* is also present in the conda/env/pmdm/lib.
 
 ```bash
 git clone https://github.com/Feriolet/PMDM
 cd PMDM
 conda env create -f mol.yml
+
+rm /path/to/miniforge/envs/benchmark_pmdm/lib/libcudart.so.11.0
 ```
 
 ### DiffSBDD
@@ -81,6 +83,8 @@ git clone https://github.com/arneschneuing/DiffSBDD
 cd DiffSBDD
 conda env create -f environment.yaml
 mkdir checkpoints
+conda activate diffsbdd
+pip install "setuptools<11.0"
 ```
 
 ### Pocket2Mol

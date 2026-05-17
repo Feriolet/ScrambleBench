@@ -58,6 +58,7 @@ class ParameterConfig:
     def write(self):
         return {self.name: {self.protein_name: self.protein_value,
                             self.model_list_name: self.model_list_value,
+                            self.num_sample_name: self.num_sample_value,
                             self.repeat_parameter_name: self.parameter_dict}}
     
     def deep_get(self, dictionary: dict, nested_key: list):
