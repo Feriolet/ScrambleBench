@@ -59,7 +59,6 @@ pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet p
 You can write the repository anywhere, but I put mine in the dedicated `models` folder
 
 ```bash
-cd ScrambleBench
 mkdir models
 cd models
 ```
@@ -79,7 +78,9 @@ conda env create -f mol.yml
 ### DiffSBDD
 ```bash
 git clone https://github.com/arneschneuing/DiffSBDD
+cd DiffSBDD
 conda env create -f environment.yaml
+mkdir checkpoints
 ```
 
 ### Pocket2Mol
@@ -89,7 +90,6 @@ The config of `sample_for_pdb.yaml` is changed to allow Pocket2Mol to expand its
 git clone https://github.com/Feriolet/Pocket2Mol
 cd Pocket2Mol
 conda env create -f env_cuda113.yml
-conda activate Pocket2Mol
 ```
 
 ### PocketFlow
@@ -98,7 +98,8 @@ conda activate Pocket2Mol
 git clone https://github.com/Saoge123/PocketFlow
 cd PocketFlow
 
-conda create -n benchmark_pocketflow2 python=3.10 pymol-open-source=2.5.0 openbabel -y
+conda create -n benchmark_pocketflow python=3.10 pymol-open-source=2.5.0 openbabel -y
+conda activate benchmark_pocketflow
 pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 torchaudio==0.13.0 --extra-index-url https://download.pytorch.org/whl/cu117
 pip install scipy numpy==1.23.0
 pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.13.0+cu117.html --no-index
@@ -114,7 +115,7 @@ Note: Lingo3DMol/util/pocket_code_all.py was modified to increase pocket represe
 ```bash
 git clone https://github.com/Feriolet/Lingo3DMol
 cd Lingo3DMol
-conda create -f environment.yml
+conda env create -f environment.yml
 ```
 
 #### Manually
@@ -140,9 +141,7 @@ conda env create -f env.yml -n benchmark_easydock
 ```bash
 git clone https://github.com/Feriolet/genbench3d.git
 cd genbench3d
-mamba env create -f environment.yml
-mamba activate genbench3d
-pip install ray
+conda env create -f environment.yml
 
 #also install adfr if you can
 ```
@@ -150,14 +149,20 @@ pip install ray
 Please add this kernel model to the genbench folder
 
 ```bash
-tar -xvzf LigBoundConf*
+
 cp LigBoundConf* [genbench3d root dir]
+cd [genbench3d root dir]
+tar -xvzf LigBoundConf_geometry_kernel_densities.tar.gz
+tar -xvzf LigBoundConf_geometry_values.tar.gz
 ```
 
 ### Diversity
 ```bash
 git clone https://github.com/HXYfighter/HamDiv
-conda create -n python_tsp numpy rdkit tqdm networkx python_tsp
+cd HamDiv
+conda create -n python_tsp numpy rdkit tqdm networkx -y
+conda activate python_tsp
+pip install python_tsp
 ```
 
 ## Pre-trained Model Installation
@@ -165,14 +170,15 @@ conda create -n python_tsp numpy rdkit tqdm networkx python_tsp
 As I do not own the model, you can download the corresponding model in the respective owner's Github repository:
 
 
-Pocket2Mol: [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
+Pocket2Mol (to `Pocket2Mol/ckpt/`): [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
 
-PocketFlow: [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
+PocketFlow (to `PocketFlow/ckpt/`): [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
+
 Lingo3DMol: inside Github repository
 
-DiffSBDD: [crossdocked_fullatom_cond.ckpt](https://zenodo.org/record/8183747/files/crossdocked_fullatom_cond.ckpt?download=1)
+DiffSBDD (to `DiffSBDD/checkpoints`): [crossdocked_fullatom_cond.ckpt](https://zenodo.org/record/8183747/files/crossdocked_fullatom_cond.ckpt?download=1)
 
-PMDM: [500.pt](https://zenodo.org/records/10630921)
+PMDM (to `PMDM/`): [500.pt](https://zenodo.org/records/10630921)
 
 ## Usage
 

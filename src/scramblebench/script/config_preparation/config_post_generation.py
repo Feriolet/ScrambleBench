@@ -30,7 +30,12 @@ class PostGenerationConfig:
         if post_generation_data.get(self.pick_last_name):
             self.pick_last_value = [model.strip() for model in post_generation_data.get(self.pick_last_name).split(',')]
 
-        self.reference_model = ParameterConfig(config_data)
+        self.reference_model = []
+        if config_constant.PARAMETER_KEY in config_data:
+            self.reference_model = ParameterConfig(config_data).model_list_value
+        else:
+            self.reference_model = ModelConfig(config_data).get_model_list()
+
 
     def update(self, key: str, value: str):
         if key == self.input_name:
@@ -49,11 +54,11 @@ class PostGenerationConfig:
     def validate_model_pick(self):
         validated_model = []
 
-        model_reference_list = self.reference_model.model_list_value
-        logging.info(f'Model name detected in the config file: {model_reference_list}')
+        self.reference_model = self.reference_model
+        logging.info(f'Model name detected in the config file: {self.reference_model}')
         if self.pick_last_value:
             for model in self.pick_last_value:
-                if model not in model_reference_list:
+                if model not in self.reference_model:
                     raise ValueError(f'The model {model} is not found on the {config_constant.MODEL_KEY} name parameter')
                 if model in validated_model:
                     raise ValueError(f'The model {model} has at least been listed twice in pick random and pick last')
@@ -61,7 +66,7 @@ class PostGenerationConfig:
 
         if self.pick_random_value:
             for model in self.pick_random_value:
-                if model not in model_reference_list:
+                if model not in self.reference_model:
                     raise ValueError(f'The model {model} is not found on the {config_constant.MODEL_KEY} name parameter')
                 if model in validated_model:
                     raise ValueError(f'The model {model} has at least been listed twice in pick random and pick last')

@@ -198,6 +198,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
 
         config_output = reassign_input_config(config_output)
+        Path(analysis_dirpath).mkdir(parents=True, exist_ok=True)
         yaml_fname = Path(analysis_dirpath) / Path(output_fname).name
         with open(yaml_fname, 'w') as yaml_f:
             yaml.dump(config_output, yaml_f, Dumper=MyDumper, sort_keys=False)
