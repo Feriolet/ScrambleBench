@@ -255,7 +255,9 @@ def fetch_glide_sp_cpu(schrodinger_dir):
     CPU_BUFFER = 5
     GLIDE_SP_LICENSE_PER_CPU = 4
 
-    return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU) - CPU_BUFFER, MAX_CPU_USED))
+    AVAILABLE_CPU = len(os.sched_getaffinity(0)) - CPU_BUFFER
+
+    return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU) - CPU_BUFFER, MAX_CPU_USED, AVAILABLE_CPU))
 
 
 def fetch_ligprep_cpu(schrodinger_dir):
@@ -267,8 +269,11 @@ def fetch_ligprep_cpu(schrodinger_dir):
 
     MAX_CPU_USED = 50
     GLIDE_SP_LICENSE_PER_CPU = 1
+    CPU_BUFFER = 5
 
-    return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU), MAX_CPU_USED))
+    AVAILABLE_CPU = len(os.sched_getaffinity(0)) - CPU_BUFFER
+
+    return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU), MAX_CPU_USED, AVAILABLE_CPU))
 
 
 def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data, input_data):

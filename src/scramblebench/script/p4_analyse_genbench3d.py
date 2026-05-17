@@ -219,10 +219,15 @@ def run_single_genbench3d(cmd_data):
         model = cmd_data['model']
         minimisation = cmd_data['minimisation']
         cmd = cmd_data['cmd']
-        logging.info(f"Running Genbench. cmd: {' '.join(cmd)}")
+        logging.info(f"Running Genbench. cmd: {cmd}")
         subprocess.run(cmd, capture_output=True, text=True)
 
-        return CheckpointStatus.COMPLETED.value, model, minimisation
+        output_fname = cmd[cmd.index('-o') + 1]
+
+        if Path(output_fname).is_file():
+            return CheckpointStatus.COMPLETED.value, model, minimisation
+        else:
+            return CheckpointStatus.FAILED.value, model, minimisation
 
     except (subprocess.CalledProcessError, PermissionError, KeyboardInterrupt) as e:
         return CheckpointStatus.FAILED.value, model, minimisation
