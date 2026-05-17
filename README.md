@@ -98,10 +98,15 @@ conda env create -f env_cuda113.yml
 
 ### PocketFlow
 
+#### Automatic (Recommended)
 ```bash
-git clone https://github.com/Saoge123/PocketFlow
+git clone https://github.com/Feriolet/PocketFlow
 cd PocketFlow
+conda env create -f environment.yml
+```
 
+#### Manual
+```bash
 conda create -n benchmark_pocketflow python=3.10 pymol-open-source=2.5.0 openbabel -y
 conda activate benchmark_pocketflow
 pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 torchaudio==0.13.0 --extra-index-url https://download.pytorch.org/whl/cu117
