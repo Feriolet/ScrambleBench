@@ -1,0 +1,5 @@
+/mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/config_test_run_clean_config.yml
+/mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_AR/config_test_run_clean_config.yml
+/mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_BCL2/config_test_run_clean_config.yml
+/mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_Beta2AR/config_test_run_clean_config.yml
+/mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_BRAF/config_test_run_clean_config.yml
