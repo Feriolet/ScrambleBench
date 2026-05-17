@@ -155,6 +155,7 @@ def prepare_easydock_config(docking_data: config_redocking.EasyDockConfig, input
     with open(config_fname, 'r') as config_f:
         config_data = yaml.load(config_f, Loader=yaml.SafeLoader)
     
+    new_config_fname = Path(output_dir) / f'easydock_{Path(input_data.protein_value).stem}.yml'
 
     grid_txt = f'''
     center_x = {pocket_coordinate[0]}
@@ -171,18 +172,22 @@ def prepare_easydock_config(docking_data: config_redocking.EasyDockConfig, input
 
     config_data['protein'] = VinaProtein(pdb_filepath=protein_pdb, 
                                          prepare_receptor_bin_path=docking_data.protein_preparation_executable_value,
-                                         preparation_method=docking_data.protein_preparation_value).pdbqt_filepath
+                                         preparation_method=docking_data.protein_preparation_value).pdbqt_filepath 
     config_data['protein_setup'] = grid_fname
-    if config_data.get('exhaustiveness') is None:
-        config_data['exhaustiveness'] = 32
-    if config_data.get('n_poses') is None:
-        config_data['n_poses'] = 5
-    if config_data.get('ncpu') is None:
-        config_data['ncpu'] = max(1, min(len(os.sched_getaffinity(0)) - 5, 5))
-    if config_data.get('seed') is None:
-        config_data['seed'] = 42
 
-    new_config_fname = Path(output_dir) / f'easydock_{Path(input_data.protein_value).stem}.yml'
+    if str(docking_data.docking_value).lower() == 'vina':
+        if config_data.get('exhaustiveness') is None:
+            config_data['exhaustiveness'] = 32
+        if config_data.get('n_poses') is None:
+            config_data['n_poses'] = 5
+        if config_data.get('ncpu') is None:
+            config_data['ncpu'] = max(1, min(len(os.sched_getaffinity(0)) - 5, 5))
+        if config_data.get('seed') is None:
+            config_data['seed'] = 42
+    else:
+        logging.warning(f'You are using a different docking program other than vina. Ensure that the config at {new_config_fname} has \
+                        the correct format. Please check easydock github for reference!')
+    
     with open(new_config_fname, 'w') as config_f:
         yaml.dump(config_data, config_f)
 
@@ -214,6 +219,8 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
     
     if docking_data.docking_value:
         cmd += ['--program', docking_data.docking_value]
+    else:
+        logging.warning('You did not specify which docking program to use for easydock')
 
     cmd += ['-c', str(calculate_easydock_cpu())]
     for model, fname in valid_molecule_file_dict.items():
@@ -289,6 +296,7 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
             continue
 
         with tempfile.TemporaryDirectory() as tempfile_dir:  
+            os.chdir(tempfile_dir)
             if docking_data.protonation_value:  
                 run_ligprep_protonation(schrodinger_dir=docking_data.dir_value, 
                                         output_dir=tempfile_dir, 
@@ -326,6 +334,7 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
                 subprocess.run(cmd, text=True)
                 subprocess.run(['cp', temp_glide_sdf_output, output_glide_fname], text=True)
                 subprocess.run(['gunzip', output_glide_fname], text=True)
+
 
     os.chdir(current_dir)           
 
