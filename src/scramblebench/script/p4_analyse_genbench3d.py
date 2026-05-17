@@ -243,7 +243,7 @@ def run_genbench3d(config_data):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Prepare generated molecules for downstream analysis")
+    parser = argparse.ArgumentParser(description="Perform genbench3d analysis after molecule preparation")
 
     parser.add_argument("-i", "--input", help="config yaml input file or txt file containing yaml filepath", required=True, type=str)
     args = parser.parse_args()
