@@ -21,14 +21,14 @@ model:
 
 generation:
   input: output
-  output: output
+  output: AI_Generation
   parameter:
     box_size: 16
     num_sample: 50,100
     name: 5ht2c_prepared_0
 
 post_generation:
-  input: output
+  input: AI_Generation
   output: cheminformatics_input_prepared
   pick_last: Pocket2Mol
 

@@ -6,32 +6,38 @@
 Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. As this version is used for transparency in providing the workflow, it is not currently production-ready and we are currently cleaning the codes. Please look out for our version 0.1.0 soon!
 
 ## Table of Contents
-- [ScrambleBench v0.1.0](#scramblebench-v001)
+- [ScrambleBench v0.1.0](#scramblebench-v010)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
+    - [Method 1: Install through environment.yaml (Recommended)](#method-1-install-through-environmentyaml-recommended)
+    - [Method 2: Install manually](#method-2-install-manually)
   - [Model Repository Installation](#model-repository-installation)
     - [PMDM](#pmdm)
     - [DiffSBDD](#diffsbdd)
     - [Pocket2Mol](#pocket2mol)
     - [PocketFlow](#pocketflow)
+      - [Automatic (Recommended)](#automatic-recommended)
+      - [Manual](#manual)
     - [Lingo3DMol](#lingo3dmol)
+      - [Recommended](#recommended)
+      - [Manually](#manually)
+  - [Other Installation](#other-installation)
+    - [Easydock](#easydock)
     - [Genbench3D](#genbench3d)
+    - [Diversity](#diversity)
   - [Pre-trained Model Installation](#pre-trained-model-installation)
   - [Usage](#usage)
-    - [Main Pipeline](#main-pipeline)
+    - [Examples](#examples)
+    - [Step-by step pipeline](#step-by-step-pipeline)
       - [1. Prepare Config File](#1-prepare-config-file)
       - [2. Run Generation](#2-run-generation)
-      - [2. Combine SDF files (Model-based)](#2-combine-sdf-files-model-based)
-      - [3. Preprocess SDF files](#3-preprocess-sdf-files)
-      - [4. Combine SDF files (Target-based)](#4-combine-sdf-files-target-based)
-      - [5. GenBench3D analysis](#5-genbench3d-analysis)
-      - [6. Redocking](#6-redocking)
-        - [Vina](#vina)
-      - [7. Pharmacophore-based screening](#7-pharmacophore-based-screening)
-      - [8. Combine Summary](#8-combine-summary)
-      - [9. Plotting](#9-plotting)
-    - [Diversity Plotting](#diversity-plotting)
+      - [3. Prepare molecule](#3-prepare-molecule)
+      - [4a. GenBench3D analysis](#4a-genbench3d-analysis)
+      - [4b. Redocking analysis](#4b-redocking-analysis)
+      - [4c. Diversity Analysis](#4c-diversity-analysis)
+      - [5. Pharmacophore-based screening](#5-pharmacophore-based-screening)
+      - [6. Plotting](#6-plotting)
     - [Data Availability](#data-availability)
     - [Reproducing Figures](#reproducing-figures)
 
@@ -191,7 +197,9 @@ PMDM (to `PMDM/`): [500.pt](https://zenodo.org/records/10630921)
 
 ## Usage
 
-The generation process is entirely dependent on the config file used. You can refer to the example of config file in `run_config` folder for reference.
+### Examples
+
+You can access the `example` folder to run multiple kinds of benchmark. We encourage you to use the `example/run_multiple_targets_multiple_parameters` with the most updated config file.
 
 ### Step-by step pipeline
 
@@ -344,9 +352,6 @@ options:
                         config yaml input file or txt file containing yaml filepath
 ```
 
-```bash
-./p2_execute_generation.py -i output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
-```
 
 #### 3. Prepare molecule
 

@@ -161,8 +161,8 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     generation_data = GenerationConfig(config_data)
     generation_dirpath = Path(generation_data.input_value).resolve()
     
-    config_data |= generation_data.update('output', 'AI_Generation').update('repeat_parameter', repeat_parameter_dict).write()
-    config_data |= PostGenerationConfig(config_data).update('input', 'AI_Generation').write()
+    config_data |= generation_data.update('repeat_parameter', repeat_parameter_dict).write()
+    config_data |= PostGenerationConfig(config_data).write()
     
     nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
     nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
