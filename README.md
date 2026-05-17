@@ -425,12 +425,16 @@ paper: https://jcheminf.biomedcentral.com/articles/10.1186/s13321-024-00883-4
 
 **MOST IMPORTANTLY, USE RDKIT V2025.9.3 OR LATER, BECAUSE THE RASCAL MCES HAS SOME BUGS IN EARLIER VERSIONS**
 
-
-```bash
-cd ScrambleBench/script/diversity
-python analyse_tsp.py
 ```
+usage: p4_analyse_diversity.py [-h] -i INPUT
 
+Calculate Diversity of generated compound
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
+```
 
 #### 5. Pharmacophore-based screening
 
