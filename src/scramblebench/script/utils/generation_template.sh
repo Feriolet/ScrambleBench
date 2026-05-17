@@ -14,7 +14,7 @@ mkdir -p $generation_output/summary
 # The PMDM requires the pocket generation through their own script
 # The cutoff is 10 A, as suggested through their Github Issue #10 (closed issue)
 if [ ! -z "$model_pmdm_conda_env" ]; then
-    FILE=$(find $generation_output/summary/ -type f -name "*$model_pmdm_name*$protein_name*.sdf")
+    FILE=$(find $generation_output/summary/ -type f -name "*$input_name*$model_pmdm_name*.sdf")
 
     if [ ! -f "$FILE" ]; then
         conda activate $model_pmdm_conda_env
@@ -27,14 +27,14 @@ if [ ! -z "$model_pmdm_conda_env" ]; then
                     --outdir $generation_output/$model_pmdm_name
 
         ## Process PMDM
-        cat $generation_output/$model_pmdm_name/generate_ref/*.sdf > $generation_output/summary/generated_$protein_name"_ligand_"$model_pmdm_name"_"$(date -I).sdf
+        cat $generation_output/$model_pmdm_name/generate_ref/*.sdf > $generation_output/summary/generated_$input_name"_ligand_"$model_pmdm_name"_"$(date -I).sdf
     fi
 fi
 
 
 # Step 2: Generating ligand through DiffSBDD model.
 if [ ! -z "$model_diffsbdd_conda_env" ]; then
-    FILE=$(find $generation_output/summary/ -type f -name "*$model_diffsbdd_name*$protein_name*.sdf")
+    FILE=$(find $generation_output/summary/ -type f -name "*$input_name*$model_diffsbdd_name*.sdf")
     
     if [ ! -f "$FILE" ]; then
         conda activate $model_diffsbdd_conda_env
@@ -49,14 +49,14 @@ if [ ! -z "$model_diffsbdd_conda_env" ]; then
                     --batch_size 50
 
         ## Process DiffSBDD
-        cp $generation_output/$model_diffsbdd_name/*.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_diffsbdd_name"_"$(date -I).sdf
+        cp $generation_output/$model_diffsbdd_name/*.sdf $generation_output/summary/generated_$input_name"_ligand_"$model_diffsbdd_name"_"$(date -I).sdf
     fi
 fi
 
 
 #Step 3: Generating ligand from Pocket2Mol
 if [ ! -z "$model_pocket2mol_conda_env" ]; then
-    FILE=$(find $generation_output/summary/ -type f -name "*$model_pocket2mol_name*$protein_name*.sdf")
+    FILE=$(find $generation_output/summary/ -type f -name "*$input_name*$model_pocket2mol_name*.sdf")
     
     if [ ! -f "$FILE" ]; then
         conda activate $model_pocket2mol_conda_env
@@ -71,14 +71,14 @@ if [ ! -z "$model_pocket2mol_conda_env" ]; then
 
         ## Process Pocket2Mol
         $DIR/combine_sdf.sh $generation_output/$model_pocket2mol_name/*/SDF #give sdf_combined.sdf as output
-        cp $generation_output/$model_pocket2mol_name/*/SDF/sdf_combined.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_pocket2mol_name"_"$(date -I).sdf
+        cp $generation_output/$model_pocket2mol_name/*/SDF/sdf_combined.sdf $generation_output/summary/generated_$input_name"_ligand_"$model_pocket2mol_name"_"$(date -I).sdf
     fi
 fi
 
 
 ## Step 4: Generating ligand from PocketFlow
 if [ ! -z "$model_pocketflow_conda_env" ]; then
-    FILE=$(find $generation_output/summary/ -type f -name "*$model_pocketflow_name*$protein_name*.sdf")
+    FILE=$(find $generation_output/summary/ -type f -name "*$input_name*$model_pocketflow_name*.sdf")
     
     if [ ! -f "$FILE" ]; then
         conda activate $model_pocketflow_conda_env
@@ -92,13 +92,13 @@ if [ ! -z "$model_pocketflow_conda_env" ]; then
             --root_path $generation_output/$model_pocketflow_name
 
         ## Process PocketFlow
-        cp $generation_output/$model_pocketflow_name/*/*/generated.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_pocketflow_name"_"$(date -I).sdf
+        cp $generation_output/$model_pocketflow_name/*/*/generated.sdf $generation_output/summary/generated_$input_name"_ligand_"$model_pocketflow_name"_"$(date -I).sdf
     fi
 fi
 
 ## Step 5: Generating ligand from Lingo3DMol
 if [ ! -z "$model_lingo3dmol_conda_env" ]; then
-    FILE=$(find $generation_output/summary/ -type f -name "*$model_lingo3dmol_name*$protein_name*.sdf")
+    FILE=$(find $generation_output/summary/ -type f -name "*$input_name*$model_lingo3dmol_name*.sdf")
     
     if [ ! -f "$FILE" ]; then
         conda activate $model_lingo3dmol_conda_env
@@ -116,7 +116,7 @@ if [ ! -z "$model_lingo3dmol_conda_env" ]; then
 
         ## Process Lingo3DMol
         $DIR/combine_mol.sh $generation_output/Lingo3DMol_0/*/
-        cp $generation_output/$model_lingo3dmol_name"_0"/*/sdf_combined.sdf $generation_output/summary/generated_$protein_name"_ligand_"$model_lingo3dmol_name"_"$(date -I).sdf
+        cp $generation_output/$model_lingo3dmol_name"_0"/*/sdf_combined.sdf $generation_output/summary/generated_$input_name"_ligand_"$model_lingo3dmol_name"_"$(date -I).sdf
     fi
 fi
 
