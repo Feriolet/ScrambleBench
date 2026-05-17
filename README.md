@@ -199,7 +199,17 @@ PMDM (to `PMDM/`): [500.pt](https://zenodo.org/records/10630921)
 
 ### Examples
 
-You can access the `example` folder to run multiple kinds of benchmark. We encourage you to use the `example/run_multiple_targets_multiple_parameters` with the most updated config file.
+You can access the `example` folder to run multiple kinds of benchmark. We encourage you to use the `example/run_multiple_targets_multiple_parameters` since this is the folder that is most often tested. Alternatively, you can use
+`run_simplest_config` for very fast generation and analysis.
+
+```bash
+cd example/run_simplest_config
+chmod +x ./prepare_config.sh
+chmod +x ./run_scramblebench.sh
+
+conda activate scramblebench
+./run_scramblebench.sh
+```
 
 ### Step-by step pipeline
 
