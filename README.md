@@ -36,7 +36,8 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
       - [4a. GenBench3D analysis](#4a-genbench3d-analysis)
       - [4b. Redocking analysis](#4b-redocking-analysis)
       - [4c. Diversity Analysis](#4c-diversity-analysis)
-      - [5. Pharmacophore-based screening](#5-pharmacophore-based-screening)
+      - [4d. Pharmacophore-based screening](#4d-pharmacophore-based-screening)
+      - [5. Compilation of data analysis](#5-compilation-of-data-analysis)
       - [6. Plotting](#6-plotting)
     - [Data Availability](#data-availability)
     - [Reproducing Figures](#reproducing-figures)
@@ -347,6 +348,17 @@ For best practice, please write the absolute pathdir, as relative pathdir is rel
 
 #### 2. Run Generation
 
+```yaml
+#yaml config
+generation:
+  input: # path to output yaml file
+  output: # path to generation output (default: input/AI_Generation)
+  script_pathfile: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
+  parameter:
+    box_size: # int or list of float/int separated by comma
+    num_sample: # int or list of int separated by comma
+    name: # job name (str)
+```
 The generation script allows two kinds of input: a single yaml file input or a txt file containing a list of yaml pathdir. 
 
 Before generation, this script will check whether the generation script (default: `src/script/utils/generation_template.sh`) will generate molecules by the correct AI model by their conda environment (e.g., pmdm model should have a `$model_pmdm_conda_env` and pocket2mol model should have a `$model_pocket2mol_conda_env` string in the bash script).
@@ -362,10 +374,40 @@ options:
                         config yaml input file or txt file containing yaml filepath
 ```
 
-
+Expected output:
+```
+output_folder
+├── model1
+│   └── generated_model1_ligand.sdf
+└── model2
+│   └── generated_model2_ligand.sdf
+└── summary
+    ├── generated_model1_ligand.sdf
+    └── generated_model2_ligand.sdf   
+```
 #### 3. Prepare molecule
 
 After generation, the molecules need to be prepared and validated.
+
+The input **MUST** contains the `summary` folder with an `.sdf` file containing all generated ligands and named with the model name, as seen in the previous step.
+
+Expected input:
+```
+summary
+  ├── generated_model1_ligand.sdf
+  └── generated_model2_ligand.sdf  
+```
+```yaml
+#yaml config
+post_generation:
+  input: # path to output generation
+  output: # path to output post generation
+  pick_last: # method of picking last ligand if exceed num_sample (model name must exist in the model key)
+  pick_random: # method of picking random ligand if exceed num_sample (model name must exist in the model key)
+```
+
+The key `pick_last` and `pick_random` should be filled with the model name (case sensitive). This will only trigger when the model generate more ligand than the requested `num_sample`. For example, if the requested num_sample is `100`, but the model has generated `200` ligand, the script will trim it down to `100` ligands instead. `pick_last` will pick the last `100` ligands from the `.sdf` file, while `pick_random` will randomly pick ligands. If the model is unspecified, the script will use `pick_random` by default.
+
 
 ```txt
 usage: p3_prepare_molecule.py [-h] -i INPUT
@@ -378,11 +420,45 @@ options:
                         config yaml input file or txt file containing yaml filepath
 ```
 
+Expected_output:
+```
+output_folder
+├── model1
+│   └── prepared_model1_ligand.sdf
+└── model2
+    └── prepared_model2_ligand.sdf
+```
 #### 4a. GenBench3D analysis
 
 This will run the GenBench3D analysis. Please fill in the config files in the GenBench3D repository in `config/GenAI_evaluation.yaml`. An example is also shown in the `example/run_multiple_targets_multiple_parameters/config/GenAI_evaluation.yaml`.
 
+Expected input:
+```
+input_folder
+├── model1
+│   └── prepared_model1_ligand.sdf
+└── model2
+    └── prepared_model2_ligand.sdf 
+```
+
+Scramblebench script currently does not attempt to access genbench3d config, which is why there is a duplicate keys in both the `ScrambleBench` and `GenBench3D` configs (e.g., `schrodinger_dir`).
+
 ```yaml
+# ScrambleBench config
+analysis: # currently, only support genbench, redocking, and diversity
+  genbench3d:
+    input: # input folder (must exist)
+    output: # output folder
+    genbench_dir: # path to genbench rootdir
+    conda_env: #genbench conda environment
+    schrodinger_dir: # (optional) schrodinger root directory
+    genbench_config: #path to genbench running config (refer to genbench github, we have default config file)
+    do_complex_forcefield_minimisation: # (optional) whether to do MMFF98 minimisation before running analysis
+    do_docking_forcefield_minimisation: # (optional) whether to do mininplace docking
+    skip_genbench3d_protonation: # (optional) whether to ask genbench not to protoonate any input
+```
+```yaml
+# genbench3d config
 benchmark_dirpath: GenBench3D rootdir repository
 glide_working_dir: I am not sure about this
 pocket_distance_from_ligand: 5.0 # Angstrom
@@ -417,7 +493,6 @@ vina:
   seed: 2023
 ```
 
-
 ```txt
 usage: p4_analyse_genbench3d.py [-h] -i INPUT
 
@@ -429,9 +504,96 @@ options:
                         config yaml input file or txt file containing yaml filepath
 ```
 
+Because genbench3d allows for many different parameter choices, each analysis can take a long time. Below is some of the parameter that can be used:
+| Parameter | Description | Config Key| Default | |
+| -------- | ----------------------- | -------- | ------- | ---- |
+| Complex Minimisation  | Whether to do MMFF94 minimisation before analysis  | `do_complex_forcefield_minimisation` | False (setting True will perform both analysis)
+| Docking Minimisation | Whether to do mininplace scoring | `do_docking_forcefield_minimisation` | False (setting True will perform both analysis)
+| Docking Program | Which docking program to use | varied (`--schrodinger_dir` to do Glide SP) | Vina (unless input key in `ScrambleBench` config is missing; see `examples/run_without_protein_input`)
+
+In order to track GenBench3D analysis, we have set up a `genbench3d_checkpoint.json` to prevent repeat analysis in case analysis terminated halfway.
+
+Expected_output:
+```
+output_folder
+├── structural_input
+│   ├── protein.pdb (from input)
+│   ├── ligand.sdf (from input)
+│   ├── protein.pdbqt (for vina)
+│   ├── protein_grid.txt (for glide)
+│   └── other intermediates files
+├── json_output
+│   ├── prepared_model1_ligand_minimisation.json
+│   ├── prepared_model1_ligand_minimisation.log
+│   ├── prepared_model2_ligand_minimisation.json
+│   └── prepared_model2_ligand_minimisation.log
+├── Vina
+├── Glide
+└── genbench3d_checkpoint.json # checks if analysis is done per model per minimisation 
+```
+
+Sample of `genbench3d_checkpoint.json`:
+```json
+{
+    "Pocket2Mol": {
+        "unminimised": "COMPLETED",
+        "minimised": "FAILED"
+    },
+    "DiffSBDD": {
+        "unminimised": "FAILED",
+        "minimised": "PENDING"
+    }
+}
+```
 #### 4b. Redocking analysis
 
-For redocking, we currently support easydock redocking and Glide SP redocking. However, to run easydock, it is necessary to have some knowledge of how to run easydock to edit our configuration (mainly the easydock config and grid file). For now, my script supports vina by default, but will be able to support other docking program supported by easydock in the future.
+For redocking, we currently support `easydock` redocking and `Glide SP` redocking. However, to run easydock, it is necessary to have some knowledge of how to run easydock to edit our configuration (mainly the easydock config and grid file). For now, my script supports vina by default, but will be able to support other docking program supported by easydock in the future. However, this is not tested yet!
+
+Separate installation is needed to run these programs. Please refer to the easydock documentation here: [protonation](https://easydock.readthedocs.io/en/latest/usage/#protonation-options) and [docking](https://easydock.readthedocs.io/en/latest/usage/#molecular-docking)
+
+supported easydock docking program: `vina`, `gnina`, `smina`, `vina-gpu`, `qvina`, `server`
+
+supported easydock protonation program: `molgpka`, `unipka`, `chemaxon`
+
+Expected input:
+```
+input_folder
+├── model1
+│   └── prepared_model1_ligand.sdf
+└── model2
+    └── prepared_model2_ligand.sdf 
+```
+
+```yaml
+analysis:
+  redocking: # currently, on support protonation and docking
+    protonation: 
+      method: # only supported protonation of easydock
+      input: # input folder (must exist)
+      output: # output folder
+      env: # easydock environment
+
+    docking: # currently, only support easydock and glide
+      easydock:
+        input: # folder must exist in previous pipeline
+        output: # output folder
+        conda_env: # easydock conda environment
+        protein_preparation: # adfr, obabel, or protwizard
+        docking_program: # supported docking in easydock, refer to easydock github
+        protonation: # only supported protonation of easydock
+        config_fname: # easydock config file
+
+      glide:
+        input: # input folder, mut exist in previous pipeline
+        output: # output folder
+        schrodinger_dir: # schrodinger root dir
+        reward_intra_hbonds: # whether to reward intramolecular hydrogen bond (bool)
+        protonation: # ligprep or none
+        protein_preparation: # protwizard or none
+```
+
+Note that there is two levels of protonation here: `protonation` key and within the `docking` key. This is provided in case that users want to protonate their molecules outside of `easydock` (e.g., `LigPrep`). However, since `easydock` can only take unique molecules, `ScrambleBench` does not support molecule inputs with multiple protonation/isomer. This will be supported in v0.2.0 or later.
+
 
 ```txt
 usage: p4_analyse_redocking.py [-h] -i INPUT
@@ -444,7 +606,14 @@ options:
                         config yaml input file or txt file containing yaml filepath
 ```
 
-
+Expected output (identical structure for `protonation`, `easydock`, and `glide` redocking):
+```
+output_folder
+├── model1
+│   └── docked_model1_ligand.sdf
+└── model2
+    └── docked_model2_ligand.sdf 
+```
 
 #### 4c. Diversity Analysis
 
@@ -454,6 +623,40 @@ github: https://github.com/HXYfighter/HamDiv
 paper: https://jcheminf.biomedcentral.com/articles/10.1186/s13321-024-00883-4
 
 **MOST IMPORTANTLY, USE RDKIT V2025.9.3 OR LATER, BECAUSE THE RASCAL MCES HAS SOME BUGS IN EARLIER VERSIONS**
+
+```yaml
+analysis:
+  diversity:
+    input: # input folder (must exist in previous pipeline)
+    output: # output folder
+    conda_env: # conda environment for diversity metric
+    method: # support multiple distance and diversity in the hamdiv github
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: mces
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm
+```
+Supported `distance` and `diversity` combination (please refer to HamDiv paper for definition for the distance)
+
+| distance | diversity |
+| ---------| ----------|
+| ecfp | hamdiv | 
+| mces | hamdiv |
+| ecfp | average |
+| null | richness |
+| null | rs |
+| null| fg|
+| null | bm |
+| null | generic_bm|
+| null | intdiv|
+| null | sumdiv|
+| null | diam|
+| null | sumdiam|
+| null | sumbot|
+| null | bot|
+| null | dpp|
 
 ```
 usage: p4_analyse_diversity.py [-h] -i INPUT
@@ -466,9 +669,42 @@ options:
                         config yaml input file or txt file containing yaml filepath
 ```
 
-#### 5. Pharmacophore-based screening
+Expected output:
+```
+output_folder
+├── model1
+│   └── diversity_output.json
+└── model2
+    └── diversity_output.json 
+```
+
+#### 4d. Pharmacophore-based screening
 
 In our manuscript, we did our pharmacophore-based screening using Schrödinger Phase. Unfortunately, we currently do not have an open-source pipeline for this. However, feel free to explore Easydock PLIF option which I might use to integrate this in v0.1
+
+#### 5. Compilation of data analysis
+
+After performing the data analysis, we can collect all of the information into one single `.csv` file.
+
+The script will detect whether each data analysis key exists in the `ScrambleBench` config file (i.e., `genbench3d`, `diversity`, `redocking`)
+```
+usage: p5_collect_data_analysis.py [-h] -i INPUT
+
+Collect data of analysis done in p4_analyse.py
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
+```
+
+Expected output:
+```
+folder
+├── yaml_list.txt # from step 1
+├── protein1 folder
+└── all.csv # output
+```
 
 #### 6. Plotting
 
