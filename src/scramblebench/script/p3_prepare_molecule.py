@@ -145,9 +145,11 @@ def process_mol(mol_l: list[Chem.Mol],
             logging.info(f'trimming {model_name} by picking randomly')
             mol_l = np.random.choice(mol_l, num_sample, replace=False).tolist()
         else:
-            raise TypeError(f'The model {model_name} has ligand more than {num_sample} and you have \
-                            not specified how you want to filter it through the model_pick_last_l or model_pick_random_l')
-
+            logging.warning(f'The model {model_name} has ligand more than {num_sample} and you have \
+                            not specified how you want to filter it through the model_pick_last_l or model_pick_random_l. \
+                            Picking random ligand instead')
+            mol_l = np.random.choice(mol_l, num_sample, replace=False).tolist()
+    
     assert len(mol_l) <= num_sample
 
     protein_name = config_data[config_constant.PARAMETER_KEY]['protein_name']

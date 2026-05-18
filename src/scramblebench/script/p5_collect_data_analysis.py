@@ -240,7 +240,6 @@ def collect_redocking_data(analysis_data, parameter_class):
     return redocking_df
 
 
-
 def combine_analysis_df_with_parameter(analysis_df, parameter_data: config_parameter.ParameterConfig):
 
     parameter_order = []

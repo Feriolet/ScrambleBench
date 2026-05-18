@@ -52,6 +52,7 @@ cd ScrambleBench
 ### Method 1: Install through environment.yaml (Recommended)
 ```bash
 conda env create -f environment.yaml
+pip install -e .
 ```
 
 ### Method 2: Install manually 
@@ -59,6 +60,7 @@ conda env create -f environment.yaml
 conda create -n scramblebench python=3.10 oddt openbabel
 conda activate scramblebench
 pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow uv pytest openmm pdbfixer pyyaml Bio pytest-xdist
+pip install -e .
 ```
 
 ## Model Repository Installation
