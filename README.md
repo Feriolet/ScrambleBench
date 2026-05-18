@@ -505,8 +505,8 @@ options:
 ```
 
 Because genbench3d allows for many different parameter choices, each analysis can take a long time. Below is some of the parameter that can be used:
-| Parameter | Description | Config Key| Default | |
-| -------- | ----------------------- | -------- | ------- | ---- |
+| Parameter | Description | Config Key| Default |
+| -------- | ----------------------- | -------- | ------- |
 | Complex Minimisation  | Whether to do MMFF94 minimisation before analysis  | `do_complex_forcefield_minimisation` | False (setting True will perform both analysis)
 | Docking Minimisation | Whether to do mininplace scoring | `do_docking_forcefield_minimisation` | False (setting True will perform both analysis)
 | Docking Program | Which docking program to use | varied (`--schrodinger_dir` to do Glide SP) | Vina (unless input key in `ScrambleBench` config is missing; see `examples/run_without_protein_input`)
