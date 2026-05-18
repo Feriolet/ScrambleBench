@@ -1,47 +1,63 @@
-# ScrambleBench v0.0.1
+# ScrambleBench v0.1.0
 
 ## Introduction
 
 ![Intro graphic](asset/GenAI_Abstract.png)
-Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. As this version is used for transparency in providing the workflow, it is not currently production-ready and we are currently cleaning the codes. Please look out for our version 0.1.0 soon!
+Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. Our v0.1.0 version streamlined most of the features used in our manuscript. Please look out for our version 0.2.0 soon!
 
 ## Table of Contents
-- [ScrambleBench v0.0.1](#scramblebench-v001)
+- [ScrambleBench v0.1.0](#scramblebench-v010)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
+    - [Method 1: Install through environment.yaml (Recommended)](#method-1-install-through-environmentyaml-recommended)
+    - [Method 2: Install manually](#method-2-install-manually)
   - [Model Repository Installation](#model-repository-installation)
     - [PMDM](#pmdm)
     - [DiffSBDD](#diffsbdd)
     - [Pocket2Mol](#pocket2mol)
     - [PocketFlow](#pocketflow)
+      - [Automatic (Recommended)](#automatic-recommended)
+      - [Manual](#manual)
     - [Lingo3DMol](#lingo3dmol)
+      - [Recommended](#recommended)
+      - [Manually](#manually)
+  - [Other Installation](#other-installation)
+    - [Easydock](#easydock)
     - [Genbench3D](#genbench3d)
+    - [Diversity](#diversity)
   - [Pre-trained Model Installation](#pre-trained-model-installation)
   - [Usage](#usage)
-    - [Main Pipeline](#main-pipeline)
-      - [0. Prepare Config File](#0-prepare-config-file)
-      - [1. Run Generation](#1-run-generation)
-      - [2. Combine SDF files (Model-based)](#2-combine-sdf-files-model-based)
-      - [3. Preprocess SDF files](#3-preprocess-sdf-files)
-      - [4. Combine SDF files (Target-based)](#4-combine-sdf-files-target-based)
-      - [5. GenBench3D analysis](#5-genbench3d-analysis)
-      - [6. Redocking](#6-redocking)
-        - [Vina](#vina)
-      - [7. Pharmacophore-based screening](#7-pharmacophore-based-screening)
-      - [8. Combine Summary](#8-combine-summary)
-      - [9. Plotting](#9-plotting)
-    - [Diversity Plotting](#diversity-plotting)
+    - [Examples](#examples)
+    - [Step-by step pipeline](#step-by-step-pipeline)
+      - [1. Prepare Config File](#1-prepare-config-file)
+      - [2. Run Generation](#2-run-generation)
+      - [3. Prepare molecule](#3-prepare-molecule)
+      - [4a. GenBench3D analysis](#4a-genbench3d-analysis)
+      - [4b. Redocking analysis](#4b-redocking-analysis)
+      - [4c. Diversity Analysis](#4c-diversity-analysis)
+      - [5. Pharmacophore-based screening](#5-pharmacophore-based-screening)
+      - [6. Plotting](#6-plotting)
     - [Data Availability](#data-availability)
     - [Reproducing Figures](#reproducing-figures)
 
 ## Installation
 
 ```sh
-## Install Scramblebench 
-conda create -n scramblebench python=3.9
+git clone https://github.com/Feriolet/ScrambleBench
+cd ScrambleBench
+```
+
+### Method 1: Install through environment.yaml (Recommended)
+```bash
+conda env create -f environment.yaml
+```
+
+### Method 2: Install manually 
+```bash
+conda create -n scramblebench python=3.10 oddt openbabel
 conda activate scramblebench
-pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow
+pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet pyarrow uv pytest openmm pdbfixer pyyaml Bio pytest-xdist
 ```
 
 ## Model Repository Installation
@@ -49,7 +65,6 @@ pip install rdkit numpy matplotlib ptitprince seaborn pandas meeko fastparquet p
 You can write the repository anywhere, but I put mine in the dedicated `models` folder
 
 ```bash
-cd ScrambleBench
 mkdir models
 cd models
 ```
@@ -58,30 +73,48 @@ cd models
 
 We are not installing the qvina environment for our study.
 The mol.yml is changed to included --extra-link-url and --find-links for pytorch
-In case torch can not be imported, may need to delete the libcudart.so.11.0 in the torch/lib if libcudart.so.11.8.*.* is also present in the torch/lib.
+In case torch can not be imported, may need to delete the conda/env/pmdm/lib/libcudart.so.11.0 i if libcudart.so.11.8.*.* is also present in the conda/env/pmdm/lib.
 
 ```bash
-git clone https://github.com/Layne-Huang/PMDM
+git clone https://github.com/Feriolet/PMDM
 cd PMDM
-# change env name to benchmark_pmdm
-# add - --extra-index-url https://download.pytorch.org/whl/cu118 at pip
 conda env create -f mol.yml
+
+rm /path/to/miniforge/envs/benchmark_pmdm/lib/libcudart.so.11.0
 ```
 
 ### DiffSBDD
 ```bash
 git clone https://github.com/arneschneuing/DiffSBDD
+cd DiffSBDD
 conda env create -f environment.yaml
+mkdir checkpoints
+conda activate diffsbdd
+pip install "setuptools<11.0"
 ```
 
 ### Pocket2Mol
 
 The config of `sample_for_pdb.yaml` is changed to allow Pocket2Mol to expand its atom
+```bash
+git clone https://github.com/Feriolet/Pocket2Mol
+cd Pocket2Mol
+conda env create -f env_cuda113.yml
+```
 
 ### PocketFlow
 
+#### Automatic (Recommended)
 ```bash
-conda create -n benchmark_pocketflow2 python=3.10 pymol-open-source=2.5.0 openbabel -y
+git clone https://github.com/Feriolet/PocketFlow
+cd PocketFlow
+conda env create -f environment.yml
+```
+
+#### Manual
+```bash
+conda create -n benchmark_pocketflow python=3.10 pymol-open-source=2.5.0 openbabel -y
+conda activate benchmark_pocketflow
 pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 torchaudio==0.13.0 --extra-index-url https://download.pytorch.org/whl/cu117
 pip install scipy numpy==1.23.0
 pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.13.0+cu117.html --no-index
@@ -92,6 +125,15 @@ pip install torch_geometric==2.3.1
 ### Lingo3DMol
 
 Note: Lingo3DMol/util/pocket_code_all.py was modified to increase pocket representation length from 500 to 1000, probably because the pocket size is too big
+
+#### Recommended
+```bash
+git clone https://github.com/Feriolet/Lingo3DMol
+cd Lingo3DMol
+conda env create -f environment.yml
+```
+
+#### Manually
 ```bash
 conda create -n lingo3dmol python=3.8
 conda activate lingo3dmol
@@ -100,132 +142,245 @@ pip install scipy==1.7.3 pandas==1.5.1 numpy==1.20.3 rdkit==2022.09.1 psutil tor
 #maybe add conda install pyg -c pyg if still does not work
 ```
 
-### Genbench3D
+## Other Installation
+
+### Easydock
+
+```bash
+git clone https://github.com/ci-lab-cz/easydock
+cd easydock
+conda env create -f env.yml -n benchmark_easydock
 ```
-git clone https://github.com/bbaillif/genbench3d.git
+
+### Genbench3D
+```bash
+git clone https://github.com/Feriolet/genbench3d.git
 cd genbench3d
-mamba env create -f environment.yml
-mamba activate genbench3d
-pip install ray
+conda env create -f environment.yml
+
+#also install adfr if you can
 ```
 
 Please add this kernel model to the genbench folder
 
 ```bash
-tar -xvzf LigBoundConf*
+
 cp LigBoundConf* [genbench3d root dir]
+cd [genbench3d root dir]
+tar -xvzf LigBoundConf_geometry_kernel_densities.tar.gz
+tar -xvzf LigBoundConf_geometry_values.tar.gz
 ```
+
+### Diversity
+```bash
+git clone https://github.com/HXYfighter/HamDiv
+cd HamDiv
+conda create -n python_tsp numpy rdkit tqdm networkx -y
+conda activate python_tsp
+pip install python_tsp
+```
+
 ## Pre-trained Model Installation
 
 As I do not own the model, you can download the corresponding model in the respective owner's Github repository:
 
 
-Pocket2Mol: [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
+Pocket2Mol (to `Pocket2Mol/ckpt/`): [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
 
-PocketFlow: [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
+PocketFlow (to `PocketFlow/ckpt/`): [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
+
 Lingo3DMol: inside Github repository
 
-DiffSBDD: [crossdocked_fullatom_cond.ckpt](https://zenodo.org/record/8183747/files/crossdocked_fullatom_cond.ckpt?download=1)
+DiffSBDD (to `DiffSBDD/checkpoints`): [crossdocked_fullatom_cond.ckpt](https://zenodo.org/record/8183747/files/crossdocked_fullatom_cond.ckpt?download=1)
 
-PMDM: [500.pt](https://zenodo.org/records/10630921)
+PMDM (to `PMDM/`): [500.pt](https://zenodo.org/records/10630921)
 
 ## Usage
 
-The generation process is entirely dependent on the config file used. You can refer to the example of config file in `run_config` folder for reference.
+### Examples
 
-### Main Pipeline
+You can access the `example` folder to run multiple kinds of benchmark. We encourage you to use the `example/run_multiple_targets_multiple_parameters` since this is the folder that is most often tested. Alternatively, you can use
+`run_simplest_config` for very fast generation and analysis.
 
-#### 0. Prepare Config File
+```bash
+cd example/run_simplest_config
+chmod +x ./prepare_config.sh
+chmod +x ./run_scramblebench.sh
+
+conda activate scramblebench
+./run_scramblebench.sh
+```
+
+### Step-by step pipeline
+
+#### 1. Prepare Config File
+
+Before running the molecule generation, it is necessary to understand the appropriate input for ScrambleBench. Several examples are available in the `example` folder. Briefly, the description of the yaml keys are the following:
 ```yaml
 input:
-  complex_path: path to protein-ligand complex 
-  pdb_path: path to holo protein pdb
-  sdf_path: path to ligand sdf with same coordinate with complex_path
+  protein1: # name of the protein (str)
+    complex_path: # pdb file (str). Must have protein + ligand inside
+    pdb_path: # pdb file (str). 
+    sdf_path: # sdf file (str)
 
-parameter:
-  box_size: Pocket2Mol box size
-  num_sample: number of ligand to be generated
-  name: jobname
-  protein_title: protein name
+input_dir:
+  dirpath: # directory path containing the folders of each protein target
 
-output:
-  output_dir: directory of output for generation
+model: 
+  pmdm: # name of the model (str)
+    name: # name of the model (str)
+    dir: # path to model dir (str)
+    conda_env: # name of conda env (str)
 
-models_dir:
-  pmdm: root directory of PMDM repository
-  diffsbdd: root directory of DiffSBDD repository
-  pocket2mol: root directory of Pocket2Mol repository
-  pocketflow: root directory of PocketFlow repository
-  lingo3dmol: root directory of Lingo3DMol repository
+generation:
+  input: # path to output yaml file
+  output: # path to generation output (default: input/AI_Generation)
+  script_pathfile: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
+  parameter:
+    box_size: # int or list of float/int separated by comma
+    num_sample: # int or list of int separated by comma
+    name: # job name (str)
 
-conda_env:
-  pmdm: conda name for PMDM
-  diffsbdd: conda name for DiffSBDD
-  pocket2mol: conda name for Pocket2Mol
-  pocketflow: conda name for PocketFlow
-  lingo3dmol: conda name for Lingo3DMol
+post_generation:
+  input: # path to output generation
+  output: # path to output post generation
+  pick_last: # method of picking last ligand if exceed num_sample (model name must exist in the model key)
+  pick_random: # method of picking random ligand if exceed num_sample (model name must exist in the model key)
+
+# optional key
+analysis: # currently, only support genbench, redocking, and diversity
+  genbench3d:
+    input: # input folder (must exist)
+    output: # output folder
+    genbench_dir: # path to genbench rootdir
+    conda_env: #genbench conda environment
+    schrodinger_dir: # (optional) schrodinger root directory
+    genbench_config: #path to genbench running config (refer to genbench github, we have default config file)
+    do_complex_forcefield_minimisation: # (optional) whether to do MMFF98 minimisation before running analysis
+    do_docking_forcefield_minimisation: # (optional) whether to do mininplace docking
+    skip_genbench3d_protonation: # (optional) whether to ask genbench not to protoonate any input
+
+  redocking: # currently, on support protonation and docking
+    protonation: 
+      method: # only supported protonation of easydock
+      input: # input folder (must exist)
+      output: # output folder
+      env: # easydock environment
+
+    docking: # currently, only support easydock and glide
+      easydock:
+        input: # folder must exist in previous pipeline
+        output: # output folder
+        conda_env: # easydock environment
+        protein_preparation: # adfr, obabel, or schrodinger protwizard
+        docking_program: # supported docking in easydock, refer to easydock github
+        protonation: # only supported protonation of easydock
+        config_fname: # easydock config file
+
+      glide:
+        input: # input folder, mut exist in previous pipeline
+        output: # output folder
+        schrodinger_dir: # schrodinger root dir
+        reward_intra_hbonds: # whether to reward intramolecular hydrogen bond (bool)
+        protonation: # ligprep or none
+        protein_preparation: # protwizard or none
+  # to be supported in future release
+  plif:
+    method: schrodinger2025
+    input:
+
+  diversity:
+    input: # input folder (must exist in previous pipeline)
+    output: # output folder
+    conda_env: # conda environment for diversity metric
+    method: # support multiple distance and diversity in the hamdiv github
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: mces
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm
+
+# to be supported in future release
+report:
+  2d: True
 ```
-
-
-
-```
-cd script
-python 00_prepare_config_file.py --config_path run_config/config_5HT2C_prepared.yml
-```
-
-A config file will be written in the `output/outputdir` folder named `run_generative_ai.yaml`
-
-#### 1. Run Generation
-
-This code will run the generation of the de novo ligand. Please look out for the config of each model to get more information of their parameters, especially their seed. In my experience, Pocket2Mol has the seed number for reproducibility purpose.
+In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder. 
 
 ```txt
-Pocket2Mol:Pocket2Mol/configs/sample_for_pdb.yml
-PocketFlow: Unknown
-Lingo3DMol: Unknown
-DiffSBDD: Unknown
-PMDM: Unknown
+usage: p1_generate_config.py [-h] [-i INPUT] [-o OUTPUT] [--dirpath_input]
+
+Prepare config file for ScrambleBench
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file
+  -o OUTPUT, --output OUTPUT
+                        config yaml output file prefix (i.e., not path directory)
+  --dirpath_input       write input key as a single directory
+```
+Multiple values for the input protein names and parameters (i.e., box_size and num_sample) are supported, which can be seen in the `example` folder.
+
+Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. If you use `input_dir` key, there **MUST** be a **SINGLE** file of protein.pdb, complex.pdb, and ligand.sdf with the string 'protein', 'complex', and 'ligand', respectively, so that the script can detect which one is which. For example, the script will detect 'gpcr_ligand.sdf' as ligand file, but not 'gpcr.sdf', because there is no 'ligand' string in the file.
+
+The path directory should be the following:
+
+```txt
+input_folder
+├── protein_1
+│   ├── complex.pdb
+│   ├── protein.pdb
+│   └── ligand.sdf
+└── protein_2
+    ├── complex.pdb
+    ├── protein.pdb
+    └── ligand.sdf
 ```
 
-```bash
-./01_run_all.sh output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
+In the future, we will support complex pdb only, but the file directory should still be the same (i.e., individual protein target has its own folder).
+
+A config file and txt file containing a list of the config.yaml will be written in the folder list in value for `config[generation][input]` key.
+
+For best practice, please write the absolute pathdir, as relative pathdir is relative to the executable path (i.e., pwd). Despite this, relative pathdir is still allowed, and ScrambleBench will resolve it in the config output.
+
+
+#### 2. Run Generation
+
+The generation script allows two kinds of input: a single yaml file input or a txt file containing a list of yaml pathdir. 
+
+Before generation, this script will check whether the generation script (default: `src/script/utils/generation_template.sh`) will generate molecules by the correct AI model by their conda environment (e.g., pmdm model should have a `$model_pmdm_conda_env` and pocket2mol model should have a `$model_pocket2mol_conda_env` string in the bash script).
+
+```txt
+usage: p2_execute_generation.py [-h] -i INPUT
+
+Run de novo molecule generation after p1_generate_config.py
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
 ```
 
-#### 2. Combine SDF files (Model-based)
 
-As some models output individuals SDF file for each ligand, we need to combine them. The default output folder in the script is called `summary` folder
+#### 3. Prepare molecule
 
-```
-./02_postprocess_models.sh ../output_test_multiple_numsample/GPCR_5HT2C_14nov100/run_generative_ai.yaml 
-```
+After generation, the molecules need to be prepared and validated.
 
-#### 3. Preprocess SDF files
-Now, we clean the SDF file a bit by removing duplicates, validating the structures, and giving name proper unique ID for tagging.
+```txt
+usage: p3_prepare_molecule.py [-h] -i INPUT
 
-In this command line below, I asked the script to write the outputs in `output_test_multiple_numsample/GPCR_5HT2C_14nov_100/cheminformatics_input_prepared`, subsampling the ligands by taking the last ligands in `Pocket2Mol` and `Lingo3DMol`, while taking random ligands in `Chem42`.
+Prepare generated molecules for downstream analysis
 
-```bash
-python ./03_check_count.py -i output_test_multiple_numsample/GPCR_5HT2C_14nov_100/summary \
-                           -c output_test_multiple_numsample/GPCR_5HT2C_14nov_100/run_generative_ai.yaml \
-                           -o cheminformatics_input_prepared
-                           --pick_last Pocket2Mol Lingo3DMol
-                           --pick_random Chem42
-                           --model_list Pocket2Mol Lingo3DMol Chem42 DiffSBDD PMDM
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
 ```
 
-#### 4. Combine SDF files (Target-based)
+#### 4a. GenBench3D analysis
 
-This script is mainly used for Docking analysis, which will combine all models together that targets the same protein.
-
-Please edit the variable in line 67-71 according to your needs. This will be fixed in v0.1.0
-
-```bash
-python ./04_combine_generated_ligand.py
-```
-
-#### 5. GenBench3D analysis
-
-This will run the GenBench3D analysis. Please fill in the config files in the GenBench3D repository in `config/default.yaml`. I am using this configuration instead (named `config/GenAI_evaluation.yaml`)
+This will run the GenBench3D analysis. Please fill in the config files in the GenBench3D repository in `config/GenAI_evaluation.yaml`. An example is also shown in the `example/run_multiple_targets_multiple_parameters/config/GenAI_evaluation.yaml`.
 
 ```yaml
 benchmark_dirpath: GenBench3D rootdir repository
@@ -262,81 +417,69 @@ vina:
   seed: 2023
 ```
 
-Then, edit the `./05_cheminfo_analysis.sh` according to your needs. Here is the explanation of the variable
 
-```bash
-genbench_config # line 14, your genbench/config filepath
-genbench_dir # line 15, your genbench rootdir path
-cheminformatic_input_dir # line 16, your output dirpath from step 3
-cheminformatic_input_dir # line 17, your output dirpath for this script
-schrodinger_path_exec # line 20, your Schrödinger root dirpath
-genai_model_array # line 28, your list of model name
-is_complex_forcefield_minimisation # line 31, whether you want genbench3d to perform MMFF98 minimisation for the complex protein-ligand
-is_complex_forcefield_unminimisation # line 32, whether you want genbench to skip MMFF98 minimisation for the complex protein-ligand. You can do both minimisatio and unminimisation
-is_cancel_protonation_by_obabel_or_adfr # line 33. GenBench can do protonation by obabel or adfr. However, if you already prepared your protein beforehand, you can use it to ask genbench3d not to deprotonate it.
+```txt
+usage: p4_analyse_genbench3d.py [-h] -i INPUT
+
+Perform genbench3d analysis after molecule preparation
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
 ```
 
-```bash
-./05_cheminfo_analysis.sh ../output_test_multiple_numsample/GPCR_5HT2C_14nov_100/run_generative_ai.yaml
+#### 4b. Redocking analysis
+
+For redocking, we currently support easydock redocking and Glide SP redocking. However, to run easydock, it is necessary to have some knowledge of how to run easydock to edit our configuration (mainly the easydock config and grid file). For now, my script supports vina by default, but will be able to support other docking program supported by easydock in the future.
+
+```txt
+usage: p4_analyse_redocking.py [-h] -i INPUT
+
+Redocking analysis after molecule preparation
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
 ```
 
 
-#### 6. Redocking
 
-For docking, we currently do not have a strict pipeline for doing so. We used both Schrödinger's Glide SP and Autodock Vina for docking calculations. Make sure that you are using the combined SDF ligand generated from step 4 to do this.
-
-##### Vina
-
-Please refer to the [Easydock Github](https://github.com/ci-lab-cz/easydock) repository to see how the protocol of their docking. For our case, we used the protonated protein structure prepared from Schrödinger Protein Preparation Workflow. For our ligand, we prepared it using Schrödinger LigPrep. Our general command line is something like this:
-
-```bash
-conda activate easydock
-
-#prepare ligand and put it in Docking/ligand_input
-easydock -i ../output_test_multiple_numsample/Docking/ligand_input_5ht2c_docking_input_ligand.sdf -o ../output_test_multiple_numsample/Docking/vina_output/gpcr_5ht2c_input_docking_vina.db -c 40 --program vina --config ../output_test_multiple_numsample/Docking/vina_input/easydock_config_5HT2C.yml --sdf
-```
-
-If you want to prepare the ligand using open-source model, you can add the `--protonation` parameter.
-
-#### 7. Pharmacophore-based screening
-
-In our manuscript, we did our pharmacophore-based screening using Schrödinger Phase. Unfortunately, we currently do not have an open-source pipeline for this. However, feel free to explore Easydock PLIF option which I might use to integrate this in v0.1
-
-#### 8. Combine Summary
-
-This script will use all results from the previous steps. Please edit line 686-701 according to your neeeds.
-
-```bash
-python ./06_generate_summary_refactored.py
-```
-#### 9. Plotting
-
-This script will use the result from step 8. Please edit line 575-597 according to your needs. Please let me know if you have any issue with this code because this code is the messiest and do a lot of things in very few functions, so refactoring is necessary :(
-
-```bash
-python ./07_plot_summary.py
-```
-
-### Diversity Plotting
+#### 4c. Diversity Analysis
 
 This pipeline outlines the codes for plotting the diversity. Shout out to the original Github and the paper discussing about this
 
 github: https://github.com/HXYfighter/HamDiv
 paper: https://jcheminf.biomedcentral.com/articles/10.1186/s13321-024-00883-4
 
-Please edit line 112-120 according to your needs (Will be refactored soon hahaha)
-
-Also use a different conda environment described in the dependency of HamDiv. 
-
 **MOST IMPORTANTLY, USE RDKIT V2025.9.3 OR LATER, BECAUSE THE RASCAL MCES HAS SOME BUGS IN EARLIER VERSIONS**
-```bash
-cd ScrambleBench/script/diversity
-python analyse_tsp.py
+
 ```
+usage: p4_analyse_diversity.py [-h] -i INPUT
+
+Calculate Diversity of generated compound
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
+```
+
+#### 5. Pharmacophore-based screening
+
+In our manuscript, we did our pharmacophore-based screening using Schrödinger Phase. Unfortunately, we currently do not have an open-source pipeline for this. However, feel free to explore Easydock PLIF option which I might use to integrate this in v0.1
+
+#### 6. Plotting
+
+To be supported in future release.
+
 
 ### Data Availability
 Please install the files in our [Zenodo](https://zenodo.org/records/18503149) for reproducibility.
 
 ### Reproducing Figures
+
+Please refer to the `v0.0.1` for the codes to reproduce the figure.
 
 The main Figures of the manuscript can be reproduced by using the `07_plot_summary.py` code with the file `output_scramblebench_data_warehouse/data_warehouse.parquet` in the Zenodo file

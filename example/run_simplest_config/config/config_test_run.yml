@@ -1,0 +1,40 @@
+input:
+  GPCR_5HT2C:
+    complex_path: input/5ht2c/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+    pdb_path: input/5ht2c/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+    sdf_path: input/5ht2c/gpcr_5ht2c_6bqh_ligand.sdf
+
+# only test a few, you can add more if you like
+model:
+  pocket2mol:
+    name: Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
+
+generation:
+  input: output
+  output: AI_Generation
+  parameter:
+    box_size: 16
+    num_sample: 50
+    name: 5ht2c_prepared_0
+
+post_generation:
+  input: AI_Generation
+  output: cheminformatics_input_prepared
+  pick_last: Pocket2Mol
+
+analysis:
+  diversity:
+    input: cheminformatics_input_prepared
+    output: diversity
+    conda_env: python_tsp
+    method:
+    - distance: ecfp
+      diversity: hamdiv
+
+
+
+
+
+

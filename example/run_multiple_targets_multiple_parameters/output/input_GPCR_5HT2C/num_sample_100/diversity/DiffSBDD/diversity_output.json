@@ -1,0 +1,19 @@
+{
+    "DiffSBDD": [
+        {
+            "method": "HamDiv ECFP",
+            "score": 83.66088581053287,
+            "time": 8.486847162246704
+        },
+        {
+            "method": "HamDiv MCES",
+            "score": 43.515270832835,
+            "time": 88.53976821899414
+        },
+        {
+            "method": "generic_bm",
+            "score": 83,
+            "time": 0.19144535064697266
+        }
+    ]
+}

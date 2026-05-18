@@ -1,0 +1,30 @@
+parameter:
+  protein_name: Protein_5HT2A
+  model_list:
+  - DiffBP
+  - PocketFlow
+  - GraphBP
+  num_sample: 2000
+  repeat_parameter: null
+
+post_generation:
+  input: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/AI_Generation
+  output: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_input_prepared
+
+analysis:
+  genbench3d:
+    input: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_input_prepared
+    output: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_analysis
+    conda_env: benchmark_genbench3d
+    genbench_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    genbench_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+
+  diversity:
+    input: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_input_prepared
+    output: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/diversity
+    conda_env: python_tsp
+    method:
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm

@@ -1,0 +1,95 @@
+input:
+  GPCR_5HT2C:
+    complex_path: input/5ht2c/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+    pdb_path: input/5ht2c/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+    sdf_path: input/5ht2c/gpcr_5ht2c_6bqh_ligand.sdf
+  generic_title2:
+    complex_path: input/GPCR_DRD2/gpcr_drd2_6luq_complex_autoprepared.pdb
+    pdb_path: input/GPCR_DRD2/gpcr_drd2_6luq_protein_autoprepared.pdb
+    sdf_path: input/GPCR_DRD2/gpcr_drd2_6luq_ligand.sdf
+
+# only test a few, you can add more if you like
+model:
+  diffsbdd:
+    name: DiffSBDD
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/DiffSBDD
+    conda_env: benchmark_diffsbdd
+  pocket2mol:
+    name: Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
+
+generation:
+  input: output
+  output: AI_Generation
+  parameter:
+    box_size: 16
+    num_sample: 50,100
+    name: 5ht2c_prepared_0
+
+post_generation:
+  input: AI_Generation
+  output: cheminformatics_input_prepared
+  pick_last: Pocket2Mol
+
+analysis:
+  genbench3d:
+    input: cheminformatics_input_prepared
+    output: cheminformatics_analysis
+    genbench_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    conda_env: benchmark_genbench3d
+    schrodinger_dir: /opt/schrodinger2025-4
+    genbench_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+    do_complex_forcefield_minimisation: True
+    do_docking_forcefield_minimisation: True
+    skip_genbench3d_protonation: True
+
+  redocking:
+    protonation: 
+      method: molgpka
+      input: cheminformatics_input_prepared
+      output: docking
+      env: benchmark_easydock
+
+    docking:
+      easydock:
+        input: docking
+        output: vina_output
+        conda_env: benchmark_easydock
+        protein_preparation: adfr
+        docking_program: vina
+        protonation: null
+        config_fname: config/easydock_config_5HT2C.yml
+
+      glide:
+        input: cheminformatics_input_prepared
+        output: glide_output
+        schrodinger_dir: /opt/schrodinger2025-4
+        reward_intra_hbonds: null
+        protonation: ligprep
+        protein_preparation: protwizard
+  plif:
+    method: schrodinger2025
+    input:
+
+  diversity:
+    input: cheminformatics_input_prepared
+    output: diversity
+    conda_env: python_tsp
+    method:
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: mces
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm
+
+report:
+  2d: True
+
+
+
+
+
+
+
