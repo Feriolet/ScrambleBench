@@ -39,8 +39,8 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
       - [4d. Pharmacophore-based screening](#4d-pharmacophore-based-screening)
       - [5. Compilation of data analysis](#5-compilation-of-data-analysis)
       - [6. Plotting](#6-plotting)
-    - [Data Availability](#data-availability)
-    - [Reproducing Figures](#reproducing-figures)
+  - [Data Availability](#data-availability)
+  - [Reproducing Figures](#reproducing-figures)
 
 ## Installation
 
@@ -714,10 +714,10 @@ folder
 To be supported in future release.
 
 
-### Data Availability
+## Data Availability
 Please install the files in our [Zenodo](https://zenodo.org/records/18503149) for reproducibility.
 
-### Reproducing Figures
+## Reproducing Figures
 
 Please refer to the `v0.0.1` for the codes to reproduce the figure.
 
