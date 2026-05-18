@@ -19,6 +19,7 @@ from collections import defaultdict
 import rdkit
 from rdkit import Chem
 from enum import Enum, IntEnum
+from rdkit.Chem import rdRascalMCES
 
 class GenBenchDockingMethod(Enum):
     VINA_MININPLACE = "Vina score"
@@ -141,21 +142,79 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
     return pd.DataFrame.from_dict(glide_dict)
 
 
-def collect_redocking_easydock_data(docking_data, parameter_class):
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=docking_data.output_value,
-                                                                    model_list=parameter_class.model_list_value)    
-    
-    easydock_dict = defaultdict(list)
-    for model, easydock_fname in valid_molecule_file_dict.items():
-        if not Path(easydock_fname).suffix == '.sdf':
-            raise ValueError(f'please convert your glide fname from {Path(easydock_fname.suffix)} to .sdf')
-        
-        
+def neutralize_atoms(mol):
+    pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
+    at_matches = mol.GetSubstructMatches(pattern)
+    at_matches_list = [y[0] for y in at_matches]
+    if len(at_matches_list) > 0:
+        for at_idx in at_matches_list:
+            atom = mol.GetAtomWithIdx(at_idx)
+            chg = atom.GetFormalCharge()
+            hcount = atom.GetTotalNumHs()
+            atom.SetFormalCharge(0)
+            atom.SetNumExplicitHs(hcount - chg)
+            atom.UpdatePropertyCache()
+    return mol
 
-        mol_l = [mol for mol in Chem.SDMolSupplier(easydock_fname) if mol]
-        easydock_dict['mol_id'] += [mol.GetProp('_Name') for mol in mol_l]
-        easydock_dict['Model'] += [model] * len(mol_l)
-        easydock_dict['easydock_redocking_score'] += [mol.GetProp('docking_score') for mol in mol_l]
+
+def calculate_rms(mol1, mol2):
+
+    mol1 = neutralize_atoms(Chem.RemoveHs(mol1))
+    mol2 = neutralize_atoms(Chem.RemoveHs(mol2))
+
+    try:
+        return Chem.rdMolAlign.CalcRMS(mol1, mol2)
+    except RuntimeError:
+        opts = rdRascalMCES.RascalOptions()
+        opts.completeAromaticRings = False
+        opts.timeout = 30
+        opts.similarityThreshold = 0.1
+        opts.maxBondMatchPairs = 2500
+        res = rdRascalMCES.FindMCES(mol1, mol2, opts)
+        if not res:
+            opts.ignoreBondOrders = True
+            res = rdRascalMCES.FindMCES(mol1, mol2, opts)
+        matches = res[0].atomMatches()
+        return Chem.rdMolAlign.CalcRMS(mol1, mol2, map=[matches])
+
+
+def collect_redocking_easydock_data(docking_data, parameter_class):
+
+    valid_easydock_input_output_dict = defaultdict(dict)
+
+    for model, input_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.input_value,
+                                                                    model_list=parameter_class.model_list_value).items():
+        valid_easydock_input_output_dict[model]['input'] = input_fname
+
+    for model, output_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.output_value,
+                                                                    model_list=parameter_class.model_list_value).items():
+        valid_easydock_input_output_dict[model]['output'] = output_fname
+
+    easydock_dict = defaultdict(list)
+    for model, easydock_fnames in valid_easydock_input_output_dict.items():
+
+        input_fname = easydock_fnames['input']
+        output_fname = easydock_fnames['output']
+
+        if not Path(input_fname).suffix == '.sdf':
+            raise ValueError(f'please convert your glide fname from {Path(input_fname.suffix)} to .sdf')
+        if not Path(output_fname).suffix == '.sdf':
+            raise ValueError(f'please convert your glide fname from {Path(output_fname.suffix)} to .sdf')
+        
+        mol_dict = defaultdict(dict)
+        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname) if mol]
+        for mol in input_mol_l:
+            mol_dict[mol.GetProp("_Name")]['input'] = mol
+
+        output_mol_l = [mol for mol in Chem.SDMolSupplier(output_fname) if mol]
+        output_mol_name_l = [mol.GetProp('_Name') for mol in output_mol_l]
+        for mol in output_mol_l:
+            mol_dict[mol.GetProp("_Name")]['output'] = mol
+
+        easydock_dict['easydock_redocking_rmsd'] += [calculate_rms(mol_dict[mol_name]['input'], mol_dict[mol_name]['output']) for mol_name in output_mol_name_l]
+        easydock_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
+        easydock_dict['Model'] += [model] * len(output_mol_l)
+        easydock_dict['easydock_redocking_score'] += [mol.GetProp('docking_score') for mol in output_mol_l]
 
     return pd.DataFrame.from_dict(easydock_dict)
 
@@ -220,6 +279,7 @@ def collect_analysis_metric(config_data):
     
     analysis_df.to_csv(Path(config_genbench3d.GenBench3DConfig(analysis_data).input_value).parent / 'all.csv')
 
+    return analysis_df
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Collect data of analysis done in p4_analyse.py")
@@ -237,7 +297,17 @@ if __name__ == '__main__':
 
     yaml_file_list = read_input(args.input)
 
+    output_analysis_fname = Path(args.input).parent / 'compiled_result.csv'
+    output_df = pd.DataFrame()
+
     for yaml_file in yaml_file_list:
         checkpoint_json = Path(yaml_file).parent
         data_input = yaml.safe_load(open(yaml_file, 'r'))
-        collect_analysis_metric(data_input) 
+
+        analysis_df = collect_analysis_metric(data_input) 
+        if output_df.empty:
+            output_df = analysis_df
+        else:
+            output_df = pd.concat([output_df, analysis_df])
+    
+    output_df.to_csv(output_analysis_fname)
