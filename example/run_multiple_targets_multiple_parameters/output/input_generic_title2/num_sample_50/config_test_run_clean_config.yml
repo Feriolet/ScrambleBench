@@ -32,6 +32,7 @@ parameter:
   model_list:
   - DiffSBDD
   - Pocket2Mol
+  num_sample: 50
   repeat_parameter:
     num_sample: 50
 
