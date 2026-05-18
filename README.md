@@ -3,7 +3,7 @@
 ## Introduction
 
 ![Intro graphic](asset/GenAI_Abstract.png)
-Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. As this version is used for transparency in providing the workflow, it is not currently production-ready and we are currently cleaning the codes. Please look out for our version 0.1.0 soon!
+Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. Our v0.1.0 version streamlined most of the features used in our manuscript. Please look out for our version 0.2.0 soon!
 
 ## Table of Contents
 - [ScrambleBench v0.1.0](#scramblebench-v010)
