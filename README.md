@@ -52,6 +52,7 @@ cd ScrambleBench
 ### Method 1: Install through environment.yaml (Recommended)
 ```bash
 conda env create -f environment.yaml
+conda activate scramblebench
 pip install -e .
 ```
 
