@@ -85,10 +85,10 @@ if __name__ == "__main__":
 
     distance_metric = args.distance
     diversity_metric = args.diversity
-    print('fhii')
+
     if diversity_metric == 'hamdiv' and distance_metric in ['ecfp', 'mces']:
         start = time()
-        print(f'{len(mol_l)=}, {distance_metric.upper()=}, {calculate_cpu()=}')
+
         result = diversity_all(mols=mol_l, mode='HamDiv', hamdiv_method=distance_metric.upper(), ncpu=calculate_cpu())
         diversity_time = time() - start
         method = f'HamDiv {distance_metric.upper()}'

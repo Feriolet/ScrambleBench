@@ -9,8 +9,8 @@ import subprocess
 import json
 from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex
-
+from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex, fetch_model_file_from_model_dir
+from scramblebench.script.utils.process_mol import calculate_rms
 import os
 import pandas as pd
 import tempfile
@@ -19,7 +19,6 @@ from collections import defaultdict
 import rdkit
 from rdkit import Chem
 from enum import Enum, IntEnum
-from rdkit.Chem import rdRascalMCES
 
 class GenBenchDockingMethod(Enum):
     VINA_MININPLACE = "Vina score"
@@ -28,31 +27,8 @@ class GenBenchDockingMethod(Enum):
     GLIDE_INPLACE = "Minimized Glide score"
 
 
-def fetch_valid_prepared_molecule_file(dir_path, model_list) -> dict[str, str]:
-
-    generation_folder_dirpath = Path(dir_path)
-    if not generation_folder_dirpath.is_dir():
-        logging.exception('You have prepared your molecule yet!')
-        raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
-    
-    valid_molecule_file_dict = {}
-    for model in model_list:
-
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath) / model)
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
-    
-    return valid_molecule_file_dict
-
-
 def fetch_valid_genbench_json_file(genbench_data: config_genbench3d.GenBench3DConfig, model) -> dict[str, str]:
 
-    
     output_dirpath = Path(genbench_data.output_value)
     if not output_dirpath.is_dir():
         logging.exception('You have prepared your molecule yet!')
@@ -82,7 +58,7 @@ def fetch_valid_genbench_json_file(genbench_data: config_genbench3d.GenBench3DCo
 def collect_genbench3d_data(analysis_data, parameter_class):
     genbench3d_data = config_genbench3d.GenBench3DConfig(analysis_data)
 
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=genbench3d_data.input_value,
+    valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=genbench3d_data.input_value,
                                                                     model_list=parameter_class.model_list_value)    
 
     genbench_dict = defaultdict(list)
@@ -120,11 +96,11 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
 
     valid_glide_input_output_dict = defaultdict(dict)
 
-    for model, input_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.input_value,
+    for model, input_fname in fetch_model_file_from_model_dir(dir_path=docking_data.input_value,
                                                                     model_list=parameter_class.model_list_value).items():
         valid_glide_input_output_dict[model]['input'] = input_fname
 
-    for model, output_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.output_value,
+    for model, output_fname in fetch_model_file_from_model_dir(dir_path=docking_data.output_value,
                                                                     model_list=parameter_class.model_list_value).items():
         valid_glide_input_output_dict[model]['output'] = output_fname
 
@@ -165,51 +141,15 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
     return pd.DataFrame.from_dict(glide_dict)
 
 
-def neutralize_atoms(mol):
-    pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
-    at_matches = mol.GetSubstructMatches(pattern)
-    at_matches_list = [y[0] for y in at_matches]
-    if len(at_matches_list) > 0:
-        for at_idx in at_matches_list:
-            atom = mol.GetAtomWithIdx(at_idx)
-            chg = atom.GetFormalCharge()
-            hcount = atom.GetTotalNumHs()
-            atom.SetFormalCharge(0)
-            atom.SetNumExplicitHs(hcount - chg)
-            atom.UpdatePropertyCache()
-    return mol
-
-
-def calculate_rms(mol1, mol2):
-
-    mol1 = neutralize_atoms(Chem.RemoveHs(mol1))
-    mol2 = neutralize_atoms(Chem.RemoveHs(mol2))
-
-    try:
-        return Chem.rdMolAlign.CalcRMS(mol1, mol2)
-    except RuntimeError:
-        opts = rdRascalMCES.RascalOptions()
-        opts.completeAromaticRings = False
-        opts.timeout = 30
-        opts.similarityThreshold = 0.1
-        opts.maxBondMatchPairs = 2500
-        res = rdRascalMCES.FindMCES(mol1, mol2, opts)
-        if not res:
-            opts.ignoreBondOrders = True
-            res = rdRascalMCES.FindMCES(mol1, mol2, opts)
-        matches = res[0].atomMatches()
-        return Chem.rdMolAlign.CalcRMS(mol1, mol2, map=[matches])
-
-
 def collect_redocking_easydock_data(docking_data, parameter_class):
 
     valid_easydock_input_output_dict = defaultdict(dict)
 
-    for model, input_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.input_value,
+    for model, input_fname in fetch_model_file_from_model_dir(dir_path=docking_data.input_value,
                                                                     model_list=parameter_class.model_list_value).items():
         valid_easydock_input_output_dict[model]['input'] = input_fname
 
-    for model, output_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.output_value,
+    for model, output_fname in fetch_model_file_from_model_dir(dir_path=docking_data.output_value,
                                                                     model_list=parameter_class.model_list_value).items():
         valid_easydock_input_output_dict[model]['output'] = output_fname
 
@@ -302,6 +242,7 @@ def collect_analysis_metric(config_data):
     analysis_df.to_csv(Path(config_genbench3d.GenBench3DConfig(analysis_data).input_value).parent / 'all.csv')
 
     return analysis_df
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Collect data of analysis done in p4_analyse.py")

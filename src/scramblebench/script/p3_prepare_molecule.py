@@ -10,7 +10,8 @@ import os
 import re
 from scramblebench.script.config_preparation import config_constant, config_post_generation, config_parameter
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, fetch_model_folder_name, find_file_name_through_regex
+from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_dir
+from scramblebench.script.utils.process_mol import neutralize_atoms
 import rdkit
 from rdkit import Chem
 import numpy as np
@@ -20,50 +21,6 @@ import json
 logger = logging.getLogger(__name__)
 
 
-# def fetch_valid_generated_molecule_file(config_data) -> dict[str, str]:
-#     model_for_generation_list = fetch_model_folder_name(config_data=config_data)
-
-#     GENERATION_SUMMARY_FOLDER = 'summary'
-#     generation_folder_dirpath = Path(config_data[config_constant.POST_GENERATION_KEY]['input']) / GENERATION_SUMMARY_FOLDER
-#     if not generation_folder_dirpath.is_dir():
-#         logging.exception('You have not run any generation yet!')
-#         raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p2_execute_generation.py')
-    
-#     valid_molecule_file_dict = {}
-#     for model in model_for_generation_list:
-
-#         matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=generation_folder_dirpath)
-#         if len(matched_fname_list) > 1:
-#             logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-#             raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-#         elif len(matched_fname_list) == 0:
-#             logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-
-#         valid_molecule_file_dict[model] = str(matched_fname_list[0])
-    
-#     return valid_molecule_file_dict
-
-
-def fetch_valid_generated_molecule_file(dir_path, model_list) -> dict[str, str]:
-
-    generation_folder_dirpath = Path(dir_path)
-    if not generation_folder_dirpath.is_dir():
-        logging.exception('You have prepared your molecule yet!')
-        raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
-    
-    valid_molecule_file_dict = {}
-    for model in model_list:
-
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath))
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
-    
-    return valid_molecule_file_dict
 
 def deep_get(dictionary: dict, nested_key: list):
     copied_dict = deepcopy(dictionary)
@@ -78,21 +35,6 @@ def deep_get(dictionary: dict, nested_key: list):
             return copied_dict
     
     return copied_dict
-
-
-def neutralize_atoms(mol):
-    pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
-    at_matches = mol.GetSubstructMatches(pattern)
-    at_matches_list = [y[0] for y in at_matches]
-    if len(at_matches_list) > 0:
-        for at_idx in at_matches_list:
-            atom = mol.GetAtomWithIdx(at_idx)
-            chg = atom.GetFormalCharge()
-            hcount = atom.GetTotalNumHs()
-            atom.SetFormalCharge(0)
-            atom.SetNumExplicitHs(hcount - chg)
-            atom.UpdatePropertyCache()
-    return mol
 
 
 def compute_uniqueness_percentage(mol_l) -> float:
@@ -113,7 +55,7 @@ def compute_validity2d_percentage(mol_l) -> float:
     return len(temp_mol_l) / total_mol
 
 
-def process_mol(mol_l: list[Chem.Mol], 
+def prepare_mol(mol_l: list[Chem.Mol], 
                 model_name: str,
                 config_data: dict[str, Any]) -> list[Chem.Mol]:
     """Check if the generated ligand is below or equal to num_sample parameter (default 100).
@@ -195,7 +137,7 @@ def prepare_molecule(config_data):
     post_generation_config_data = config_data[config_constant.POST_GENERATION_KEY]
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
     postgen_data = config_post_generation.PostGenerationConfig(config_data)
-    valid_molecule_file_dict = fetch_valid_generated_molecule_file(dir_path=str(Path(postgen_data.input_value) / 'summary'),
+    valid_molecule_file_dict = fetch_model_file_from_dir(dir_path=str(Path(postgen_data.input_value) / 'summary'),
                                                                    model_list=parameter_data.model_list_value)
     post_generation_output_root_dirpath = post_generation_config_data['output']
     json_dir = Path(post_generation_output_root_dirpath).parent
@@ -213,7 +155,7 @@ def prepare_molecule(config_data):
         validity = compute_validity2d_percentage(mol_l=mol_l)
         json_content[model]['validity2d'] = validity
         print(f'{uniqueness=}, {validity=}')
-        mol_l = process_mol(validate_mol_list(mol_l), model, config_data=config_data)
+        mol_l = prepare_mol(validate_mol_list(mol_l), model, config_data=config_data)
 
         with Chem.SDWriter(output_file) as w:
             for mol in mol_l:

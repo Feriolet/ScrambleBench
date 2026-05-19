@@ -50,23 +50,25 @@ analysis:
       input: cheminformatics_input_prepared
       output: docking
       env: benchmark_easydock
+  
+    docking:
+      easydock:
+        input: docking
+        output: vina_output
+        conda_env: benchmark_easydock
+        protein_pdbqt_preparation: adfr
+        protein_protonation: pdbfixer
+        docking_program: vina
+        protonation: null
+        config_fname: config/easydock_config_5HT2C.yml
 
-    easydock:
-      input: docking
-      output: vina_output
-      conda_env: benchmark_easydock
-      protein_preparation: adfr
-      docking_program: vina
-      protonation: null
-      config_fname: config/easydock_config_5HT2C.yml
-
-    glide:
-      input: cheminformatics_input_prepared
-      output: glide_output
-      schrodinger_dir: /opt/schrodinger2025-4
-      reward_intra_hbonds: null
-      protonation: ligprep
-      protein_preparation: protwizard
+      glide:
+        input: cheminformatics_input_prepared
+        output: glide_output
+        schrodinger_dir: /opt/schrodinger2025-4
+        reward_intra_hbonds: null
+        protonation: ligprep
+        protein_preparation: protwizard
 
 
 

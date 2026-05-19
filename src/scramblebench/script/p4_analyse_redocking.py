@@ -10,7 +10,7 @@ import os
 
 from scramblebench.script.config_preparation import config_constant, config_genbench3d, config_input, config_redocking, config_parameter
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, fetch_model_folder_name, find_file_name_through_regex
+from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_model_dir, find_file_name_through_regex
 from scramblebench.script.utils.prepare_protein import VinaProtein, GlideProtein
 
 
@@ -21,29 +21,6 @@ import rdkit
 from rdkit import Chem
 
 logger = logging.getLogger(__name__)
-
-
-def fetch_valid_prepared_molecule_file(dir_path, parameter_class: config_parameter.ParameterConfig) -> dict[str, str]:
-    model_for_generation_list = parameter_class.model_list_value
-
-    generation_folder_dirpath = Path(dir_path)
-    if not generation_folder_dirpath.is_dir():
-        logging.exception('You have prepared your molecule yet!')
-        raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
-    
-    valid_molecule_file_dict = {}
-    for model in model_for_generation_list:
-
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath) / model)
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
-    
-    return valid_molecule_file_dict
 
 
 def run_ligprep_protonation(schrodinger_dir, output_dir, valid_molecule_file_dict):
@@ -135,8 +112,8 @@ def run_protonation(config_data):
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
     redocking_data.validate_config()
     protonation_data = redocking_data.protonation_value
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=protonation_data.input_value,
-                                                                  parameter_class=parameter_data)
+    valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=protonation_data.input_value,
+                                                               model_list=parameter_data.model_list_value)
 
     if 'schrodinger' in str(protonation_data.environment_value).lower():
         run_ligprep_protonation(schrodinger_dir=protonation_data.environment_value,
@@ -172,7 +149,9 @@ def prepare_easydock_config(docking_data: config_redocking.EasyDockConfig, input
 
     config_data['protein'] = VinaProtein(pdb_filepath=protein_pdb, 
                                          prepare_receptor_bin_path=docking_data.protein_preparation_executable_value,
-                                         preparation_method=docking_data.protein_preparation_value).pdbqt_filepath 
+                                         protonation_method=docking_data.protein_protonation_value,
+                                         preparation_method=docking_data.protein_pdbqt_preparation_value).pdbqt_filepath 
+    
     config_data['protein_setup'] = grid_fname
 
     if str(docking_data.docking_value).lower() == 'vina':
@@ -212,8 +191,8 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
     config_fname = prepare_easydock_config(docking_data, input_data, output_dir=docking_data.output_value)
     cmd += ['--config', config_fname]
 
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=docking_data.input_value,
-                                                                  parameter_class=parameter_data)
+    valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=docking_data.input_value,
+                                                               model_list=parameter_data.model_list_value)
     if docking_data.protonation_value:
         cmd += ['--protonation', docking_data.protonation_value]
     
@@ -284,8 +263,8 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
                                 schrodinger_dirpath=docking_data.dir_value,
                                 protein_preparation=docking_data.protein_preparation_value).grid_filepath
 
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=docking_data.input_value,
-                                                                    parameter_class=parameter_data)
+    valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=docking_data.input_value,
+                                                               model_list=parameter_data.model_list_value)
 
     current_dir = Path.cwd()
 
@@ -355,7 +334,6 @@ def run_docking(config_data):
             run_easydock_docking(docking_data, parameter_data=parameter_data, input_data=input_data)
         elif isinstance(docking_data, config_redocking.GlideConfig):
             run_glide_docking(docking_data, parameter_data=parameter_data, input_data=input_data)
-
 
 
 if __name__ == '__main__':

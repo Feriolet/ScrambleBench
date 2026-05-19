@@ -1,0 +1,34 @@
+14/05/2026 03:55:24 PM [INFO] generate_glide_in_file: Preparing Glide docking input in /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/native_glide_scoring_unminimised.in
+14/05/2026 03:55:24 PM [INFO] run_docking: Glide docking using /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/native_glide_scoring_unminimised.in
+14/05/2026 03:55:24 PM [INFO] run_docking: Running cd /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised ; /opt/schrodinger2025-4/glide native_glide_scoring_unminimised.in -WAIT -OVERWRITE
+14/05/2026 03:55:34 PM [INFO] generate_glide_in_file: Preparing Glide docking input in /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/native_glide_scoring_minimised.in
+14/05/2026 03:55:34 PM [INFO] run_docking: Glide docking using /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/native_glide_scoring_minimised.in
+14/05/2026 03:55:34 PM [INFO] run_docking: Running cd /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised ; /opt/schrodinger2025-4/glide native_glide_scoring_minimised.in -WAIT -OVERWRITE
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing Validity2D
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing Uniqueness2D
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing Diversity2D
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing Ring proportion
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing MW
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing logP
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing SAScore
+14/05/2026 03:55:43 PM [INFO] get_results_for_cel: Computing QED
+14/05/2026 03:55:44 PM [INFO] get_results_for_cel: Computing Validity3D
+14/05/2026 03:55:48 PM [INFO] get_results_for_cel: Computing Strain energy
+14/05/2026 03:55:48 PM [WARNING] compute_strain_energy: Force field error
+14/05/2026 03:55:55 PM [INFO] get_results_for_cel: Compute valid CEL for further analysis
+14/05/2026 03:55:55 PM [INFO] get_results_for_cel: Computing Uniqueness3D
+14/05/2026 03:55:55 PM [INFO] get_results_for_cel: Computing Diversity3D
+14/05/2026 03:55:57 PM [INFO] get_sb_results_for_cel: Evaluating Steric clash
+14/05/2026 03:55:59 PM [INFO] get_sb_results_for_cel: Evaluating Distance to native centroid
+14/05/2026 03:55:59 PM [INFO] get_sb_results_for_cel: Evaluating Vina score
+14/05/2026 03:56:29 PM [INFO] get_sb_results_for_cel: Evaluating Minimized Vina score
+14/05/2026 03:56:59 PM [INFO] get_sb_results_for_cel: Evaluating Glide score
+14/05/2026 03:56:59 PM [INFO] generate_glide_in_file: Preparing Glide docking input in /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/glide_scoring_unminimised.in
+14/05/2026 03:57:00 PM [INFO] run_docking: Glide docking using /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/glide_scoring_unminimised.in
+14/05/2026 03:57:00 PM [INFO] run_docking: Running cd /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised ; /opt/schrodinger2025-4/glide glide_scoring_unminimised.in -WAIT -OVERWRITE
+14/05/2026 03:57:10 PM [INFO] get: No Glide result for DiffSBDD_2_num_sample_50
+14/05/2026 03:57:10 PM [INFO] get_sb_results_for_cel: Evaluating Minimized Glide score
+14/05/2026 03:57:10 PM [INFO] generate_glide_in_file: Preparing Glide docking input in /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/glide_scoring_minimised.in
+14/05/2026 03:57:10 PM [INFO] run_docking: Glide docking using /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised/glide_scoring_minimised.in
+14/05/2026 03:57:10 PM [INFO] run_docking: Running cd /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/cheminformatics_analysis/Glide/DiffSBDD/unminimised ; /opt/schrodinger2025-4/glide glide_scoring_minimised.in -WAIT -OVERWRITE
+14/05/2026 03:57:23 PM [INFO] get: No Glide result for DiffSBDD_2_num_sample_50

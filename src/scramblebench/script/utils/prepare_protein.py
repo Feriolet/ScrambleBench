@@ -16,7 +16,8 @@ class VinaProtein():
     def __init__(self, 
                  pdb_filepath: str,
                  prepare_receptor_bin_path: str,
-                 preparation_method:str='adfr') -> None:
+                 preparation_method:str='adfr',
+                 protonation_method:str='pdbfixer') -> None:
         self.protein_filepath = pdb_filepath
         self.prepare_receptor_bin_path = prepare_receptor_bin_path
         self._pdbqt_filepath = pdb_filepath.replace('.pdb', 
@@ -24,7 +25,7 @@ class VinaProtein():
         self._protein_clean_filepath = pdb_filepath.replace('.pdb', 
                                                            '_protein_only_clean.pdb')
         self.preparation_method = preparation_method
-        
+        self.protonation_method = protonation_method
         
     @property
     def pdbqt_filepath(self):
@@ -50,10 +51,31 @@ class VinaProtein():
         """
         inspired from teachopencadd talktorial 15 on protein_ligand_docking
         """
-        self.clean_protein(input_pdb_filepath=self.protein_filepath,
-                           output_pdb_filepath=self.protein_clean_filepath,
-                           pH=pH)
+
+        if self.protonation_method == 'pdbfixer':
+            self.clean_protein(input_pdb_filepath=self.protein_filepath,
+                            output_pdb_filepath=self.protein_clean_filepath,
+                            pH=pH)
+            
+        elif 'schrodinger' in self.protonation_method:
+
+            current_dir = Path.cwd()
+            os.chdir(Path(self.protein_filepath).parent)
+            command = [str(Path(self.protonation_method) / 'utilities/prepwizard'), 
+                       str(Path(self.protein_filepath).name), 
+                       str(Path(self.protein_clean_filepath).name), '-fillsidechains',
+                        '-disulfides', '-mse', '-assign_all_residues', '-fillloops', '-rehtreat', 
+                        '-max_states', '1', '-epik_pH', '7.4', '-epik_pHt', '1.0', '-samplewater',
+                        '-include_epik_states', '-propka_pH', '7.4', '-f', 'S-OPLS', '-rmsd', '0.3',
+                        '-watdist','5.0','-JOBNAME','proteinprep_4','-HOST','localhost:7', '-WAIT']
+
+            subprocess.run(command)
+
+            os.chdir(current_dir)
         
+        else:
+            self.protein_clean_filepath = self.protein_filepath
+
         if self.preparation_method == 'adfr':
             self.adfr_receptor_preparation(input_pdb_filepath=self.protein_clean_filepath,
                                            output_pdbqt_filepath=output_pdbqt_filepath)
@@ -232,19 +254,24 @@ class GlideProtein():
         subprocess.run(command)
     
         os.chdir(current_dir)
+
     def prepare_protein(self):
         logging.info(f'Preparing protein using ProtWizard {self.mae_filepath}')
-
+        current_dir = Path.cwd()
+        os.chdir(Path(self.prepared_mae_filepath).parent)
         prepared_mae_filename = Path(self.prepared_mae_filepath).name
 
-        command = [self.protwizard_path, self.mae_filepath, prepared_mae_filename, '-fillsidechains',
+        command = [self.protwizard_path, str(Path(self.mae_filepath).name), prepared_mae_filename, '-fillsidechains',
                    '-disulfides', '-mse', '-assign_all_residues', '-fillloops', '-rehtreat', 
                    '-max_states', '1', '-epik_pH', '7.4', '-epik_pHt', '1.0', '-samplewater',
                    '-include_epik_states', '-propka_pH', '7.4', '-f', 'S-OPLS', '-rmsd', '0.3',
                    '-watdist','5.0','-JOBNAME','proteinprep_4','-HOST','localhost:7', '-WAIT']
+
         subprocess.run(command)
 
         subprocess.run(['mv', prepared_mae_filename, self.prepared_mae_filepath])
+
+        os.chdir(current_dir)
 
 if __name__ == '__main__':
 

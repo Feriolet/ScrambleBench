@@ -20,6 +20,6 @@ ANALYSIS_DIVERSITY_KEY = 'diversity'
 
 ## Generation
 GENERATION_FOLDER = 'AI_Generation'
-GENERATION_TEMPLATE_SCRIPT_PATH = Path(Path(__file__).parent.parent / 'utils' / 'generation_template.sh').resolve()
+GENERATION_TEMPLATE_SCRIPT_PATH = Path(Path(__file__).parent.parent / 'utils/generation_utils/generation_template.sh').resolve()
 MODEL_CONDA_ENV_KEY = 'conda_env'
 GENERATION_TEMPLATE_SCRIPT_FILE_KEY = 'script_pathfile'

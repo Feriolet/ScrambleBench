@@ -8,35 +8,10 @@ import sys
 import subprocess
 import os
 from scramblebench.script.config_preparation import config_constant
+from scramblebench.script.utils.process_data import read_input
+
 
 logger = logging.getLogger(__name__)
-
-def read_input(input_fname: str) -> list[str]:
-    input_filepath = Path(input_fname)
-    
-    if not input_filepath.is_file():
-        raise FileNotFoundError(f'The file {input_fname} is not found. Please check your directory')
-    
-    if input_filepath.suffix.lower() in ['.yaml', '.yml']:
-        return [input_filepath.resolve()]
-    elif input_filepath.suffix.lower() in ['.txt', '.text']:
-        logging.debug(f'Input is in suffix {input_filepath.suffix}. Reading content to fetch yaml files.')
-        yaml_file_list = []
-        input_content = input_filepath.read_text().splitlines()
-
-        for yaml_file in input_content:
-            yaml_file = yaml_file.strip()
-            yaml_filepath = Path(yaml_file).resolve()
-
-            if not yaml_filepath.is_file():
-                raise FileNotFoundError(f'The file {yaml_file} is not found. Please check your directory')
-    
-            if yaml_filepath.suffix.lower() not in ['.yaml', '.yml']:
-                raise ValueError(f'Incorrect file {yaml_file}. We only support yaml file (i.e., .yaml or .yml). Please use the p1_generate_config.py to prepare your config file.')
-
-            yaml_file_list.append(yaml_file)
-
-        return yaml_file_list
     
 
 def fetch_model(config_data):

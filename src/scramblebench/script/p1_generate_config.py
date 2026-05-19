@@ -115,6 +115,7 @@ def forcetype(value: Any, dtype='int'):
         logging.exception(f'{value} has unsupported type of {dtype} requested')
         raise ValueError(f'unsupported dtype {dtype}. Please enter int, float, or str only')
 
+
 def reassign_input_config(config_data):
     'to prevent subsequent script to identify the protein name of the input key'
 
@@ -128,6 +129,7 @@ def reassign_input_config(config_data):
     config_data[config_constant.INPUT_KEY]['name'] = list(input_data.keys())[0]
 
     return config_data
+
 
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
@@ -237,11 +239,11 @@ if __name__ == '__main__':
     else:
         from scramblebench.script.config_preparation.config_input import InputConfig
     if not args.output:
-        args.output = f'{args.input[:-4]}_clean_config.yml'
+        args.output = Path(args.input).parent / f'{Path(args.input).stem}_clean_config.yml'
     if Path(args.output).suffix not in ['.yaml', '.yml']:
         logging.exception('Error failed in config output filename format')
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
     
-    args.output = Path(args.output).name
+    args.output = str(Path(args.output))
     if validate_config(data_input):
         write_config(data_input, args.output)

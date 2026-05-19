@@ -8,9 +8,13 @@ import sys
 import subprocess
 import os
 
-from scramblebench.script.config_preparation import config_constant, config_genbench3d, config_input
+from scramblebench.script.config_preparation import config_constant, config_genbench3d, config_input, config_parameter
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, fetch_model_folder_name, find_file_name_through_regex
+from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_model_dir, find_file_name_through_regex
+from scramblebench.script.utils.prepare_protein import GlideProtein
+
+import rdkit
+from rdkit import Chem
 
 from copy import deepcopy
 import json
@@ -65,29 +69,6 @@ class CheckpointManager():
         return self
 
 
-def fetch_valid_prepared_molecule_file(config_data) -> dict[str, str]:
-    model_for_generation_list = fetch_model_folder_name(config_data=config_data)
-
-    generation_folder_dirpath = Path(config_data[config_constant.ANALYSIS_KEY][config_constant.ANALYSIS_GENBENCH3D_KEY]['input'])
-    if not generation_folder_dirpath.is_dir():
-        logging.exception('You have prepared your molecule yet!')
-        raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
-    
-    valid_molecule_file_dict = {}
-    for model in model_for_generation_list:
-
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath) / model)
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-
-        valid_molecule_file_dict[model] = str(matched_fname_list[0])
-    
-    return valid_molecule_file_dict
-
-
 def check_schrodinger_status(schrodinger_dir):
     if 'schrodinger' not in Path(schrodinger_dir).name:
         raise ValueError('schrodinger dirname should end in schrodinger string (e.g., /path/to/schrodinger-year-quarter)')
@@ -123,11 +104,13 @@ def prepare_genbench3d_input(input_data, genbench3d_data):
 
 def prepare_genbench3d_cmd(config_data):
     genbench_data = config_genbench3d.GenBench3DConfig(config_data[config_constant.ANALYSIS_KEY])
+    parameter_data = config_parameter.ParameterConfig(config_data=config_data)
 
     do_sbdd_analysis = False
 
-
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(config_data=config_data)
+    valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=genbench_data.input_value,
+                                                               model_list=parameter_data.model_list_value)
+                                                               
     genbench_output_dirpath = Path(genbench_data.output_value)
     genbench_data.validate_config()
     if genbench_data.schrodinger_dir_value:
@@ -202,6 +185,14 @@ def prepare_genbench3d_cmd(config_data):
                 if genbench_data.schrodinger_dir_value:
                     glide_output =  Path(genbench_output_dirpath) / 'Glide' / model / minimisation
                     glide_output.mkdir(parents=True, exist_ok=True)
+
+                    # if Path(input_pdb).parent / Path(input_pdb).stem
+                    # GlideProtein(pdb_filepath=input_pdb,
+                    #         native_ligand=list(Chem.SDMolSupplier(input_sdf))[0],
+                    #         grid_output_dirpath=str(Path(input_pdb).parent),
+                    #         schrodinger_dirpath=genbench_data.schrodinger_dir_value,
+                    #         protein_preparation=True)
+
                     model_cmd += ['--glide', '--output_glide_dir', str(glide_output)]
 
                 vina_output = Path(genbench_output_dirpath) / 'Vina' / model / minimisation
@@ -232,6 +223,7 @@ def run_single_genbench3d(cmd_data):
     except (subprocess.CalledProcessError, PermissionError, KeyboardInterrupt) as e:
         return CheckpointStatus.FAILED.value, model, minimisation
 
+
 def run_genbench3d(config_data):
     cmd_list, checkpoint_fname = prepare_genbench3d_cmd(config_data=config_data)
     checkpoint_manager = CheckpointManager().from_json(checkpoint_fname)
@@ -240,11 +232,14 @@ def run_genbench3d(config_data):
     CPU_BUFFER = 5
     num_cpu_available = len(os.sched_getaffinity(0)) - CPU_BUFFER
 
-    used_cpu = max(1, min(MAX_CPU_USED, num_cpu_available))
-    with Pool(used_cpu) as pool:
-        for genbench_status, model, minimisation in pool.imap_unordered(run_single_genbench3d, cmd_list):
-            checkpoint_manager.state[model][minimisation] = genbench_status
-            checkpoint_manager.save_state()
+    # used_cpu = max(1, min(MAX_CPU_USED, num_cpu_available))
+    # with Pool(used_cpu) as pool:
+    #     for genbench_status, model, minimisation in pool.imap_unordered(run_single_genbench3d, cmd_list):
+    
+    for cmd in cmd_list:
+        genbench_status, model, minimisation = run_single_genbench3d(cmd)
+        checkpoint_manager.state[model][minimisation] = genbench_status
+        checkpoint_manager.save_state()
 
 
 if __name__ == '__main__':

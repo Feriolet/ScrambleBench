@@ -193,7 +193,8 @@ class EasyDockConfig:
         self.docking_name = 'docking_program'
         self.protonation_name = 'protonation'
         self.config_name = 'config_fname'
-        self.protein_preparation_name = 'protein_preparation'
+        self.protein_pdbqt_preparation_name = 'protein_pdbqt_preparation'
+        self.protein_protonation_name = 'protein_protonation'
         self.protein_preparation_executable_name = 'protein_preparation_executable'
 
         self.input_value = easydock_data[self.input_name]
@@ -202,8 +203,9 @@ class EasyDockConfig:
         self.docking_value = easydock_data[self.docking_name]
         self.protonation_value = easydock_data.get(self.protonation_name) or None
         self.config_value = easydock_data[self.config_name]
-        self.protein_preparation_value = easydock_data.get(self.protein_preparation_name) or 'adfr'
-        self.protein_preparation_executable_value = easydock_data.get(self.protein_preparation_executable_name) or None
+        self.protein_protonation_value = easydock_data.get(self.protein_protonation_name)
+        self.protein_pdbqt_preparation_value = easydock_data.get(self.protein_pdbqt_preparation_name) or 'adfr'
+        self.protein_preparation_executable_value = easydock_data.get(self.protein_preparation_executable_name)
 
     def update(self, key, value):
         pass
@@ -213,7 +215,9 @@ class EasyDockConfig:
         EASYDOCK_PROTONATION_PROGRAM = ['molgpka', 'unipka', 'chemaxon', None]
         EASYDOCK_DOCKING_PROGRAM = ['vina', 'gnina', 'smina', 'vina-gpu', 'qvina', 'server']
 
-        SUPPORTED_PROTEIN_PREPARATION_PROGRAM = ['adfr', 'obabel', 'schrodinger']
+        SUPPORTED_PDBQT_PREPARATION_PROGRAM = ['adfr', 'obabel']
+        SUPPORTED_PROTEIN_PROTONATION_PROGRAM = ['pdbfixer', 'obabel']
+
         check_file_start_with_number(self.input_value)
         check_file_start_with_number(self.output_value)
 
@@ -230,12 +234,20 @@ class EasyDockConfig:
         if config_filepath.suffix not in ['.yaml', '.yml']:
             raise ValueError(f'{str(config_filepath)} should have a .yaml or .yml suffix, not {config_filepath.suffix}')
 
-        if self.protein_preparation_value:
-            if self.protein_preparation_value not in SUPPORTED_PROTEIN_PREPARATION_PROGRAM:
-                raise ValueError(f'{self.protein_preparation_value} is not supported by scramblebench')
+        if self.protein_pdbqt_preparation_value:
+            if self.protein_pdbqt_preparation_value not in SUPPORTED_PDBQT_PREPARATION_PROGRAM:
+                raise ValueError(f'{self.protein_pdbqt_preparation_value} is not supported by scramblebench')
         if self.protein_preparation_executable_value:
             if not Path(self.protein_preparation_executable_value).is_file():
                 raise FileNotFoundError(f'{self.protein_preparation_executable_value} is not found')
+
+        if self.protein_protonation_value:
+            if isinstance(self.protein_protonation_value, bool):
+                self.protein_protonation_value = 'pdbfixer'
+
+            elif self.protein_protonation_value not in SUPPORTED_PROTEIN_PROTONATION_PROGRAM:
+                if not (Path(self.protein_protonation_value).is_dir() and 'schrodinger' in Path(self.protein_protonation_value).name):
+                    raise ValueError(f'{self.protein_protonation_value} is not supported by scramblebench')
 
         if self.protonation_value:
             if not isinstance(self.protonation_value, str):
@@ -276,13 +288,18 @@ class EasyDockConfig:
                                self.config_name: str(Path(self.config_value).resolve())}
 
         if not self.protein_preparation_executable_value:
-            if not self.protein_preparation_value:
-                self.protein_preparation_value = 'adfr'
+            if not self.protein_pdbqt_preparation_value:
+                self.protein_pdbqt_preparation_value = 'adfr'
                 self.protein_preparation_executable_value = str(Path(__file__).parent.parent / 'utils/prepare_receptor')
             else:
                 self.protein_preparation_executable_value = str(Path(__file__).parent.parent / 'utils/prepare_receptor')
         
-        data[self.protein_preparation_name] = self.protein_preparation_value
+        if self.protein_pdbqt_preparation_value == 'obabel' or self.protein_protonation_value == 'obabel':
+            self.protein_pdbqt_preparation_value = 'obabel'
+            self.protein_protonation_value = 'obabel'
+
+        data[self.protein_pdbqt_preparation_name] = self.protein_pdbqt_preparation_value
+        data[self.protein_protonation_name] = self.protein_protonation_value
         data[self.protein_preparation_executable_name] = self.protein_preparation_executable_value
 
         return {self.name : data}

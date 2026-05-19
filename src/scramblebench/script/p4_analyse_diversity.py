@@ -9,7 +9,7 @@ import subprocess
 import json
 from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex
+from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_model_dir
 
 import os
 
@@ -21,40 +21,17 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 
-def fetch_valid_prepared_molecule_file(dir_path, parameter_class: config_parameter.ParameterConfig) -> dict[str, str]:
-    model_for_generation_list = parameter_class.model_list_value
-
-    generation_folder_dirpath = Path(dir_path)
-    if not generation_folder_dirpath.is_dir():
-        logging.exception('You have prepared your molecule yet!')
-        raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
-    
-    valid_molecule_file_dict = {}
-    for model in model_for_generation_list:
-
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath) / model)
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
-    
-    return valid_molecule_file_dict
-
-
 def run_diversity(config_data):
     diversity_data = config_diversity.DiversityConfig(config_data[config_constant.ANALYSIS_KEY])
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
 
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=diversity_data.input_value,
-                                                                  parameter_class=parameter_data)
+    valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=diversity_data.input_value,
+                                                               model_list=parameter_data.model_list_value)
     
     diversity_output_dirpath = diversity_data.output_value
 
     cmd = ['conda', 'run', '-n', diversity_data.environment_value,
-            'python', str(Path(__file__).parent / 'utils/analyse_tsp.py')]
+            'python', str(Path(__file__).parent / 'utils/diversity_utils/analyse_tsp.py')]
     
     for model, fname in valid_molecule_file_dict.items():
         diversity_output_dict = defaultdict(list)
@@ -67,7 +44,6 @@ def run_diversity(config_data):
             logging.info(f'Diversity analysis is done using {fname}. Skipping...')
             continue
 
-        print(f'{diversity_model_output_fname=}')
         for method in diversity_data.method_value:
             diversity = method[diversity_data.method_diversity_name]
             distance = method[diversity_data.method_distance_name]
