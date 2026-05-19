@@ -118,26 +118,49 @@ def collect_genbench3d_data(analysis_data, parameter_class):
 
 def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class):
 
-    valid_molecule_file_dict = fetch_valid_prepared_molecule_file(dir_path=docking_data.output_value,
-                                                                    model_list=parameter_class.model_list_value)    
-    
+    valid_glide_input_output_dict = defaultdict(dict)
+
+    for model, input_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.input_value,
+                                                                    model_list=parameter_class.model_list_value).items():
+        valid_glide_input_output_dict[model]['input'] = input_fname
+
+    for model, output_fname in fetch_valid_prepared_molecule_file(dir_path=docking_data.output_value,
+                                                                    model_list=parameter_class.model_list_value).items():
+        valid_glide_input_output_dict[model]['output'] = output_fname
+
     glide_dict = defaultdict(list)
-    for model, glide_fname in valid_molecule_file_dict.items():
-        if not Path(glide_fname).suffix == '.sdf':
-            raise ValueError(f'please convert your glide fname from {Path(glide_fname.suffix)} to .sdf')
+    for model, glide_fnames in valid_glide_input_output_dict.items():
+
+        input_fname = glide_fnames['input']
+        output_fname = glide_fnames['output']
+
+        if not Path(input_fname).suffix == '.sdf':
+            raise ValueError(f'please convert your glide fname from {Path(input_fname.suffix)} to .sdf')
+        if not Path(output_fname).suffix == '.sdf':
+            raise ValueError(f'please convert your glide fname from {Path(output_fname.suffix)} to .sdf')
         
-        
+        mol_dict = defaultdict(dict)
+        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname) if mol]
+        for mol in input_mol_l:
+            mol_dict[mol.GetProp("_Name")]['input'] = mol
+
         with tempfile.TemporaryDirectory() as tempfile_dir:
-            best_score_sdf_fname = Path(tempfile_dir) / f'{Path(glide_fname).stem}_best_score.sdf'
+            best_score_sdf_fname = Path(tempfile_dir) / f'{Path(output_fname).stem}_best_score.sdf'
             cmd = [f'{schrodinger_dir}/utilities/glide_sort', '-best_by_title', 
-                '-o', str(best_score_sdf_fname), glide_fname]
+                '-o', str(best_score_sdf_fname), output_fname]
             
             subprocess.run(cmd, text=True)
 
-            mol_l = [mol for mol in Chem.SDMolSupplier(best_score_sdf_fname) if mol]
-            glide_dict['mol_id'] += [mol.GetProp('_Name') for mol in mol_l]
-            glide_dict['Model'] += [model] * len(mol_l)
-            glide_dict['glide_redocking_score'] += [mol.GetProp('r_i_docking_score') for mol in mol_l]
+            output_mol_l = [mol for mol in Chem.SDMolSupplier(best_score_sdf_fname) if mol]
+
+        output_mol_name_l = [mol.GetProp('_Name') for mol in output_mol_l]
+        for mol in output_mol_l:
+            mol_dict[mol.GetProp("_Name")]['output'] = mol
+
+        glide_dict['glide_redocking_rmsd'] += [calculate_rms(mol_dict[mol_name]['input'], mol_dict[mol_name]['output']) for mol_name in output_mol_name_l]
+        glide_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
+        glide_dict['Model'] += [model] * len(output_mol_l)
+        glide_dict['glide_redocking_score'] += [mol.GetProp('r_i_docking_score') for mol in output_mol_l]
 
     return pd.DataFrame.from_dict(glide_dict)
 
