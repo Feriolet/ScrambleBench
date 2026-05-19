@@ -52,8 +52,7 @@ analysis:
         input: docking
         output: vina_output
         conda_env: benchmark_easydock
-        protein_pdbqt_preparation: adfr
-        protein_protonation: pdbfixer
+        protein_preparation: adfr
         docking_program: vina
         protonation: null
         config_fname: config/easydock_config_5HT2C.yml

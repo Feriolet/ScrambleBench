@@ -160,7 +160,11 @@ def prepare_easydock_config(docking_data: config_redocking.EasyDockConfig, input
         if config_data.get('n_poses') is None:
             config_data['n_poses'] = 5
         if config_data.get('ncpu') is None:
-            config_data['ncpu'] = max(1, min(len(os.sched_getaffinity(0)) - 5, 5))
+            if hasattr(os, 'sched_getaffinity'):
+                num_cpus = len(os.sched_getaffinity(0))
+            else:
+                num_cpus = os.cpu_count() or 1
+            config_data['ncpu'] = max(1, min(num_cpus - 5, 5))
         if config_data.get('seed') is None:
             config_data['seed'] = 42
     else:
@@ -174,10 +178,14 @@ def prepare_easydock_config(docking_data: config_redocking.EasyDockConfig, input
 
 
 def calculate_easydock_cpu():
-    cpu_available = len(os.sched_getaffinity(0))
+    if hasattr(os, 'sched_getaffinity'):
+        num_cpus = len(os.sched_getaffinity(0))
+    else:
+        num_cpus = os.cpu_count() or 1
     CPU_FOR_VINA = 5
     CPU_BUFFER = 5
-    return max(1, int((cpu_available - CPU_BUFFER)/ CPU_FOR_VINA))
+
+    return max(1, int((num_cpus - CPU_BUFFER)/ CPU_FOR_VINA))
 
 
 def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, parameter_data, input_data):
@@ -201,7 +209,17 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
     else:
         logging.warning('You did not specify which docking program to use for easydock')
 
-    cmd += ['-c', str(calculate_easydock_cpu())]
+
+    if docking_data.cpu_value:
+        if hasattr(os, 'sched_getaffinity'):
+            num_cpus = len(os.sched_getaffinity(0))
+        else:
+            num_cpus = os.cpu_count() or 1
+        cmd += ['-c', str(min(int(docking_data.cpu_value), num_cpus - 5))]
+
+    else:
+        cmd += ['-c', str(calculate_easydock_cpu())]
+
     for model, fname in valid_molecule_file_dict.items():
 
         output_easydock_sdf =  str(Path(docking_data.output_value) / model / f'{Path(fname).stem}_easydock_redocked.sdf')
@@ -234,7 +252,12 @@ def fetch_glide_sp_cpu(schrodinger_dir):
     CPU_BUFFER = 5
     GLIDE_SP_LICENSE_PER_CPU = 4
 
-    AVAILABLE_CPU = len(os.sched_getaffinity(0)) - CPU_BUFFER
+    if hasattr(os, 'sched_getaffinity'):
+        num_cpus = len(os.sched_getaffinity(0))
+    else:
+        num_cpus = os.cpu_count() or 1
+    
+    AVAILABLE_CPU = num_cpus - CPU_BUFFER
 
     return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU) - CPU_BUFFER, MAX_CPU_USED, AVAILABLE_CPU))
 
@@ -250,7 +273,12 @@ def fetch_ligprep_cpu(schrodinger_dir):
     GLIDE_SP_LICENSE_PER_CPU = 1
     CPU_BUFFER = 5
 
-    AVAILABLE_CPU = len(os.sched_getaffinity(0)) - CPU_BUFFER
+    if hasattr(os, 'sched_getaffinity'):
+        num_cpus = len(os.sched_getaffinity(0))
+    else:
+        num_cpus = os.cpu_count() or 1
+
+    AVAILABLE_CPU = num_cpus - CPU_BUFFER
 
     return max(1, min(int(glide_sp_license_available / GLIDE_SP_LICENSE_PER_CPU), MAX_CPU_USED, AVAILABLE_CPU))
 

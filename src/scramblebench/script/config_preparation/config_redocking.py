@@ -193,6 +193,7 @@ class EasyDockConfig:
         self.docking_name = 'docking_program'
         self.protonation_name = 'protonation'
         self.config_name = 'config_fname'
+        self.cpu_name = 'ncpu'
         self.protein_pdbqt_preparation_name = 'protein_pdbqt_preparation'
         self.protein_protonation_name = 'protein_protonation'
         self.protein_preparation_executable_name = 'protein_preparation_executable'
@@ -203,6 +204,7 @@ class EasyDockConfig:
         self.docking_value = easydock_data[self.docking_name]
         self.protonation_value = easydock_data.get(self.protonation_name) or None
         self.config_value = easydock_data[self.config_name]
+        self.cpu_value = easydock_data.get(self.cpu_name)
         self.protein_protonation_value = easydock_data.get(self.protein_protonation_name)
         self.protein_pdbqt_preparation_value = easydock_data.get(self.protein_pdbqt_preparation_name) or 'adfr'
         self.protein_preparation_executable_value = easydock_data.get(self.protein_preparation_executable_name)
@@ -260,6 +262,9 @@ class EasyDockConfig:
         if self.docking_value.lower() not in EASYDOCK_DOCKING_PROGRAM:
             raise ValueError(f'{self.docking_value} is not supported by easydock')
         
+        if self.cpu_value:
+            self.cpu_value = int(self.cpu_value)
+
         check_conda_env(self.environment_value)
 
     def update_input_output(self, prefix_dir):
@@ -298,6 +303,9 @@ class EasyDockConfig:
             self.protein_pdbqt_preparation_value = 'obabel'
             self.protein_protonation_value = 'obabel'
 
+        if self.cpu_value:
+            data[self.cpu_name] = self.cpu_value
+            
         data[self.protein_pdbqt_preparation_name] = self.protein_pdbqt_preparation_value
         data[self.protein_protonation_name] = self.protein_protonation_value
         data[self.protein_preparation_executable_name] = self.protein_preparation_executable_value
