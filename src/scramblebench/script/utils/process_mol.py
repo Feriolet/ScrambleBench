@@ -1,6 +1,8 @@
 import rdkit
 from rdkit import Chem
 from rdkit.Chem import rdRascalMCES
+from copy import deepcopy
+
 
 def neutralize_atoms(mol):
     pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
@@ -36,3 +38,44 @@ def calculate_rms(mol1, mol2):
             res = rdRascalMCES.FindMCES(mol1, mol2, opts)
         matches = res[0].atomMatches()
         return Chem.rdMolAlign.CalcRMS(mol1, mol2, map=[matches])
+
+
+def validate_mol_list(mol_list: list[Chem.Mol]) -> list[Chem.Mol]:
+    # only filter valid and unique molecule
+    validated_mol_l = []
+    validated_smi_l = []
+    for mol in mol_list:
+        if not mol:
+            continue
+
+        smi = Chem.MolToSmiles(neutralize_atoms(mol))
+
+        if smi != '' and mol.GetNumAtoms() > 1 and smi not in validated_smi_l:
+            validated_mol_l.append(mol)
+            validated_smi_l.append(smi)
+    
+    return validated_mol_l
+
+
+def compute_uniqueness_percentage(mol_l) -> float:
+
+    smi_l = [Chem.MolToSmiles(neutralize_atoms(mol)) for mol in validate_mol_list(mol_l)]
+    return len(set(smi_l)) / len(list(mol_l))
+
+
+def compute_validity2d_percentage(mol_l) -> float:
+
+    return len(validate_mol_list(mol_l)) / len(list(mol_l))
+
+
+def compute_generation_performance(mol_l):
+
+    computed_mol_l = deepcopy(list(mol_l))
+
+    performance_dict = {}
+    performance_dict['total_mol'] = len(computed_mol_l)
+    performance_dict['uniqueness'] = compute_uniqueness_percentage(computed_mol_l)
+    performance_dict['validity2d'] = compute_validity2d_percentage(computed_mol_l)
+
+    return performance_dict
+

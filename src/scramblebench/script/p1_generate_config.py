@@ -1,7 +1,6 @@
 
 from typing import Any, Callable
 from pathlib import Path
-from dataclasses import dataclass
 import yaml
 import argparse
 import logging
@@ -11,12 +10,11 @@ from copy import deepcopy
 from scramblebench.script.config_preparation.config_model import ModelConfig
 from scramblebench.script.config_preparation.config_generation import GenerationConfig
 from scramblebench.script.config_preparation.config_post_generation import PostGenerationConfig
-from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
 from scramblebench.script.config_preparation.config_analysis import AnalysisConfig
 from scramblebench.script.config_preparation.config_parameter import ParameterConfig
 from scramblebench.script.config_preparation import config_constant
 import itertools 
-import subprocess
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,30 +32,19 @@ def check_correct_input_output_folder(prestep: Callable, poststep: Callable) -> 
 
 def validate_config(config_data: dict[str, Any]) -> None:
 
-    compulsory_config_key_list = [
-        config_constant.INPUT_KEY,
-        config_constant.MODEL_KEY,
-        config_constant.GENERATION_KEY,
-        config_constant.POST_GENERATION_KEY
-    ]
+    compulsory_config_list = [InputConfig, ModelConfig, GenerationConfig, PostGenerationConfig]
 
-    for config_key in compulsory_config_key_list:
-        if config_key not in config_data.keys():
-            if config_key == config_constant.INPUT_KEY and config_constant.INPUT_DIR_KEY not in config_data.keys():
-                raise ValueError(f'{config_key} not in your config file. Please add it with case sensitive letters.')
-        
-    InputConfig(config_data).validate_config()
-    ModelConfig(config_data).validate_config()
-    GenerationConfig(config_data).validate_config()
-    PostGenerationConfig(config_data).validate_config()
+    for config_class in compulsory_config_list:
+        config_class(config_data).validate_config()
 
     check_correct_input_output_folder(prestep=GenerationConfig(config_data),
                                       poststep=PostGenerationConfig(config_data))
     
-    if config_constant.ANALYSIS_KEY in config_data.keys():
+    if config_constant.ANALYSIS_KEY in config_data:
         AnalysisConfig(config_data).validate_config()
     
     return True
+
 
 #https://github.com/yaml/pyyaml/issues/127
 class MyDumper(yaml.SafeDumper):
@@ -116,90 +103,82 @@ def forcetype(value: Any, dtype='int'):
         raise ValueError(f'unsupported dtype {dtype}. Please enter int, float, or str only')
 
 
-def reassign_input_config(config_data):
-    'to prevent subsequent script to identify the protein name of the input key'
+def prepare_config(config_data: dict[str, Any]) -> dict[str, Any]:
 
-    input_data = config_data[config_constant.INPUT_KEY]
-    assert len(list(input_data.keys())) == 1
-
-    config_data[config_constant.INPUT_KEY] = {}
-    for values in input_data.values():
-        config_data[config_constant.INPUT_KEY].update(values)
-
-    config_data[config_constant.INPUT_KEY]['name'] = list(input_data.keys())[0]
+    config_data |= InputConfig(config_data).write()
+    config_data |= GenerationConfig(config_data).write()
 
     return config_data
 
 
+def fetch_batch_parameters(config_data):
+
+    batch_parameters : list[dict[str]] = deepcopy(config_constant.CONFIG_BATCH_PARAMETERS)
+    for parameter_dict in batch_parameters:
+        parameter_values = deep_get(config_data, parameter_dict['key'])
+        if isinstance(parameter_values, dict):
+            parameter_dict['value'] = [{key: value} for key, value in parameter_values.items()]
+        elif isinstance(parameter_values, list):
+            parameter_dict['value'] = parameter_values
+
+    batch_parameters = [parameter_dict for parameter_dict in batch_parameters if parameter_dict.get('value')]   
+
+    return batch_parameters
+
+
+def write_new_config(config_data, prefix_dir, batch_parameter):
+
+    config_output = {}
+    logging.debug('Writing Config for Input key')
+    config_output = config_output | InputConfig(config_data).write_inputstruct(cutoff=10)
+    logging.debug('Writing Config for Model key')
+    config_output = config_output | ModelConfig(config_data).write()
+    logging.debug('Writing Config for Generation key')
+    config_output = config_output | GenerationConfig(config_data).write(prefix_dir=prefix_dir)
+    logging.debug('Writing Config for Parameter key')
+    config_output = config_output | ParameterConfig().create(config_data=config_output, batch_parameter=batch_parameter).write()
+    logging.debug('Writing Config for PostGeneration key')
+    config_output = config_output | PostGenerationConfig(config_data).write(prefix_dir=prefix_dir)
+    
+    if config_constant.ANALYSIS_KEY in config_data:
+        logging.debug('Writing Config for Analysis key')
+        config_output = config_output | AnalysisConfig(config_data).write(prefix_dir=prefix_dir)
+
+    return config_output
+
+
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
-    repeat_parameter = [{'key':[config_constant.INPUT_KEY],
-                         'type': 'dict'},
-                        {'key':[config_constant.GENERATION_KEY, config_constant.GENERATION_PARAMETER_KEY, 'num_sample'],
-                        'type': 'int'},
-                        {'key':[config_constant.GENERATION_KEY, config_constant.GENERATION_PARAMETER_KEY, 'box_size'],
-                        'type': 'float'}]
-    
-    config_data |= InputConfig(config_data).write()
-    config_data |= GenerationConfig(config_data).write()
-    
-    for repeat_dict in repeat_parameter:
-        nested_value = deep_get(config_data, repeat_dict['key'])
-        if isinstance(nested_value, dict):
-            repeat_dict['value'] = [{key: value} for key, value in nested_value.items()]
-        else:
-            repeat_dict['value'] = nested_value
+    config_data = prepare_config(config_data=config_data)
 
-    repeat_parameter = [repeat_dict for repeat_dict in repeat_parameter if isinstance(repeat_dict['value'], list)]   
+    batch_parameters: list[dict[str, list]] = fetch_batch_parameters(config_data=config_data) 
 
-    repeat_parameter_dict = {}
-    for parameter in repeat_parameter:
-        parameter = parameter['key']
-        if parameter[-1] == config_constant.INPUT_KEY:
-            continue
-        # add repeat parameter key in config_generation.py
-        repeat_parameter_dict[parameter[-1]] = ','.join(parameter) 
+    parameter_value_lists = [parameter_dict['value'] for parameter_dict in batch_parameters]
+    parameter_key_lists = [parameter_dict['key'] for parameter_dict in batch_parameters]
     
-    generation_data = GenerationConfig(config_data)
-    generation_dirpath = Path(generation_data.input_value).resolve()
-    
-    config_data |= generation_data.update('repeat_parameter', repeat_parameter_dict).write()
-    config_data |= PostGenerationConfig(config_data).write()
-    
-    nested_value_lists = [repeat_dict['value'] for repeat_dict in repeat_parameter]
-    nested_key_lists = [repeat_dict['key'] for repeat_dict in repeat_parameter]
-    nested_type_lists = [repeat_dict['type'] for repeat_dict in repeat_parameter]
-    combinatorial_value_end_list = list(itertools.product(*nested_value_lists))
-
     yaml_list = []
-    for each_combination_list in combinatorial_value_end_list:
+    generation_dirpath = Path(GenerationConfig(config_data).input_value).resolve()
+
+    for assigned_parameter_values in list(itertools.product(*parameter_value_lists)): # [ [val, val, val], [val, val, val] ]
         
         assigned_config_data = deepcopy(config_data)
-        for key, value, dtype in zip(nested_key_lists, each_combination_list, nested_type_lists):
+        param_config_batch_parameter_dict = {}
+        analysis_dirpath = generation_dirpath
+
+        for key, value, dtype in zip(parameter_key_lists, assigned_parameter_values, [parameter_dict['type'] for parameter_dict in batch_parameters]):
             assigned_config_data = deep_assign(assigned_config_data, key, value=forcetype(value, dtype))
 
-        analysis_dirpath = generation_dirpath
-        for key, val in zip(nested_key_lists, each_combination_list):
-            if isinstance(val, dict):
-                val = list(val.keys())[0]
-            analysis_dirpath = Path(analysis_dirpath) / f'{key[-1]}_{val}'
+            if key[0] != config_constant.INPUT_KEY:
+                param_config_batch_parameter_dict[key[-1]] = value
 
-        config_output = {}
-        logging.debug('Writing Config for Input key')
-        config_output = config_output | InputConfig(assigned_config_data).write(cutoff=10)
-        logging.debug('Writing Config for Model key')
-        config_output = config_output | ModelConfig(assigned_config_data).write()
-        logging.debug('Writing Config for Generation key')
-        config_output = config_output | GenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
-        logging.debug('Writing Config for Parameter key')
-        config_output = config_output | ParameterConfig().create(config_data=config_output).write()
-        logging.debug('Writing Config for PostGeneration key')
-        config_output = config_output | PostGenerationConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
-        logging.debug('Writing Config for Analysis key')
-        config_output = config_output | AnalysisConfig(assigned_config_data).write(prefix_dir=analysis_dirpath)
+            if isinstance(value, dict):
+                value = list(value.keys())[0]
+            analysis_dirpath = Path(analysis_dirpath) / f'{key[-1]}_{value}'
 
+        config_output = write_new_config(config_data=assigned_config_data, 
+                                         prefix_dir=analysis_dirpath, 
+                                         batch_parameter=param_config_batch_parameter_dict)
 
-        config_output = reassign_input_config(config_output)
         Path(analysis_dirpath).mkdir(parents=True, exist_ok=True)
         yaml_fname = Path(analysis_dirpath) / Path(output_fname).name
         with open(yaml_fname, 'w') as yaml_f:
@@ -245,5 +224,5 @@ if __name__ == '__main__':
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
     
     args.output = str(Path(args.output))
-    if validate_config(data_input):
+    if True:
         write_config(data_input, args.output)

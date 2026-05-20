@@ -6,51 +6,46 @@ import argparse
 import logging
 import sys
 import subprocess
-import os
-from scramblebench.script.config_preparation import config_constant
+from scramblebench.script.config_preparation import config_constant, config_generation, config_model
 from scramblebench.script.utils.process_data import read_input
 
 
 logger = logging.getLogger(__name__)
     
 
-def fetch_model(config_data):
-    return list(config_data[config_constant.MODEL_KEY].keys())
-
-
 def validate_generation_script(config_data: dict) -> None:
+    generation_data = config_generation.GenerationConfig(config_data=config_data)
+    model_data = config_model.ModelConfig(config_data=config_data)
 
     logging.debug('Validating the template generation (or custom) script file')
-    script_file = config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_TEMPLATE_SCRIPT_FILE_KEY]
+
+    script_file = generation_data.script_value
     script_pathfile = Path(script_file)
     assert script_pathfile.is_file() and script_pathfile.suffix == '.sh'
-
     script_text = script_pathfile.read_text()
 
-    model_for_generation_list = fetch_model(config_data=config_data)
-
-    for model in model_for_generation_list:
-        # here, we check whether the model is executed through each model conda environment
-        if config_data[config_constant.MODEL_KEY][model][config_constant.MODEL_CONDA_ENV_KEY] is None or config_data[config_constant.MODEL_KEY][model][config_constant.MODEL_CONDA_ENV_KEY] == 'non_applicable':
+    for model, modelstruct in model_data.modelstructure_dict.items():
+        modelstruct.conda_env_value
+        if modelstruct.conda_env_value is None or modelstruct.conda_env_value == 'non_applicable':
             logging.warning(f'{model} is detected not to be inferred.')
             continue
 
-        if f'${config_constant.MODEL_KEY}_{model}_{config_constant.MODEL_CONDA_ENV_KEY}' not in script_text:
-            raise ValueError(f"We did not detect {model} for the inference in the {script_file}. We detect each model by checking the string '${config_constant.MODEL_KEY}_{model}_{config_constant.MODEL_CONDA_ENV_KEY}'")
+        if f'${model_data.name}_{model}_{modelstruct.conda_env_name}' not in script_text:
+            raise ValueError(f"We did not detect {model} for the inference in the {script_file}. \
+                             We detect each model by checking the string '${model_data.name}_{model}_{modelstruct.conda_env_name}'")
     
     return True
 
 
 def run_inference(yaml_file, config_data, log_status=False) -> None:
-    cmd = ['/bin/bash', config_data[config_constant.GENERATION_KEY][config_constant.GENERATION_TEMPLATE_SCRIPT_FILE_KEY],
-           yaml_file]
+    generation_data = config_generation.GenerationConfig(config_data=config_data)
+    cmd = ['/bin/bash', generation_data.script_value, yaml_file]
     
-    cmd = ' '.join(map(str, cmd))
     if log_status:
-        log_msg = subprocess.run(cmd, shell=True, check=True, text=True, env=os.environ, capture_output=True)
+        log_msg = subprocess.run(cmd, check=True, text=True, capture_output=True)
         logging.info(log_msg)
     else:
-        subprocess.run(cmd, shell=True, check=True, text=True, env=os.environ)
+        subprocess.run(cmd, check=True, text=True)
 
 
 if __name__ == '__main__':
@@ -82,4 +77,4 @@ if __name__ == '__main__':
 
         if validate_generation_script(config_data=data_input):
             logging.info('Running inference!')
-            run_inference(yaml_file, data_input)
+            run_inference(yaml_file, data_input, args.log)

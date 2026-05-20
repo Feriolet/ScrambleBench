@@ -11,9 +11,14 @@ logger = logging.getLogger(__name__)
 class PostGenerationConfig:
 
     def __init__(self, config_data: dict[str, Any]):
-        post_generation_data = config_data[config_constant.POST_GENERATION_KEY]
-
+        
         self.name = config_constant.POST_GENERATION_KEY
+
+        if self.name not in config_data:
+            raise KeyError(f'You forgot to put "{self.name}" key in your config file!')
+        
+        post_generation_data = config_data[self.name]
+
         self.input_name = 'input'
         self.output_name = 'output'
         self.pick_random_name = 'pick_random'

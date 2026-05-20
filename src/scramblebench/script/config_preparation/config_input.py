@@ -23,6 +23,10 @@ class InputConfig:
     def __init__(self, config_data: dict[str, Any]):
 
         self.name = config_constant.INPUT_KEY
+        
+        if self.name not in config_data:
+            raise KeyError(f'You forgot to put "{self.name}" key in your config file!')
+        
         input_data = config_data[self.name]
 
         self.inputstructure_dict = {input_keyname: InputStructure(structinput_data) for input_keyname, structinput_data in input_data.items()}
@@ -54,6 +58,17 @@ class InputConfig:
             
         return {self.name: input_data}
     
+    def write_inputstruct(self, cutoff:int=10) -> dict[str, Any]:
+
+        assert len(list(self.inputstructure_dict.keys())) == 1
+
+        for key, inputstruct in self.inputstructure_dict.items():
+            input_data = inputstruct.write(cutoff=cutoff)
+            input_data[inputstruct.protein_name] = key
+
+            return {self.name: input_data}
+        
+
 class InputStructure:
 
     def __init__(self, input_dict: dict[str, Any]):
@@ -115,7 +130,6 @@ class InputStructure:
         if self.protein_value:
             data[self.protein_name] = self.protein_value
 
-        print()
         return data
 
 

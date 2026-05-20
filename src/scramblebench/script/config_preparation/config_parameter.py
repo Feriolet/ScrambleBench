@@ -16,41 +16,39 @@ class ParameterConfig:
         self.protein_name = 'protein_name'
         self.model_list_name = 'model_list'
         self.num_sample_name = 'num_sample'
-        self.repeat_parameter_name = 'repeat_parameter'
+        self.batch_parameter_name = 'batch_parameter'
 
         self.protein_value = None
         self.model_list_value = []
-        self.repeat_parameter_dict = {}
+        self.batch_parameter_dict = {}
 
         if config_data:
+
+            if self.name not in config_data:
+                raise KeyError(f'You forgot to put "{self.name}" key in your config file!')
+            
             parameter_data = config_data[self.name]
             self.protein_value = parameter_data[self.protein_name]
             self.model_list_value = parameter_data[self.model_list_name]
-            self.repeat_parameter_dict = parameter_data[self.repeat_parameter_name]
+            self.batch_parameter_dict = parameter_data[self.batch_parameter_name]
             self.num_sample_value = parameter_data[self.num_sample_name]
 
-    def create(self, config_data: dict[str, Any]):
+    def create(self, config_data: dict[str, Any], batch_parameter):
 
         self.name = config_constant.PARAMETER_KEY
-        input_data = config_input.InputConfig(config_data=config_data)
+        input_data = config_input.InputStructure(input_dict=config_data[config_constant.INPUT_KEY])
         self.protein_name = 'protein_name'
-        self.protein_value = list(input_data.inputstructure_dict.keys())[0]
+        self.protein_value = input_data.protein_value
 
         model_data = config_model.ModelConfig(config_data=config_data)
         self.model_list_name = 'model_list'
         self.model_list_value = model_data.get_model_list()
 
-        parameter_data = config_generation.GenerationConfig(config_data=config_data).parameter_value
-        parameter_dict = parameter_data.repeat_parameter_value
-
-        self.num_sample_value = parameter_data.num_sample_value
+        self.num_sample_value = config_generation.GenerationConfig(config_data=config_data)\
+                                                            .parameter_value.num_sample_value
         
-        self.repeat_parameter_name = parameter_data.repeat_parameter_name
-        self.parameter_dict = {}
-
-        for key, value in parameter_dict.items():
-            value = value.split(',')
-            self.parameter_dict[key] = self.deep_get(config_data, value)
+        self.batch_parameter_name = 'batch_parameter'
+        self.parameter_dict = batch_parameter
     
         return self
     
@@ -59,7 +57,7 @@ class ParameterConfig:
         return {self.name: {self.protein_name: self.protein_value,
                             self.model_list_name: self.model_list_value,
                             self.num_sample_name: self.num_sample_value,
-                            self.repeat_parameter_name: self.parameter_dict}}
+                            self.batch_parameter_name: self.parameter_dict}}
     
     def deep_get(self, dictionary: dict, nested_key: list):
         copied_dict = deepcopy(dictionary)
@@ -74,3 +72,4 @@ class ParameterConfig:
                 return copied_dict
         
         return copied_dict
+    

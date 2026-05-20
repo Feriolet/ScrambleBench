@@ -23,3 +23,10 @@ GENERATION_FOLDER = 'AI_Generation'
 GENERATION_TEMPLATE_SCRIPT_PATH = Path(Path(__file__).parent.parent / 'utils/generation_utils/generation_template.sh').resolve()
 MODEL_CONDA_ENV_KEY = 'conda_env'
 GENERATION_TEMPLATE_SCRIPT_FILE_KEY = 'script_pathfile'
+
+CONFIG_BATCH_PARAMETERS = [{'key':[INPUT_KEY],
+                            'type': 'dict'},
+                           {'key':[GENERATION_KEY, GENERATION_PARAMETER_KEY, 'num_sample'],
+                            'type': 'int'},
+                           {'key':[GENERATION_KEY, GENERATION_PARAMETER_KEY, 'box_size'],
+                            'type': 'float'}]

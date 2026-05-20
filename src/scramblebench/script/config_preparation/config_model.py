@@ -60,6 +60,10 @@ class ModelConfig:
     def __init__(self, config_data: dict[str, Any]):
 
         self.name = config_constant.MODEL_KEY
+
+        if self.name not in config_data:
+            raise KeyError(f'You forgot to put "{self.name}" key in your config file!')
+        
         model_data = config_data[config_constant.MODEL_KEY]
 
         self.modelstructure_dict = {model_keyname: ModelStructure(structmodel_data) for model_keyname, structmodel_data in model_data.items()}
