@@ -24,8 +24,8 @@ class GenBench3DConfig:
         self.output_value = config_data[self.output_name]
         self.genbench_dir_value = config_data[self.genbench_dir_name]
         self.conda_env_value = config_data[self.conda_env_name]
-        self.schrodinger_dir_value = config_data.get(self.schrodinger_dir_name)
         self.genbench_config_value = config_data[self.genbench_config_name]
+        self.schrodinger_dir_value = config_data.get(self.schrodinger_dir_name)
         self.do_complex_forcefield_minimisation_value = config_data.get(self.do_complex_forcefield_minimisation_name) or False
         self.do_docking_forcefield_minimisation_value = config_data.get(self.do_docking_forcefield_minimisation_name) or False
         self.do_cancel_protonation_by_genbench_value = config_data.get(self.do_cancel_protonation_by_genbench_name) or False
@@ -71,6 +71,7 @@ class GenBench3DConfig:
                 raise ValueError(f'{self.schrodinger_dir_value} is not a directory. Please recheck your schrodinger input')
         if not Path(self.genbench_config_value).is_file():
             raise ValueError(f'{self.genbench_config_value} is not a file. Please recheck your config input')
+        
         if not isinstance(self.do_complex_forcefield_minimisation_value, bool):
             raise ValueError(f'The parameter do_complex_forcefield_minimisation is not a boolean. Please type True or False')
         if not isinstance(self.do_docking_forcefield_minimisation_value, bool) :

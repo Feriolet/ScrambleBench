@@ -9,7 +9,7 @@ import rdkit
 from Bio.PDB import PDBParser
 from rdkit import Chem
 import os
-from scramblebench.script.utils.split_protein_ligand import split_pocket_ligand
+from scramblebench.script.config_preparation.split_protein_ligand import split_pocket_ligand
 from oddt.toolkits.extras.rdkit import fixer
 import numpy as np
 import logging

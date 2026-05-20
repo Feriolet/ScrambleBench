@@ -210,7 +210,7 @@ def combine_analysis_df_with_parameter(analysis_df, parameter_data: config_param
 
     analysis_df[parameter_data.protein_name] = parameter_data.protein_value
     parameter_order.append(parameter_data.protein_name)
-    for key, val in parameter_data.repeat_parameter_dict.items():
+    for key, val in parameter_data.batch_parameter_dict.items():
         parameter_order.append(key)
         analysis_df[key] = val
 

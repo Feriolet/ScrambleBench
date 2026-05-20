@@ -11,7 +11,7 @@ import os
 from scramblebench.script.config_preparation import config_constant, config_genbench3d, config_input, config_parameter
 from scramblebench.script.utils.error_handler import DirNotFoundError
 from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_model_dir, find_file_name_through_regex
-from scramblebench.script.utils.prepare_protein import GlideProtein
+from scramblebench.script.utils.docking_utils.prepare_protein import GlideProtein
 
 import rdkit
 from rdkit import Chem
@@ -102,26 +102,44 @@ def prepare_genbench3d_input(input_data, genbench3d_data):
     return input_pdb, input_sdf
 
 
+def initialise_genbench_checkpoint(checkpoint_fname, models, minimisations):
+    checkpoint_manager = CheckpointManager()
+    checkpoint_filepath = Path(checkpoint_fname)
+
+    if not checkpoint_filepath.is_file():
+        checkpoint = defaultdict(dict)
+        for model in models:
+            for minimisation in minimisations:
+                checkpoint[model][minimisation] = CheckpointStatus.PENDING.value
+
+        checkpoint_manager = checkpoint_manager.from_dict(checkpoint)
+        checkpoint_manager.checkpoint_fname = checkpoint_filepath
+        checkpoint_manager.save_state()
+    else:
+        checkpoint_manager = checkpoint_manager.from_json(checkpoint_filepath)
+
+    return checkpoint_manager
+
+
 def prepare_genbench3d_cmd(config_data):
     genbench_data = config_genbench3d.GenBench3DConfig(config_data[config_constant.ANALYSIS_KEY])
+    genbench_data.validate_config()
+
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
-
-    do_sbdd_analysis = False
-
     valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=genbench_data.input_value,
                                                                model_list=parameter_data.model_list_value)
                                                                
-    genbench_output_dirpath = Path(genbench_data.output_value)
-    genbench_data.validate_config()
-    if genbench_data.schrodinger_dir_value:
-        check_schrodinger_status(genbench_data.schrodinger_dir_value)
-
-
     complex_minimisation = ['unminimised']
+    do_sbdd_analysis = False
+    
     if config_constant.INPUT_KEY in config_data:
         do_sbdd_analysis = True
-        input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
-        input_pdb, input_sdf = prepare_genbench3d_input(input_data=input_data, genbench3d_data=genbench_data)
+
+        if genbench_data.do_complex_forcefield_minimisation_value:
+            complex_minimisation.append('minimised')
+
+        input_pdb, input_sdf = prepare_genbench3d_input(input_data=config_input.InputStructure(config_data[config_constant.INPUT_KEY]),
+                                                        genbench3d_data=genbench_data)
     
         cmd  = ["conda", "run", "-n", genbench_data.conda_env_value, 
                 'python', str(Path(genbench_data.genbench_dir_value) / 'sb_benchmark_mols.py'),
@@ -133,56 +151,41 @@ def prepare_genbench3d_cmd(config_data):
         if genbench_data.do_cancel_protonation_by_genbench_value:
             cmd += ['--cancel_protonation']
 
-        if genbench_data.do_complex_forcefield_minimisation_value:
-            complex_minimisation.append('minimised')
-
     else:
         cmd = ["conda", "run", "-n", genbench_data.conda_env_value, 
                'python', str(Path(genbench_data.genbench_dir_value) / 'benchmark_mols.py'),
                '-c', genbench_data.genbench_config_value]
 
-
+    genbench_output_dirpath = Path(genbench_data.output_value)
     json_output_dirpath = Path(genbench_output_dirpath) / 'json_output'
     json_output_dirpath.mkdir(parents=True, exist_ok=True)
 
-
     checkpoint_filepath = Path(genbench_output_dirpath) / 'genbench3d_checkpoint.json'
-    checkpoint_manager = CheckpointManager()
-    if not checkpoint_filepath.is_file():
-        checkpoint = defaultdict(dict)
-        for model in valid_molecule_file_dict:
-            for minimisation in complex_minimisation:
-                checkpoint[model][minimisation] = CheckpointStatus.PENDING.value
-
-        checkpoint_manager = checkpoint_manager.from_dict(checkpoint)
-        checkpoint_manager.checkpoint_fname = checkpoint_filepath
-        checkpoint_manager.save_state()
-    else:
-        checkpoint_manager = checkpoint_manager.from_json(checkpoint_filepath)
-
+    checkpoint_manager = initialise_genbench_checkpoint(checkpoint_fname=checkpoint_filepath,
+                                                        models=valid_molecule_file_dict.keys(),
+                                                        minimisations=complex_minimisation)
     
     cmd_list = []
     for model, fname in valid_molecule_file_dict.items():
         for minimisation in complex_minimisation:
-            cmd_data = {}
-            cmd_data['minimisation'] = minimisation
-            cmd_data['model'] = model
+
             if checkpoint_manager.state[model][minimisation] == CheckpointStatus.COMPLETED.value:
                 logging.info(f'{fname} {model} has been completed with {minimisation} config. Skipping...')
                 continue
-
 
             model_cmd = deepcopy(cmd)
             fname_stem = Path(fname).stem
 
             model_cmd += ['-i', fname]
             model_cmd += ['-o', f'{json_output_dirpath}/{fname_stem}_{minimisation}.json']
-            model_cmd += ['--log_output', f'{json_output_dirpath}/{fname_stem}_{minimisation}_sb_benchmark.log']
+            model_cmd += ['--log_output', f'{json_output_dirpath}/{fname_stem}_{minimisation}{"_sb" if do_sbdd_analysis else ""}_benchmark.log']
 
             if do_sbdd_analysis:
                 if minimisation == 'minimised':
                     model_cmd += ['-m']
+
                 if genbench_data.schrodinger_dir_value:
+                    check_schrodinger_status(genbench_data.schrodinger_dir_value)
                     glide_output =  Path(genbench_output_dirpath) / 'Glide' / model / minimisation
                     glide_output.mkdir(parents=True, exist_ok=True)
 
@@ -199,6 +202,9 @@ def prepare_genbench3d_cmd(config_data):
                 vina_output.mkdir(parents=True, exist_ok=True)
                 model_cmd += ['--output_vina_dir', str(vina_output)]
 
+            cmd_data = {}
+            cmd_data['minimisation'] = minimisation
+            cmd_data['model'] = model
             cmd_data['cmd'] = model_cmd
             cmd_list.append(cmd_data)
 
@@ -210,6 +216,7 @@ def run_single_genbench3d(cmd_data):
         model = cmd_data['model']
         minimisation = cmd_data['minimisation']
         cmd = cmd_data['cmd']
+
         logging.info(f"Running Genbench. cmd: {cmd}")
         subprocess.run(cmd, capture_output=True, text=True)
 
