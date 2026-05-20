@@ -152,8 +152,6 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
 
     valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=docking_data.input_value,
                                                                model_list=parameter_data.model_list_value)
-    if docking_data.protonation_value:
-        cmd += ['--protonation', docking_data.protonation_value]
     
     if docking_data.docking_value:
         cmd += ['--program', docking_data.docking_value]
@@ -182,8 +180,12 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
             temp_output_easydock_db = str(Path(temp_docking_dir) / f'{Path(fname).stem}_redocked.db')
             temp_output_easydock_sdf = str(Path(temp_docking_dir) / f'{Path(fname).stem}_redocked.sdf')
             
-            model_cmd = deepcopy(cmd)                               
-            model_cmd += ['-i', fname, '-o', temp_output_easydock_db, ]
+            model_cmd = deepcopy(cmd)  
+            
+            if docking_data.protonation_value and docking_data.protonation_value != 'ligprep':
+                model_cmd += ['--protonation', docking_data.protonation_value]               
+
+            model_cmd += ['-i', fname, '-o', temp_output_easydock_db]
 
             logging.info(f'Easydock docking with cmd: {model_cmd=}')
             subprocess.run(model_cmd, text=True)
@@ -213,35 +215,31 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
             logging.info(f'Glide docking with {Path(fname).name} has been done. Skipping...')
             continue
 
-        with tempfile.TemporaryDirectory() as temp_protonation_dir:  
-            os.chdir(temp_protonation_dir)
+        with tempfile.TemporaryDirectory() as tempdir:  
+            os.chdir(tempdir)
             if docking_data.protonation_value:  
                 run_ligprep_protonation(schrodinger_dir=docking_data.dir_value, 
-                                        output_dir=temp_protonation_dir, 
+                                        output_dir=tempdir, 
                                         valid_molecule_file_dict={model: fname})
-                protonated_fname = Path(temp_protonation_dir) / model / f'{Path(fname).stem}_protonated.sdf'
+                protonated_fname = Path(tempdir) / model / f'{Path(fname).stem}_protonated.sdf'
             else:
                 protonated_fname = fname
 
-            with tempfile.TemporaryDirectory() as temp_docking_dir: 
-                os.chdir(temp_docking_dir)
-                subprocess.run(['cp', protonated_fname, temp_docking_dir], text=True) 
+            jobname = f'glide_{Path(fname).stem}'
+            inp_fname = Path(tempdir) / f'{jobname}.inp'
+            prepare_glide_inp_file(grid_fname=grid_filepath,
+                                    ligand_fname=protonated_fname,
+                                    intra_hbonds=docking_data.reward_intra_hbonds_value,
+                                    write_fname=inp_fname)
 
-                jobname = f'glide_{Path(fname).stem}'
-                inp_fname = Path(temp_docking_dir) / f'{jobname}.inp'
-                prepare_glide_inp_file(grid_fname=grid_filepath,
-                                       ligand_fname=protonated_fname,
-                                       intra_hbonds=docking_data.reward_intra_hbonds_value,
-                                       write_fname=inp_fname)
+            cmd = [f"{docking_data.dir_value}/glide", inp_fname, '-OVERWRITE', 
+                '-adjust', '-HOST', f'localhost:{fetch_glide_sp_cpu(docking_data.dir_value)}', '-TMPLAUNCHDIR', '-WAIT']
 
-                cmd = [f"{docking_data.dir_value}/glide", inp_fname, '-OVERWRITE', 
-                    '-adjust', '-HOST', f'localhost:{fetch_glide_sp_cpu(docking_data.dir_value)}', '-TMPLAUNCHDIR', '-WAIT']
-
-                temp_glide_sdf_output = f'{jobname}_lib.sdfgz' 
-                logging.info(f'Glide docking with cmd: {cmd=}')
-                subprocess.run(cmd, text=True)
-                subprocess.run(['cp', temp_glide_sdf_output, output_glide_fname], text=True)
-                subprocess.run(['gunzip', output_glide_fname], text=True)
+            temp_glide_sdf_output = f'{jobname}_lib.sdfgz' 
+            logging.info(f'Glide docking with cmd: {cmd=}')
+            subprocess.run(cmd, text=True)
+            subprocess.run(['cp', temp_glide_sdf_output, output_glide_fname], text=True)
+            subprocess.run(['gunzip', output_glide_fname], text=True)
 
     os.chdir(current_dir)           
 
