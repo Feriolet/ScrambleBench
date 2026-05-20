@@ -224,5 +224,5 @@ if __name__ == '__main__':
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
     
     args.output = str(Path(args.output))
-    if True:
+    if validate_config(config_data=data_input):
         write_config(data_input, args.output)
