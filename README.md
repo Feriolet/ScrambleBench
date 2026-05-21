@@ -5,10 +5,14 @@
 ![Intro graphic](asset/GenAI_Abstract.png)
 Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. Our v0.1.0 version streamlined most of the features used in our manuscript. Please look out for our version 0.2.0 soon!
 
+**Note: v0.1.0 is not a stable version, since it is still updating its code even today (see latest commits). Hence, the codes that are cloned today may be different tomorrow. Please update the repository regularly until the version is stable.**
+
 ## Table of Contents
 - [ScrambleBench v0.1.0](#scramblebench-v010)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Future feature for v0.1.0](#future-feature-for-v010)
   - [Installation](#installation)
     - [Method 1: Install through environment.yaml (Recommended)](#method-1-install-through-environmentyaml-recommended)
     - [Method 2: Install manually](#method-2-install-manually)
@@ -43,6 +47,24 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
       - [6. Plotting](#6-plotting)
   - [Data Availability](#data-availability)
   - [Reproducing Figures](#reproducing-figures)
+  - [FAQ](#faq)
+
+
+## Features
+
+- **Streamlined workflow**: from de novo molecule generation, molecule validation, and analysis to a single `.csv` file
+- **Integrated software**: This repository integrates multiple docking program supported by `easydock`, conformation analysis by `genbench3d`, and various molecular diversity, such as conventional `tanimoto ecfp`, `hamdiv`, and `generic BM scaffold`.
+- **Checkpoints**: Checkpoints are available for most of the worflow to resume process that got interrupted.
+- **Batch runs**: Each YAML configs are generated for multiple possible parameters (`protein targets`, `num_sample`) which are suitables for batch runs in job schedulers.
+- **Flexible parameters**: `ScrambleBench` can be run with or without protein inputs
+- **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
+
+
+## Future feature for v0.1.0
+
+- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, diversity, and conformational analysis.
+- **Additional report**: JSON file that reports on `validity3d`, `uniqueness`, and `diversity`
+
 
 ## Installation
 
@@ -856,3 +878,51 @@ Please install the files in our [Zenodo](https://zenodo.org/records/18503149) fo
 Please refer to the `v0.0.1` for the codes to reproduce the figure.
 
 The main Figures of the manuscript can be reproduced by using the `07_plot_summary.py` code with the file `output_scramblebench_data_warehouse/data_warehouse.parquet` in the Zenodo file
+
+## FAQ
+
+**Q: I want to use `ScrambleBench` to evaluate other Gen AI models.**
+
+**A:** There is multiple ways to do it. A simple way is to generate the molecules outside of ScrambleBench and evaluate it similar to `examples/run_without_protein_input`. However, this limits docking analysis since docking requires protein input.
+
+Another way to do it is to integrate the generation of molecules within the `ScrambleBench`. To do this, simply edit the bash file at `src/scramblebench/script/utils/generation_utils/generation_template.sh` and add the necessary models generation command line here. Remember to include the model names into the generated files and add them into the `summary` folder. Lastly, add the model information in the `model` config key.
+
+If you insist on generating the molecule without using `ScrambleBench` and wanted to include docking analysis, let me know and I will add another feature for this.
+
+**Q: I want to generate molecules using `ScrambleBench`, but I don't want to separate the protein-ligand complex to protein pdb and ligand sdf.**
+
+**A:** This feature is likely to be added in v0.2.0 or later, but I am not sure how to efficiently separate ligand and protein. Using RDKit may not be favorable, so I would likely use oddt to extract ligand and filter **ATOM** for protein instead. Let me know if there is a much more efficient way to separate these if you wish to incorporate this quicker.
+
+**Q: I want to add other docking/conformation/diversity program into `ScrambleBench`. How do I do that?**
+
+**A:** Unfortunately, there is no easy way to do this. After all, the reason that I wrote dedicated `KeyConfig` in the `src/scramblebench/script/config_preparation` for every key is that I can certainly filter what is printed out for configs. Simply adding more keys will not work, because these will be filtered out.
+
+If you are using it for your own use, it is possible to just manually edit the source code, especially below the `if __name__ == "__main__"` line of code for the `px_script.py`. However, if you wish to make a PR to integrate it, it is best to learn how the `KeyConfig` class works. In my opinion, it is fairly easy to understand them once you are familiar with one or two of them, because they are written in a very template-y manner.
+
+For docking program, another way is to integrate your desired docking program into `easydock`, which have a dedicated page for integrating their program viewed here https://easydock.readthedocs.io/en/latest/custom_docking/.
+
+I may release a documentation dedicated for developers for this in the future.
+
+**Q: I want to contribute to the `ScrambleBench`.**
+
+**A:** We are happy to have someone who are interested in developing our repository. However, since we have not added the necessary tests for our repository, it is very difficult to determine if the upcoming PR will break the codes or not. Feel free to make PR whenever you wish, but the PR will probably take a long time to review. As the standard practice, please do not upload very huge chunk of line of codes to the point where it is impossible to review hahaha.
+
+**Q: Do I need to prepare my protein-complex and/or protein input for `ScrambleBench`?**
+
+**A:** It depends on the purpose of using `ScrambleBench`. In my experience, if you want to generate the molecules, it is not really necessary to prepare them, because these models tend to remove the hydrogens in protein and ligand, possibly because of the encoding aspect. However, it may be a good idea to protonate them early on for analysis (e.g., `docking` and `genbench3d`) so you can save some time. Regardless, there are separate protonation/preparation in the current implementations.
+
+**Q: I tried to install the conda environment of `ScrambleBench`/`Gen AI`/`third-party` software and it does not work.**
+
+**A:** Unfortunately, this is an inevitable phenomenon where some dependencies are no longer supported. Please raise this issue on the `Issues` section at this repository or the repository of the model or software.
+
+**Q: Will `ScrambleBench` be continuously improved even after its publication (if it gets published)?**
+
+**A:** This is a very difficult question to answer. While I want to integrate more tools into the repository like `PoseBusters`, `HEAD-TED`, and other diversity tools, it depends on the current and future priorities that I have. Similar to other benchmarks and/or programs, people will move on to other projects once they have published the paper. So, for me, maintaining the repositories will depend on the interest of the community. After all, there is little benefit on improving it if no one will use it.
+
+At the very least, in the case where I moved on to other projects, I will complete the code documentations so it can be developed by other people if they wish to fork the repository. Further, I will still answer any questions that you have at the `Issues` section.
+
+**Q: Why is it named `ScrambleBench`?**
+
+**A:** When developing the workflow, I realized that the workflow will depend on various `conda` environment, which as we know can be a nightmare to maintain, and this kinda `scramble` my brains out hahaha. And the fact that the word `Scramble` reminds me of the scrambled eggs led me to put the egg image in the Abstract above XD.
+
+
