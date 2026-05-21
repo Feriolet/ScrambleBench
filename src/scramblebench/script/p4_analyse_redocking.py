@@ -18,7 +18,7 @@ from scramblebench.script.utils.process_data import read_input, fetch_model_file
 from scramblebench.script.utils.docking_utils.prepare_protein import VinaProtein, GlideProtein
 from scramblebench.script.utils.docking_utils.prepare_docking import calculate_easydock_cpu, fetch_glide_sp_cpu, fetch_ligprep_cpu, prepare_easydock_grid,\
                                                                      prepare_easydock_grid, prepare_easydock_vina_parameter, prepare_ligprep_inp_file,\
-                                                                     prepare_glide_inp_file, prepare_easydock_ligprep_docking_input, process_easydock_docking_output
+                                                                     prepare_glide_inp_file, prepare_easydock_ligand_input, process_easydock_docking_output
 
 
 logger = logging.getLogger(__name__)
@@ -190,10 +190,10 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
                                         output_dir=temp_docking_dir, 
                                         valid_molecule_file_dict={model: fname})   
 
-            post_processed_fname = prepare_easydock_ligprep_docking_input(input_fname=preprocessed_fname,
+            easydock_input_fname = prepare_easydock_ligand_input(input_fname=preprocessed_fname,
                                                                           output_dir=temp_docking_dir)
 
-            model_cmd += ['-i', post_processed_fname, '-o', temp_output_easydock_db]
+            model_cmd += ['-i', easydock_input_fname, '-o', temp_output_easydock_db]
 
             logging.info(f'Easydock docking with cmd: {model_cmd=}')
             subprocess.run(model_cmd, text=True)
