@@ -1,6 +1,9 @@
 import os
 import subprocess
 from pathlib import Path
+import rdkit
+from rdkit import Chem
+from collections import defaultdict
 
 def calculate_easydock_cpu():
     if hasattr(os, 'sched_getaffinity'):
@@ -132,3 +135,52 @@ def prepare_glide_inp_file(grid_fname, ligand_fname, write_fname, intra_hbonds=F
 
     with open(write_fname, 'w') as glide_inp_f:
         glide_inp_f.write(glide_inp)
+
+
+def prepare_easydock_ligprep_docking_input(input_fname):
+
+    mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
+    print(f'input{len(mol_l)=}')
+    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_ez_prepared.sdf'
+    write_fname = Chem.SDWriter(output_fname)
+    mol_dict = {}
+
+    for mol in mol_l:
+        id = mol.GetProp('_Name')
+        if id in mol_dict:
+            mol_dict[id] += 1
+        else:
+            mol_dict[id] = 0
+            
+        mol.SetProp('_Name', f'{id}_{mol_dict[id]}')
+        write_fname.write(mol)
+
+    return output_fname
+
+
+def process_easydock_docking_output(input_fname):
+
+    mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
+    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_processed.sdf'
+    write_fname = Chem.SDWriter(output_fname)
+    mol_dict = defaultdict(dict)
+    print(f'output{len(mol_l)=}')
+    for mol in mol_l:
+        id_num = mol.GetProp('_Name')
+        docking_score = float(mol.GetProp('docking_score'))
+        parent_id = mol.GetProp('_Name').rsplit('_', 1)[0]
+        if parent_id not in mol_dict:
+            mol_dict[parent_id]['mol'] = mol
+            mol_dict[parent_id]['docking_score'] = docking_score
+
+        else:
+            if docking_score < mol_dict[parent_id]['docking_score']:
+                mol_dict[parent_id]['mol'] = mol
+                mol_dict[parent_id]['docking_score'] = docking_score
+        
+    for data in mol_dict.values():
+        mol = data['mol']
+        mol.SetProp('_Name', mol.GetProp('_Name').rsplit('_', 1)[0])
+        write_fname.write(mol)
+
+    return output_fname

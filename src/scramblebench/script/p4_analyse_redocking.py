@@ -1,12 +1,16 @@
-from typing import Any, Callable
-from pathlib import Path
-
 import yaml
 import argparse
 import logging
 import sys
 import subprocess
 import os
+import tempfile
+import rdkit
+
+from rdkit import Chem
+from typing import Any, Callable
+from pathlib import Path
+from copy import deepcopy
 
 from scramblebench.script.config_preparation import config_constant, config_input, config_redocking, config_parameter
 from scramblebench.script.utils.error_handler import DirNotFoundError
@@ -14,14 +18,8 @@ from scramblebench.script.utils.process_data import read_input, fetch_model_file
 from scramblebench.script.utils.docking_utils.prepare_protein import VinaProtein, GlideProtein
 from scramblebench.script.utils.docking_utils.prepare_docking import calculate_easydock_cpu, fetch_glide_sp_cpu, fetch_ligprep_cpu, prepare_easydock_grid,\
                                                                      prepare_easydock_grid, prepare_easydock_vina_parameter, prepare_ligprep_inp_file,\
-                                                                     prepare_glide_inp_file
+                                                                     prepare_glide_inp_file, prepare_easydock_ligprep_docking_input, process_easydock_docking_output
 
-from collections import defaultdict
-from copy import deepcopy
-import tempfile
-
-import rdkit
-from rdkit import Chem
 
 logger = logging.getLogger(__name__)
 
@@ -142,53 +140,6 @@ def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_
     return new_config_fname
 
 
-def prepare_easydock_ligprep_docking_input(input_fname):
-
-    mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
-    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_ez_prepared.sdf'
-    write_fname = Chem.SDWriter(output_fname)
-    mol_dict = {}
-
-    for mol in mol_l:
-        id = mol.GetProp('_Name')
-        if id in mol_dict:
-            mol_dict[id] += 1
-        else:
-            mol_dict[id] = 0
-            
-        mol.SetProp('_Name', f'{id}_{mol_dict[id]}')
-        write_fname.write(mol)
-
-    return output_fname
-
-
-def process_easydock_docking_output(input_fname):
-
-    mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
-    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_processed.sdf'
-    write_fname = Chem.SDWriter(output_fname)
-    mol_dict = defaultdict(dict)
-
-    for mol in mol_l:
-        id_num = mol.GetProp('_Name')
-        docking_score = float(mol.GetProp('docking_score'))
-        parent_id = mol.GetProp('_Name').rsplit('_', 1)[0]
-        if parent_id not in mol_dict:
-            mol_dict[parent_id]['mol'] = mol
-            mol_dict[parent_id]['docking_score'] = docking_score
-
-        else:
-            if docking_score < mol_dict[parent_id]['docking_score']:
-                mol_dict[parent_id]['mol'] = mol
-                mol_dict[parent_id]['docking_score'] = docking_score
-        
-    for data in mol_dict.values():
-        mol = data['mol']
-        mol.SetProp('_Name', mol.GetProp('_Name').rsplit('_', 1)[0])
-        write_fname.write(mol)
-
-    return output_fname
-
 def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, parameter_data, input_data):
     
     cmd = ['conda', 'run', '-n', docking_data.environment_value,
@@ -234,7 +185,7 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
             if docking_data.protonation_value and 'schrodinger' not in docking_data.protonation_value:
                 model_cmd += ['--protonation', docking_data.protonation_value]
                 preprocessed_fname = fname               
-            else:
+            elif 'schrodinger' in docking_data.protonation_value:
                 preprocessed_fname = run_ligprep_protonation(schrodinger_dir=docking_data.protonation_value, 
                                         output_dir=temp_docking_dir, 
                                         valid_molecule_file_dict={model: fname})   
