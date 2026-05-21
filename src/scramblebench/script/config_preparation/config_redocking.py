@@ -253,9 +253,11 @@ class EasyDockConfig:
         if self.protonation_value:
             if not isinstance(self.protonation_value, str):
                 raise TypeError(f'Please put protonation method as string, not {type(self.input_value)}')
-            if self.protonation_value.lower() not in EASYDOCK_PROTONATION_PROGRAM:
+            if self.protonation_value.lower() not in EASYDOCK_PROTONATION_PROGRAM and 'schrodinger' not in self.protonation_value:
                 raise ValueError(f'{self.protonation_value} is not supported by easydock')
-        
+            
+
+
         if not isinstance(self.docking_value, str):
             raise TypeError(f'Please put docking method as string, not {type(self.input_value)}')
         if self.docking_value.lower() not in EASYDOCK_DOCKING_PROGRAM:
@@ -288,9 +290,12 @@ class EasyDockConfig:
                                self.output_name: str(self.output_value),
                                self.environment_name: str(self.environment_value),
                                self.docking_name: str(self.docking_value),
-                               self.protonation_name: self.protonation_value,
                                self.config_name: str(Path(self.config_value).resolve())}
 
+        if 'schrodinger' in self.protonation_value:
+            self.check_schrodinger_ligprep()
+            data[self.protonation_name] = self.protonation_value
+            
         if not self.protein_preparation_executable_value:
             if not self.protein_pdbqt_preparation_value:
                 self.protein_pdbqt_preparation_value = 'adfr'
@@ -311,6 +316,15 @@ class EasyDockConfig:
 
         return {self.name : data}
     
+
+    def check_schrodinger_ligprep(self):
+        if 'ligprep' in self.protonation_value:
+            assert 'schrodinger' in Path(self.protonation_value).parent.name
+            self.protonation_value = str(Path(self.protonation_value).parent.resolve())
+            print(f'{self.protonation_value}')
+        else:
+            assert 'schrodinger' in Path(self.protonation_value).name
+            self.protonation_value = str(Path(self.protonation_value).resolve())
 
 class GlideConfig:
 

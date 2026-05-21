@@ -63,7 +63,7 @@ def collect_genbench3d_data(analysis_data, parameter_class):
 
     genbench_dict = defaultdict(list)
     for model, input_sdf_fname in valid_molecule_file_dict.items():
-        input_mol = Chem.SDMolSupplier(input_sdf_fname)
+        input_mol = Chem.SDMolSupplier(input_sdf_fname, removeHs=False)
         name_l = [mol.GetProp('_Name') for mol in input_mol]
         genbench_dict['mol_id'] +=  name_l
         genbench_dict['Model'] += [model] * len(name_l)
@@ -116,7 +116,7 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
             raise ValueError(f'please convert your glide fname from {Path(output_fname.suffix)} to .sdf')
         
         mol_dict = defaultdict(dict)
-        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname) if mol]
+        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname, removeHs=False) if mol]
         for mol in input_mol_l:
             mol_dict[mol.GetProp("_Name")]['input'] = mol
 
@@ -127,7 +127,7 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
             
             subprocess.run(cmd, text=True)
 
-            output_mol_l = [mol for mol in Chem.SDMolSupplier(best_score_sdf_fname) if mol]
+            output_mol_l = [mol for mol in Chem.SDMolSupplier(best_score_sdf_fname, removeHs=False) if mol]
 
         output_mol_name_l = [mol.GetProp('_Name') for mol in output_mol_l]
         for mol in output_mol_l:
@@ -165,11 +165,11 @@ def collect_redocking_easydock_data(docking_data, parameter_class):
             raise ValueError(f'please convert your glide fname from {Path(output_fname.suffix)} to .sdf')
         
         mol_dict = defaultdict(dict)
-        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname) if mol]
+        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname, removeHs=False) if mol]
         for mol in input_mol_l:
             mol_dict[mol.GetProp("_Name")]['input'] = mol
 
-        output_mol_l = [mol for mol in Chem.SDMolSupplier(output_fname) if mol]
+        output_mol_l = [mol for mol in Chem.SDMolSupplier(output_fname, removeHs=False) if mol]
         output_mol_name_l = [mol.GetProp('_Name') for mol in output_mol_l]
         for mol in output_mol_l:
             mol_dict[mol.GetProp("_Name")]['output'] = mol

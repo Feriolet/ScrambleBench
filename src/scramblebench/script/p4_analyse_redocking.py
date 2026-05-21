@@ -16,6 +16,7 @@ from scramblebench.script.utils.docking_utils.prepare_docking import calculate_e
                                                                      prepare_easydock_grid, prepare_easydock_vina_parameter, prepare_ligprep_inp_file,\
                                                                      prepare_glide_inp_file
 
+from collections import defaultdict
 from copy import deepcopy
 import tempfile
 
@@ -61,6 +62,7 @@ def run_ligprep_protonation(schrodinger_dir, output_dir, valid_molecule_file_dic
 
     os.chdir(current_dir)
     
+    return ligprep_output_fname
 
 def run_easydock_protonation(protonation_data, valid_molecule_file_dict):
 
@@ -140,6 +142,53 @@ def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_
     return new_config_fname
 
 
+def prepare_easydock_ligprep_docking_input(input_fname):
+
+    mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
+    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_ez_prepared.sdf'
+    write_fname = Chem.SDWriter(output_fname)
+    mol_dict = {}
+
+    for mol in mol_l:
+        id = mol.GetProp('_Name')
+        if id in mol_dict:
+            mol_dict[id] += 1
+        else:
+            mol_dict[id] = 0
+            
+        mol.SetProp('_Name', f'{id}_{mol_dict[id]}')
+        write_fname.write(mol)
+
+    return output_fname
+
+
+def process_easydock_docking_output(input_fname):
+
+    mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
+    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_processed.sdf'
+    write_fname = Chem.SDWriter(output_fname)
+    mol_dict = defaultdict(dict)
+
+    for mol in mol_l:
+        id_num = mol.GetProp('_Name')
+        docking_score = float(mol.GetProp('docking_score'))
+        parent_id = mol.GetProp('_Name').rsplit('_', 1)[0]
+        if parent_id not in mol_dict:
+            mol_dict[parent_id]['mol'] = mol
+            mol_dict[parent_id]['docking_score'] = docking_score
+
+        else:
+            if docking_score < mol_dict[parent_id]['docking_score']:
+                mol_dict[parent_id]['mol'] = mol
+                mol_dict[parent_id]['docking_score'] = docking_score
+        
+    for data in mol_dict.values():
+        mol = data['mol']
+        mol.SetProp('_Name', mol.GetProp('_Name').rsplit('_', 1)[0])
+        write_fname.write(mol)
+
+    return output_fname
+
 def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, parameter_data, input_data):
     
     cmd = ['conda', 'run', '-n', docking_data.environment_value,
@@ -182,20 +231,29 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
             
             model_cmd = deepcopy(cmd)  
             
-            if docking_data.protonation_value and docking_data.protonation_value != 'ligprep':
-                model_cmd += ['--protonation', docking_data.protonation_value]               
+            if docking_data.protonation_value and 'schrodinger' not in docking_data.protonation_value:
+                model_cmd += ['--protonation', docking_data.protonation_value]
+                preprocessed_fname = fname               
+            else:
+                preprocessed_fname = run_ligprep_protonation(schrodinger_dir=docking_data.protonation_value, 
+                                        output_dir=temp_docking_dir, 
+                                        valid_molecule_file_dict={model: fname})   
 
-            model_cmd += ['-i', fname, '-o', temp_output_easydock_db]
+            post_processed_fname = prepare_easydock_ligprep_docking_input(input_fname=preprocessed_fname)
+
+            model_cmd += ['-i', post_processed_fname, '-o', temp_output_easydock_db]
 
             logging.info(f'Easydock docking with cmd: {model_cmd=}')
             subprocess.run(model_cmd, text=True)
-            subprocess.run(['cp', temp_output_easydock_sdf, output_easydock_sdf], text=True)
+
+            post_processed_docking_fname = process_easydock_docking_output(temp_output_easydock_sdf)
+            subprocess.run(['cp', post_processed_docking_fname, output_easydock_sdf], text=True)
 
 
 def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data, input_data):
 
     grid_filepath = GlideProtein(pdb_filepath=input_data.pdb_value,
-                                native_ligand=list(Chem.SDMolSupplier(input_data.sdf_value))[0],
+                                native_ligand=list(Chem.SDMolSupplier(input_data.sdf_value, removeHs=False))[0],
                                 grid_output_dirpath=str(Path(input_data.pdb_value).parent),
                                 schrodinger_dirpath=docking_data.dir_value,
                                 protein_preparation=docking_data.protein_preparation_value).grid_filepath
@@ -225,6 +283,7 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
             else:
                 protonated_fname = fname
 
+            os.chdir(Path(protonated_fname).parent)
             jobname = f'glide_{Path(fname).stem}'
             inp_fname = Path(tempdir) / f'{jobname}.inp'
             prepare_glide_inp_file(grid_fname=grid_filepath,

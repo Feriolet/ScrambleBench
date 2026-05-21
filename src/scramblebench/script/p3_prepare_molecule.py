@@ -113,7 +113,7 @@ def prepare_molecule(config_data):
     json_content = defaultdict(dict)
     for model, fname in valid_molecule_file_dict.items():
 
-        mol_l = Chem.SDMolSupplier(fname)
+        mol_l = Chem.SDMolSupplier(fname, removeHs=False)
 
         json_content[model] = compute_generation_performance(mol_l=mol_l)
 
