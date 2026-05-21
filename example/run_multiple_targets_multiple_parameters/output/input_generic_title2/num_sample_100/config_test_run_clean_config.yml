@@ -18,14 +18,12 @@ model:
 
 generation:
   input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output
-  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/output
-  script_pathfile: /mnt/sod/Veincent/manuscript/ScrambleBench/src/scramblebench/script/utils/generation_template.sh
+  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/AI_Generation
+  script_pathfile: /mnt/sod/Veincent/manuscript/ScrambleBench/src/scramblebench/script/utils/generation_utils/generation_template.sh
   parameter:
     box_size: 16
     num_sample: 100
     name: 5ht2c_prepared_0
-    repeat_parameter:
-      num_sample: generation,parameter,num_sample
 
 parameter:
   protein_name: generic_title2
@@ -33,7 +31,7 @@ parameter:
   - DiffSBDD
   - Pocket2Mol
   num_sample: 100
-  repeat_parameter:
+  batch_parameter:
     num_sample: 100
 
 post_generation:
@@ -46,12 +44,12 @@ analysis:
     input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/cheminformatics_input_prepared
     output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/cheminformatics_analysis
     conda_env: benchmark_genbench3d
-    genbench_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
-    schrodinger_dir: /opt/schrodinger2025-4
-    genbench_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+    genbench3d_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    genbench3d_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
     do_complex_forcefield_minimisation: true
     do_docking_forcefield_minimisation: true
     skip_genbench3d_protonation: true
+    schrodinger_dir: /opt/schrodinger2025-4
   redocking:
     protonation:
       input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/cheminformatics_input_prepared
@@ -64,10 +62,10 @@ analysis:
         output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/vina_output
         conda_env: benchmark_easydock
         docking_program: vina
-        protonation: null
         config_fname: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/config/easydock_config_5HT2C.yml
-        protein_preparation: adfr
-        protein_preparation_executable: /mnt/sod/Veincent/manuscript/ScrambleBench/src/scramblebench/script/utils/prepare_receptor
+        protein_pdbqt_preparation: adfr
+        protein_preparation: pdbfixer
+        protein_pdbqt_executable: /opt/veincent/software/ADFRsuite-1.0/ADFRsuite_x86_64Linux_1.0/bin/prepare_receptor
       glide:
         input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/cheminformatics_input_prepared
         output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/glide_output

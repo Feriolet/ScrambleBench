@@ -113,15 +113,19 @@ def prepare_molecule(config_data):
     json_content = defaultdict(dict)
     for model, fname in valid_molecule_file_dict.items():
 
+        output_dir = postgen_output_root_dirpath / model
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / f'{Path(fname).stem}_prepared.sdf'
+
+        if Path(output_file).is_file():
+            logging.info(f'Molecule Preparation is done using {fname}. Skipping...')
+            continue
+
         mol_l = Chem.SDMolSupplier(fname, removeHs=False)
 
         json_content[model] = compute_generation_performance(mol_l=mol_l)
 
         mol_l = prepare_mol(validate_mol_list(mol_l), model, config_data=config_data)
-
-        output_dir = postgen_output_root_dirpath / model
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = output_dir / f'{Path(fname).stem}_prepared.sdf'
 
         with Chem.SDWriter(output_file) as w:
             for mol in mol_l:

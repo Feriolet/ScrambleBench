@@ -1,0 +1,50 @@
+input:
+  GPCR_5HT2C:
+    complex_path: input/5ht2c/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+    pdb_path: input/5ht2c/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+    sdf_path: input/5ht2c/gpcr_5ht2c_6bqh_ligand.sdf
+
+model:
+  pocket2mol:
+    name: Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
+
+generation:
+  input: output
+  output: AI_Generation
+
+post_generation:
+  input: AI_Generation
+  output: cheminformatics_input_prepared
+
+analysis:
+  genbench3d:
+    input: cheminformatics_input_prepared
+    output: cheminformatics_analysis
+    genbench3d_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    conda_env: benchmark_genbench3d
+    genbench3d_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+
+  redocking:
+    docking:
+      easydock:
+        input: cheminformatics_input_prepared
+        output: vina_output
+        conda_env: benchmark_easydock
+        protonation: molgpka
+
+  diversity:
+    input: cheminformatics_input_prepared
+    output: diversity
+    conda_env: python_tsp
+
+report:
+  2d: True
+
+
+
+
+
+
+

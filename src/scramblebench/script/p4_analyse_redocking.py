@@ -121,8 +121,8 @@ def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_
         config_data = yaml.load(config_f, Loader=yaml.SafeLoader)
     
     config_data['protein'] = VinaProtein(pdb_filepath=protein_pdb, 
-                                         prepare_receptor_bin_path=docking_data.protein_preparation_executable_value,
-                                         protonation_method=docking_data.protein_protonation_value,
+                                         prepare_receptor_bin_path=docking_data.protein_pdbqt_executable_value,
+                                         protonation_method=docking_data.protein_preparation_value,
                                          preparation_method=docking_data.protein_pdbqt_preparation_value).pdbqt_filepath 
     
     config_data['protein_setup'] = grid_fname
@@ -190,7 +190,8 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
                                         output_dir=temp_docking_dir, 
                                         valid_molecule_file_dict={model: fname})   
 
-            post_processed_fname = prepare_easydock_ligprep_docking_input(input_fname=preprocessed_fname)
+            post_processed_fname = prepare_easydock_ligprep_docking_input(input_fname=preprocessed_fname,
+                                                                          output_dir=temp_docking_dir)
 
             model_cmd += ['-i', post_processed_fname, '-o', temp_output_easydock_db]
 

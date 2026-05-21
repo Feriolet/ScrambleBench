@@ -22,9 +22,12 @@ class DiversityConfig:
 
         self.input_value = config_data[self.input_name]
         self.output_value = config_data[self.output_name]
-        self.method_value = config_data[self.method_name]
+        self.method_value = config_data.get(self.method_name) 
         self.environment_value = config_data[self.environment_name]
 
+        if config_data.get(self.method_name) is None:
+            self.method_value = [{self.method_distance_name: 'ecfp',
+                                  self.method_diversity_name: 'hamdiv'}]
 
     def update(self, key: str, value: str):
         return self

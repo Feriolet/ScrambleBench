@@ -5,7 +5,7 @@ parameter:
   - PocketFlow
   - GraphBP
   num_sample: 2000
-  repeat_parameter: null
+  repeat_parameter: {}
 
 post_generation:
   input: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/AI_Generation
@@ -16,8 +16,8 @@ analysis:
     input: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_input_prepared
     output: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_analysis
     conda_env: benchmark_genbench3d
-    genbench_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
-    genbench_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+    genbench3d_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    genbench3d_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
 
   diversity:
     input: /mnt/sod/Veincent/manuscript/POKMOL_data/Model-Generation-Outputs/Protein_5HT2A/cheminformatics_input_prepared

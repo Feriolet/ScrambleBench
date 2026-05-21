@@ -10,7 +10,11 @@ logger = logging.getLogger(__name__)
 class GenerationParameterConfig:
 
     def __init__(self, parameter_data: dict[str, Any]):
-        parameter_data = parameter_data[config_constant.GENERATION_PARAMETER_KEY]
+
+        if config_constant.GENERATION_PARAMETER_KEY in parameter_data:
+            parameter_data = parameter_data[config_constant.GENERATION_PARAMETER_KEY] 
+        else:
+            parameter_data = {}
 
         self.box_size_name = 'box_size'
         self.num_sample_name = 'num_sample'
@@ -18,7 +22,7 @@ class GenerationParameterConfig:
 
         if parameter_data.get(self.box_size_name) is None:
             logging.warning('Unspecified parameter box size. Setting default to 16 A')
-            self.box_size_value = 10
+            self.box_size_value = 16
         elif isinstance(parameter_data[self.box_size_name], (int, float)):
             self.box_size_value = parameter_data[self.box_size_name]
         elif isinstance(parameter_data[self.box_size_name], str):
@@ -31,7 +35,7 @@ class GenerationParameterConfig:
         if parameter_data.get(self.num_sample_name) is None:
             logging.warning('Unspecified parameter num sample. Setting default to 100')
             self.num_sample_value = 100
-        if isinstance(parameter_data[self.num_sample_name], int):
+        elif isinstance(parameter_data[self.num_sample_name], int):
             self.num_sample_value = parameter_data[self.num_sample_name]
         elif isinstance(parameter_data[self.num_sample_name], str):
             self.num_sample_value = [int(num.strip()) for num in parameter_data[self.num_sample_name].split(',')]

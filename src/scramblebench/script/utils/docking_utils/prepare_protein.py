@@ -44,6 +44,11 @@ class VinaProtein():
             'Something went wrong during protein cleaning'
         return self._protein_clean_filepath
     
+    @protein_clean_filepath.setter
+    def protein_clean_filepath(self, new_filepath):
+        # Add any validation or logic here
+        self._protein_clean_filepath = new_filepath
+
     def vina_prepare_receptor(self,
                               output_pdbqt_filepath: str,
                                 pH: float = 7.4
@@ -102,7 +107,7 @@ class VinaProtein():
     def pdb_to_pdbqt(self,
                      ph: float = 7.4,
                      ) -> None:
-        molecule = list(pybel.readfile("pdb", str(self._protein_filepath)))[0]
+        molecule = list(pybel.readfile("pdb", str(self.protein_filepath)))[0]
         self.ob_mol_to_pdbqt(molecule, ph)
 
 

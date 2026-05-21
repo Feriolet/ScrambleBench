@@ -27,9 +27,9 @@ class GenBenchDockingMethod(Enum):
     GLIDE_INPLACE = "Minimized Glide score"
 
 
-def fetch_valid_genbench_json_file(genbench_data: config_genbench3d.GenBench3DConfig, model) -> dict[str, str]:
+def fetch_valid_genbench3d_json_file(genbench3d_data: config_genbench3d.GenBench3DConfig, model) -> dict[str, str]:
 
-    output_dirpath = Path(genbench_data.output_value)
+    output_dirpath = Path(genbench3d_data.output_value)
     if not output_dirpath.is_dir():
         logging.exception('You have prepared your molecule yet!')
         raise DirNotFoundError(f'{output_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
@@ -37,7 +37,7 @@ def fetch_valid_genbench_json_file(genbench_data: config_genbench3d.GenBench3DCo
     valid_molecule_file_dict = {}
 
     complex_minimisation = ['unminimised']
-    if genbench_data.do_complex_forcefield_minimisation_value:
+    if genbench3d_data.do_complex_forcefield_minimisation_value:
         complex_minimisation += ['minimised']
 
     for minimisation in complex_minimisation:
@@ -61,35 +61,35 @@ def collect_genbench3d_data(analysis_data, parameter_class):
     valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=genbench3d_data.input_value,
                                                                     model_list=parameter_class.model_list_value)    
 
-    genbench_dict = defaultdict(list)
+    genbench3d_dict = defaultdict(list)
     for model, input_sdf_fname in valid_molecule_file_dict.items():
         input_mol = Chem.SDMolSupplier(input_sdf_fname, removeHs=False)
         name_l = [mol.GetProp('_Name') for mol in input_mol]
-        genbench_dict['mol_id'] +=  name_l
-        genbench_dict['Model'] += [model] * len(name_l)
-        valid_genbench_json_dict = fetch_valid_genbench_json_file(genbench_data=genbench3d_data,
+        genbench3d_dict['mol_id'] +=  name_l
+        genbench3d_dict['Model'] += [model] * len(name_l)
+        valid_genbench3d_json_dict = fetch_valid_genbench3d_json_file(genbench3d_data=genbench3d_data,
                                                     model=model)
                                                     
-        for minimisation, json_fname in valid_genbench_json_dict.items():
+        for minimisation, json_fname in valid_genbench3d_json_dict.items():
             with open(json_fname, 'r') as json_f:
                 genbench3d_json_data = json.load(json_f)
 
-            genbench_docking_column = [GenBenchDockingMethod.VINA_INPLACE]
+            genbench3d_docking_column = [GenBenchDockingMethod.VINA_INPLACE]
             if genbench3d_data.do_docking_forcefield_minimisation_value:
-                genbench_docking_column += [GenBenchDockingMethod.VINA_MININPLACE]
+                genbench3d_docking_column += [GenBenchDockingMethod.VINA_MININPLACE]
             if genbench3d_data.schrodinger_dir_value:
-                genbench_docking_column += [GenBenchDockingMethod.GLIDE_INPLACE]
+                genbench3d_docking_column += [GenBenchDockingMethod.GLIDE_INPLACE]
             if genbench3d_data.schrodinger_dir_value and genbench3d_data.do_docking_forcefield_minimisation_value:
-                genbench_docking_column += [GenBenchDockingMethod.GLIDE_MININPLACE]
+                genbench3d_docking_column += [GenBenchDockingMethod.GLIDE_MININPLACE]
 
-            for genbench_metric in genbench_docking_column:
+            for genbench3d_metric in genbench3d_docking_column:
                 if minimisation == 'minimised':
-                    genbench_dict[f'FF_minimised_{genbench_metric.value}'] += genbench3d_json_data[genbench_metric.value]
+                    genbench3d_dict[f'FF_minimised_{genbench3d_metric.value}'] += genbench3d_json_data[genbench3d_metric.value]
                 elif minimisation == 'unminimised':
-                    genbench_dict[f'FF_unminimised_{genbench_metric.value}'] += genbench3d_json_data[genbench_metric.value]
+                    genbench3d_dict[f'FF_unminimised_{genbench3d_metric.value}'] += genbench3d_json_data[genbench3d_metric.value]
 
 
-    return pd.DataFrame.from_dict(genbench_dict)
+    return pd.DataFrame.from_dict(genbench3d_dict)
         
 
 def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class):
@@ -225,9 +225,9 @@ def collect_analysis_metric(config_data):
 
     analysis_df = pd.DataFrame()
     if config_constant.ANALYSIS_GENBENCH3D_KEY in analysis_data:
-        genbench_df = collect_genbench3d_data(analysis_data=analysis_data, parameter_class = parameter_data)
+        genbench3d_df = collect_genbench3d_data(analysis_data=analysis_data, parameter_class = parameter_data)
         if analysis_df.empty:
-            analysis_df = genbench_df
+            analysis_df = genbench3d_df
 
     if config_constant.ANALYSIS_REDOCKING_KEY in analysis_data:
         if config_constant.ANALYSIS_REDOCKING_DOCKING_KEY in analysis_data[config_constant.ANALYSIS_REDOCKING_KEY]:

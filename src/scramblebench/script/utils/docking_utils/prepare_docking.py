@@ -137,11 +137,11 @@ def prepare_glide_inp_file(grid_fname, ligand_fname, write_fname, intra_hbonds=F
         glide_inp_f.write(glide_inp)
 
 
-def prepare_easydock_ligprep_docking_input(input_fname):
+def prepare_easydock_ligprep_docking_input(input_fname, output_dir):
 
     mol_l = Chem.SDMolSupplier(input_fname, removeHs=False)
-    print(f'input{len(mol_l)=}')
-    output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_ez_prepared.sdf'
+
+    output_fname = Path(output_dir) / f'{Path(input_fname).stem}_ez_prepared.sdf'
     write_fname = Chem.SDWriter(output_fname)
     mol_dict = {}
 
@@ -164,7 +164,7 @@ def process_easydock_docking_output(input_fname):
     output_fname = Path(input_fname).parent / f'{Path(input_fname).stem}_processed.sdf'
     write_fname = Chem.SDWriter(output_fname)
     mol_dict = defaultdict(dict)
-    print(f'output{len(mol_l)=}')
+
     for mol in mol_l:
         id_num = mol.GetProp('_Name')
         docking_score = float(mol.GetProp('docking_score'))

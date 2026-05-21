@@ -29,10 +29,10 @@ analysis:
   genbench3d:
     input: cheminformatics_input_prepared
     output: cheminformatics_analysis
-    genbench_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    genbench3d_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
     conda_env: benchmark_genbench3d
     schrodinger_dir: /opt/schrodinger2025-4
-    genbench_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+    genbench3d_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
     do_complex_forcefield_minimisation: True
     do_docking_forcefield_minimisation: True
     skip_genbench3d_protonation: True
@@ -50,7 +50,8 @@ analysis:
         output: vina_output
         conda_env: benchmark_easydock
         protein_pdbqt_preparation: adfr
-        protein_protonation: pdbfixer
+        protein_pdbqt_executable: /opt/veincent/software/ADFRsuite-1.0/ADFRsuite_x86_64Linux_1.0/bin/prepare_receptor 
+        protein_preparation: pdbfixer
         docking_program: vina
         protonation: null
         config_fname: config/easydock_config_5HT2C.yml

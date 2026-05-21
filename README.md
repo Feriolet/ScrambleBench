@@ -365,7 +365,7 @@ string: `parameter`
 
 | Field      | dtype                | description                                                                                            | required | default       |
 |------------|----------------------|--------------------------------------------------------------------------------------------------------|----------|---------------|
-| box_size   | None or float or str | box size for molecule generation (similar to docking box) in Amstrong (must be comma separated if str) | False*    | 10            |
+| box_size   | None or float or str | box size for molecule generation (similar to docking box) in Amstrong (must be comma separated if str) | False*    | 16            |
 | num_sample | None or int or str | number of requested generated molecule (must be comma separated if str)                                | False*    | 100           |
 | name       | str or None          | job name                                                                                               | False    | generic_title |
 
