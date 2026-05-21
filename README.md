@@ -64,6 +64,7 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 
 - **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, diversity, and conformational analysis.
 - **Additional report**: JSON file that reports on `validity3d`, `uniqueness`, and `diversity`
+- **Pharmacophore Screening**: implements pharmacophore screening to reflect ideal target binding
 
 
 ## Installation
