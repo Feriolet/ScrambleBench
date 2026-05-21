@@ -219,7 +219,8 @@ conda activate scramblebench
 
 #### 1. Prepare Config File
 
-Before running the molecule generation, it is necessary to understand the appropriate input for ScrambleBench. Several examples are available in the `example` folder. Briefly, the description of the yaml keys are the following:
+Before running the molecule generation, it is necessary to understand the appropriate input for ScrambleBench. Several examples are available in the `example` folder. Although  `p1_generate_config.py` scans all of the `yaml` keys and subkeys, we will reveal the config keys gradually throughout the documentation :).
+
 ```yaml
 input:
   protein1: # name of the protein (str)
@@ -235,80 +236,45 @@ model:
     name: # name of the model (str)
     dir: # path to model dir (str)
     conda_env: # name of conda env (str)
-
-generation:
-  input: # path to output yaml file
-  output: # path to generation output (default: input/AI_Generation)
-  script_pathfile: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
-  parameter:
-    box_size: # int or list of float/int separated by comma
-    num_sample: # int or list of int separated by comma
-    name: # job name (str)
-
-post_generation:
-  input: # path to output generation
-  output: # path to output post generation
-  pick_last: # method of picking last ligand if exceed num_sample (model name must exist in the model key)
-  pick_random: # method of picking random ligand if exceed num_sample (model name must exist in the model key)
-
-# optional key
-analysis: # currently, only support genbench, redocking, and diversity
-  genbench3d:
-    input: # input folder (must exist)
-    output: # output folder
-    genbench_dir: # path to genbench rootdir
-    conda_env: #genbench conda environment
-    schrodinger_dir: # (optional) schrodinger root directory
-    genbench_config: #path to genbench running config (refer to genbench github, we have default config file)
-    do_complex_forcefield_minimisation: # (optional) whether to do MMFF98 minimisation before running analysis
-    do_docking_forcefield_minimisation: # (optional) whether to do mininplace docking
-    skip_genbench3d_protonation: # (optional) whether to ask genbench not to protoonate any input
-
-  redocking: # currently, on support protonation and docking
-    protonation: 
-      method: # only supported protonation of easydock
-      input: # input folder (must exist)
-      output: # output folder
-      env: # easydock environment
-
-    docking: # currently, only support easydock and glide
-      easydock:
-        input: # folder must exist in previous pipeline
-        output: # output folder
-        conda_env: # easydock environment
-        protein_preparation: # adfr, obabel, or schrodinger protwizard
-        docking_program: # supported docking in easydock, refer to easydock github
-        protonation: # only supported protonation of easydock
-        config_fname: # easydock config file
-
-      glide:
-        input: # input folder, mut exist in previous pipeline
-        output: # output folder
-        schrodinger_dir: # schrodinger root dir
-        reward_intra_hbonds: # whether to reward intramolecular hydrogen bond (bool)
-        protonation: # ligprep or none
-        protein_preparation: # protwizard or none
-  # to be supported in future release
-  plif:
-    method: schrodinger2025
-    input:
-
-  diversity:
-    input: # input folder (must exist in previous pipeline)
-    output: # output folder
-    conda_env: # conda environment for diversity metric
-    method: # support multiple distance and diversity in the hamdiv github
-    - distance: ecfp
-      diversity: hamdiv
-    - distance: mces
-      diversity: hamdiv
-    - distance: null
-      diversity: generic_bm
-
-# to be supported in future release
-report:
-  2d: True
 ```
+
+**Input Key**
+
+string: `input`
+
+This key must be followed by protein name(s) (e.g., `protein1`) **MULTIPLE proteins are allowed**. Each protein name can have the following fields: 
+| Field        | dtype                    | description                                                           | required | default       |
+|--------------|--------------------------|-----------------------------------------------------------------------|----------|---------------|
+| complex_path | str                      | directory path to complex pdb                                         | True     | N/A           |
+| pdb_path     | str                      | directory path to protein pdb                                         | True     | N/A           |
+| sdf_path     | str                      | directory path to ligand sdf                                          | True     | N/A           |
+| name         | str                      | protein name                                                          | True     | subheading    |
+| pocket_path  | str or None              | directory path to pocket pdb                                          | False*   | autogenerated |
+| pocket_coord | str or list[str] or None | pocket x,y,z center coordinate (must be comma separated or as a list) | False*   | autogenerated |
+
+*: not required for `p1_generate_config.py` but required for other script.
+
+string: `input_dir`
+| Field   | dtype | description                          | required | default |
+|---------|-------|--------------------------------------|----------|---------|
+| dirpath | str   | directory path to protein folder pdb | True     | None    |
+
+Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. If you use `input_dir` key, there **MUST** be a **SINGLE** file of protein.pdb, complex.pdb, and ligand.sdf with the string `protein`, `complex`, and `ligand`, respectively, so that the script can detect which one is which. For example, the script will detect `gpcr_ligand.sdf` as ligand file, but not `gpcr.sdf`, because there is no `ligand` string in the file.
+
+The path directory should be the following:
+
+```txt
+input_folder
+├── protein1
+│   ├── complex.pdb
+│   ├── protein.pdb
+│   └── ligand.sdf
+└── protein2
+    ├── complex.pdb
+    ├── protein.pdb
+    └── ligand.sdf
+```
+
 In the config file, the input key should be either `input` or `input_dir`. Config file with `input_dir` key must be run with `--dirpath_input` argument in the `p1_generate_config.py` script, which can be seen in the `example/run_multiple_targets_single_dir` folder. 
 
 ```txt
@@ -326,21 +292,7 @@ options:
 ```
 Multiple values for the input protein names and parameters (i.e., box_size and num_sample) are supported, which can be seen in the `example` folder.
 
-Currently, all protein target should have a 1) complex pdb, 2) protein pdb, and 3) ligand sdf, because different AI models require different inputs. If you use `input_dir` key, there **MUST** be a **SINGLE** file of protein.pdb, complex.pdb, and ligand.sdf with the string 'protein', 'complex', and 'ligand', respectively, so that the script can detect which one is which. For example, the script will detect 'gpcr_ligand.sdf' as ligand file, but not 'gpcr.sdf', because there is no 'ligand' string in the file.
 
-The path directory should be the following:
-
-```txt
-input_folder
-├── protein_1
-│   ├── complex.pdb
-│   ├── protein.pdb
-│   └── ligand.sdf
-└── protein_2
-    ├── complex.pdb
-    ├── protein.pdb
-    └── ligand.sdf
-```
 
 In the future, we will support complex pdb only, but the file directory should still be the same (i.e., individual protein target has its own folder).
 
@@ -348,11 +300,28 @@ A config file and txt file containing a list of the config.yaml will be written 
 
 For best practice, please write the absolute pathdir, as relative pathdir is relative to the executable path (i.e., pwd). Despite this, relative pathdir is still allowed, and ScrambleBench will resolve it in the config output.
 
+In the output file, you can notice that the protein name in the subheading will be moved to the `name` field of the `input` key.
+
+```yaml
+input:
+  complex_path: 
+  pdb_path: 
+  sdf_path: 
+  pocket_path: 
+  pocket_coord: 
+  name: protein1
+```
 
 #### 2. Run Generation
 
 ```yaml
 #yaml config
+model:
+  pocket2mol:
+    name: # model name used in generating output
+    dir: # model root dir
+    conda_env: # conda name
+
 generation:
   input: # path to output yaml file
   output: # path to generation output (default: input/AI_Generation)
@@ -362,6 +331,47 @@ generation:
     num_sample: # int or list of int separated by comma
     name: # job name (str)
 ```
+
+**Model Key**
+
+string: `model`
+
+This key must be followed by a model name (e.g., `model1`, preferably lowercase) **MULTIPLE models are allowed**. Each model name can have the following fields:
+| Field | dtype       | description                                           | required | default |
+|-------|-------------|-------------------------------------------------------|----------|---------|
+| name  | str         | model name used for output and downstream file naming | True     | N/A     |
+| dir   | str or None | directory path to installed model folder              | False    | None    |
+| conda | str or None | conda environment name used to run the model          | False    | None    |
+
+If the `dir` and `conda` field is empty or filled with `non_applicable`, the `p2_execute_generation.py` won't run these models. This is reserved for models that have generated the molecules without using `ScrambleBench`.
+
+Note that there are differences in the `name` field and the model name (e.g., `model1`). The `name` field is essential for naming the intermediates and output files for downstream analysis, while the `model1` is essential for the `script/utils/generation_utils/generation_template.sh`
+
+**Generation Key**
+
+string: `generation`
+
+| Field           | dtype       | description                                        | required | default                                                |
+|-----------------|-------------|----------------------------------------------------|----------|--------------------------------------------------------|
+| input           | str         | typically directory path to the prepared yaml file | True     | N/A                                                    |
+| output          | str         | directory path to output generation                | True     | N/A                                                    |
+| script_pathfile | str or None | file path to bash script to execute generation     | False*   | `script/utils/generation_utils/generation_template.sh` |
+| parameter       | dict        | model parameter used for generation                | False*   | see below                                              |
+
+*: not required for `p1_generate_config.py` but required for other script.
+
+**Generation Parameter Key**
+
+string: `parameter`
+
+| Field      | dtype                | description                                                                                            | required | default       |
+|------------|----------------------|--------------------------------------------------------------------------------------------------------|----------|---------------|
+| box_size   | None or float or str | box size for molecule generation (similar to docking box) in Amstrong (must be comma separated if str) | False*    | 10            |
+| num_sample | None or int or str | number of requested generated molecule (must be comma separated if str)                                | False*    | 100           |
+| name       | str or None          | job name                                                                                               | False    | generic_title |
+
+*: not required for `p1_generate_config.py` but required for other script.
+
 The generation script allows two kinds of input: a single yaml file input or a txt file containing a list of yaml pathdir. 
 
 Before generation, this script will check whether the generation script (default: `src/script/utils/generation_template.sh`) will generate molecules by the correct AI model by their conda environment (e.g., pmdm model should have a `$model_pmdm_conda_env` and pocket2mol model should have a `$model_pocket2mol_conda_env` string in the bash script).
@@ -408,6 +418,18 @@ post_generation:
   pick_last: # method of picking last ligand if exceed num_sample (model name must exist in the model key)
   pick_random: # method of picking random ligand if exceed num_sample (model name must exist in the model key)
 ```
+
+**Post Generation Key**
+
+string: `post_generation`
+
+| Field       | dtype       | description                                                                                | required | default |
+|-------------|-------------|--------------------------------------------------------------------------------------------|----------|---------|
+| input       | str         | input directory path to generated molecule                                                 | True     | N/A     |
+| output      | str         | output directory path to processed generated molecule                                      | True     | N/A     |
+| pick_last   | None or str | filled with model name to pick last `num_sample` molecule (must be comma separated if str) | False    | None    |
+| pick_random | None or str | filled with model name to randomly pick molecule (must be comma separated if str)          | False    | None    |
+
 
 The key `pick_last` and `pick_random` should be filled with the model name (case sensitive). This will only trigger when the model generate more ligand than the requested `num_sample`. For example, if the requested num_sample is `100`, but the model has generated `200` ligand, the script will trim it down to `100` ligands instead. `pick_last` will pick the last `100` ligands from the `.sdf` file, while `pick_random` will randomly pick ligands. If the model is unspecified, the script will use `pick_random` by default.
 
