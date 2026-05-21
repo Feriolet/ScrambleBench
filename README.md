@@ -32,7 +32,9 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
     - [Step-by step pipeline](#step-by-step-pipeline)
       - [1. Prepare Config File](#1-prepare-config-file)
       - [2. Run Generation](#2-run-generation)
+      - [2.5. Parameter Key](#25-parameter-key)
       - [3. Prepare molecule](#3-prepare-molecule)
+      - [4. Analysis Key](#4-analysis-key)
       - [4a. GenBench3D analysis](#4a-genbench3d-analysis)
       - [4b. Redocking analysis](#4b-redocking-analysis)
       - [4c. Diversity Analysis](#4c-diversity-analysis)
@@ -223,19 +225,13 @@ Before running the molecule generation, it is necessary to understand the approp
 
 ```yaml
 input:
-  protein1: # name of the protein (str)
-    complex_path: # pdb file (str). Must have protein + ligand inside
-    pdb_path: # pdb file (str). 
-    sdf_path: # sdf file (str)
+  protein1:
+    complex_path: input/5ht2c/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+    pdb_path: input/5ht2c/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+    sdf_path: input/5ht2c/gpcr_5ht2c_6bqh_ligand.sdf
 
 input_dir:
-  dirpath: # directory path containing the folders of each protein target
-
-model: 
-  pmdm: # name of the model (str)
-    name: # name of the model (str)
-    dir: # path to model dir (str)
-    conda_env: # name of conda env (str)
+  dirpath: input
 ```
 
 **Input Key**
@@ -245,7 +241,7 @@ string: `input`
 This key must be followed by protein name(s) (e.g., `protein1`) **MULTIPLE proteins are allowed**. Each protein name can have the following fields: 
 | Field        | dtype                    | description                                                           | required | default       |
 |--------------|--------------------------|-----------------------------------------------------------------------|----------|---------------|
-| complex_path | str                      | directory path to complex pdb                                         | True     | N/A           |
+| complex_path | str                      | directory path to protein-ligand complex pdb                          | True     | N/A           |
 | pdb_path     | str                      | directory path to protein pdb                                         | True     | N/A           |
 | sdf_path     | str                      | directory path to ligand sdf                                          | True     | N/A           |
 | name         | str                      | protein name                                                          | True     | subheading    |
@@ -304,11 +300,11 @@ In the output file, you can notice that the protein name in the subheading will 
 
 ```yaml
 input:
-  complex_path: 
-  pdb_path: 
-  sdf_path: 
-  pocket_path: 
-  pocket_coord: 
+  complex_path: /home/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/5ht2c/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+  pdb_path: /home/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/5ht2c/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+  sdf_path: /home/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/5ht2c/gpcr_5ht2c_6bqh_ligand.sdf
+  pocket_path: /home/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/input/5ht2c/gpcr_5ht2c_6bqh_complex_autopreparedcut10/gpcr_5ht2c_6bqh_complex_autopreparedcut10_pocket_withH.pdb
+  pocket_coord: 38.87,31.02,56.85
   name: protein1
 ```
 
@@ -316,27 +312,30 @@ input:
 
 ```yaml
 #yaml config
-model:
+model: 
+  diffsbdd:
+    name: DiffSBDD
+    dir: models/DiffSBDD
+    conda_env: benchmark_diffsbdd
   pocket2mol:
-    name: # model name used in generating output
-    dir: # model root dir
-    conda_env: # conda name
+    name: Pocket2Mol
+    dir: models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
 
 generation:
-  input: # path to output yaml file
-  output: # path to generation output (default: input/AI_Generation)
-  script_pathfile: # path to generation script for custom model (default: src/script/utils/generation_template.sh)
+  input: output
+  output: AI_Generation
   parameter:
-    box_size: # int or list of float/int separated by comma
-    num_sample: # int or list of int separated by comma
-    name: # job name (str)
+    box_size: 16
+    num_sample: 50,100 
+    name: 5ht2c_prepared_0
 ```
 
 **Model Key**
 
 string: `model`
 
-This key must be followed by a model name (e.g., `model1`, preferably lowercase) **MULTIPLE models are allowed**. Each model name can have the following fields:
+This key must be followed by a model name (e.g., `pocket2mol`, preferably lowercase) **MULTIPLE models are allowed**. Each model name can have the following fields:
 | Field | dtype       | description                                           | required | default |
 |-------|-------------|-------------------------------------------------------|----------|---------|
 | name  | str         | model name used for output and downstream file naming | True     | N/A     |
@@ -345,7 +344,7 @@ This key must be followed by a model name (e.g., `model1`, preferably lowercase)
 
 If the `dir` and `conda` field is empty or filled with `non_applicable`, the `p2_execute_generation.py` won't run these models. This is reserved for models that have generated the molecules without using `ScrambleBench`.
 
-Note that there are differences in the `name` field and the model name (e.g., `model1`). The `name` field is essential for naming the intermediates and output files for downstream analysis, while the `model1` is essential for the `script/utils/generation_utils/generation_template.sh`
+Note that there are differences in the `name` field and the model name (e.g., `pocket2mol`). The `name` field is essential for naming the intermediates and output files for downstream analysis, while the `pocket2mol` is essential for the `script/utils/generation_utils/generation_template.sh`
 
 **Generation Key**
 
@@ -355,7 +354,7 @@ string: `generation`
 |-----------------|-------------|----------------------------------------------------|----------|--------------------------------------------------------|
 | input           | str         | typically directory path to the prepared yaml file | True     | N/A                                                    |
 | output          | str         | directory path to output generation                | True     | N/A                                                    |
-| script_pathfile | str or None | file path to bash script to execute generation     | False*   | `script/utils/generation_utils/generation_template.sh` |
+| script_pathfile | str or None | file path to bash script to execute generation     | False*   | `src/scramblebench/script/utils/generation_utils/generation_template.sh` |
 | parameter       | dict        | model parameter used for generation                | False*   | see below                                              |
 
 *: not required for `p1_generate_config.py` but required for other script.
@@ -398,6 +397,27 @@ output_folder
     ├── generated_model1_ligand.sdf
     └── generated_model2_ligand.sdf   
 ```
+
+
+  batch_parameter: {}
+
+#### 2.5. Parameter Key
+
+For further downstream analysis, this key is essential as all parts will require this information one way or another. This parameter key is auto-generated from `p1_generate_config.py` and hence does not need to be prefilled.
+
+
+**Parameter Key**
+
+string: `parameter`
+
+| Field        | dtype     | description                         | required | default |
+|--------------|-----------|-------------------------------------|----------|---------|
+| protein_name | str       | identical as the `input` key        | True     | N/A     |
+| model_list   | list[str] | list of model `name` in `model` key | True     | N/A     |
+| num_sample   | int       | identical as the `generation` key   | True     | 100     |
+| batch_parameter   | dict       | `parameter` in the `generation` key that have multiple values (i.e., `num_sample` and `box_size`)  | False     | {}     |
+
+
 #### 3. Prepare molecule
 
 After generation, the molecules need to be prepared and validated.
@@ -413,10 +433,10 @@ summary
 ```yaml
 #yaml config
 post_generation:
-  input: # path to output generation
-  output: # path to output post generation
-  pick_last: # method of picking last ligand if exceed num_sample (model name must exist in the model key)
-  pick_random: # method of picking random ligand if exceed num_sample (model name must exist in the model key)
+  input: AI_Generation
+  output: cheminformatics_input_prepared
+  pick_last: Pocket2Mol
+  pick_random: null
 ```
 
 **Post Generation Key**
@@ -453,6 +473,11 @@ output_folder
 └── model2
     └── prepared_model2_ligand.sdf
 ```
+
+#### 4. Analysis Key
+
+This key is optional if the user wishes to perform the analysis of their generated molecules. In the config files, the key `analysis` must be added. The subkeys `genbench3d`, `redocking`, and `diversity` are supported.
+
 #### 4a. GenBench3D analysis
 
 This will run the GenBench3D analysis. Please fill in the config files in the GenBench3D repository in `config/GenAI_evaluation.yaml`. An example is also shown in the `example/run_multiple_targets_multiple_parameters/config/GenAI_evaluation.yaml`.
@@ -470,18 +495,38 @@ Scramblebench script currently does not attempt to access genbench3d config, whi
 
 ```yaml
 # ScrambleBench config
-analysis: # currently, only support genbench, redocking, and diversity
+analysis:
   genbench3d:
-    input: # input folder (must exist)
-    output: # output folder
-    genbench_dir: # path to genbench rootdir
-    conda_env: #genbench conda environment
-    schrodinger_dir: # (optional) schrodinger root directory
-    genbench_config: #path to genbench running config (refer to genbench github, we have default config file)
-    do_complex_forcefield_minimisation: # (optional) whether to do MMFF98 minimisation before running analysis
-    do_docking_forcefield_minimisation: # (optional) whether to do mininplace docking
-    skip_genbench3d_protonation: # (optional) whether to ask genbench not to protoonate any input
+    input: cheminformatics_input_prepared
+    output: cheminformatics_analysis
+    genbench3d_dir: /home/Veincent/manuscript/ScrambleBench/models/genbench3d
+    conda_env: benchmark_genbench3d
+    schrodinger_dir: /opt/schrodinger2025-4
+    genbench3d_config: /home/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+    do_complex_forcefield_minimisation: True
+    do_docking_forcefield_minimisation: True
+    skip_genbench3d_protonation: True
 ```
+
+
+**GenBench3D Key**
+
+string: `genbench3d`
+
+| Field                              | dtype        | description                                                            | required | default |
+|------------------------------------|--------------|------------------------------------------------------------------------|----------|---------|
+| input                              | str          | input directory path to prepared generated molecule                    | True     | N/A     |
+| output                             | str          | output directory path to genbench3d analysis                           | True     | N/A     |
+| genbench3d_dir                     | str          | directory path to installed genbench3d folder                          | True     | N/A     |
+| conda_env                          | str          | conda environment name to execute genbench3d script                    | True     | N/A     |
+| genbench3d_config                  | str          | file path to the genbench3d_config (see below)                         | True     | N/A     |
+| schrodinger_dir                    | None or str  | directory path to the schrodinger root dir                             | False    | None    |
+| do_complex_forcefield_minimisation | None or bool | whether to perform MMFF94 minimisation before analysis                 | False    | None    |
+| do_docking_forcefield_minimisation | None or bool | whether to perform mininplace docking                                  | False    | None    |
+| skip_genbench3d_protonation        | None or bool | whether to skip both ligand and protein protonation by adfr and/obabel | False    | None    |
+
+
+
 ```yaml
 # genbench3d config
 benchmark_dirpath: GenBench3D rootdir repository
@@ -530,11 +575,12 @@ options:
 ```
 
 Because genbench3d allows for many different parameter choices, each analysis can take a long time. Below is some of the parameter that can be used:
-| Parameter | Description | Config Key| Default |
-| -------- | ----------------------- | -------- | ------- |
-| Complex Minimisation  | Whether to do MMFF94 minimisation before analysis  | `do_complex_forcefield_minimisation` | False (setting True will perform both analysis)
-| Docking Minimisation | Whether to do mininplace scoring | `do_docking_forcefield_minimisation` | False (setting True will perform both analysis)
-| Docking Program | Which docking program to use | varied (`--schrodinger_dir` to do Glide SP) | Vina (unless input key in `ScrambleBench` config is missing; see `examples/run_without_protein_input`)
+
+| Parameter            | Description                                       | GenBench3D Config Field                     | Default                                                                                                |
+|----------------------|---------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| Complex Minimisation | Whether to do MMFF94 minimisation before analysis | `do_complex_forcefield_minimisation`        | False (setting True will perform both analysis)                                                        |
+| Docking Minimisation | Whether to do mininplace scoring                  | `do_docking_forcefield_minimisation`        | False (setting True will perform both analysis)                                                        |
+| Docking Program      | Which docking program to use                      | varied (`--schrodinger_dir` to do Glide SP) | Vina (unless input key in `ScrambleBench` config is missing; see `examples/run_without_protein_input`) |
 
 In order to track GenBench3D analysis, we have set up a `genbench3d_checkpoint.json` to prevent repeat analysis in case analysis terminated halfway.
 
@@ -576,9 +622,10 @@ For redocking, we currently support `easydock` redocking and `Glide SP` redockin
 
 Separate installation is needed to run these programs. Please refer to the easydock documentation here: [protonation](https://easydock.readthedocs.io/en/latest/usage/#protonation-options) and [docking](https://easydock.readthedocs.io/en/latest/usage/#molecular-docking)
 
-supported easydock docking program: `vina`, `gnina`, `smina`, `vina-gpu`, `qvina`, `server`
+string: `redocking`
 
-supported easydock protonation program: `molgpka`, `unipka`, `chemaxon`
+supported subkeys: `protonation`, `docking`
+
 
 Expected input:
 ```
@@ -591,33 +638,79 @@ input_folder
 
 ```yaml
 analysis:
-  redocking: # currently, on support protonation and docking
+  redocking:
     protonation: 
-      method: # only supported protonation of easydock
-      input: # input folder (must exist)
-      output: # output folder
-      env: # easydock environment
+      method: ligprep
+      input: cheminformatics_input_prepared
+      output: docking
+      env: /opt/schrodinger2025-4
 
-    docking: # currently, only support easydock and glide
+    docking:
       easydock:
-        input: # folder must exist in previous pipeline
-        output: # output folder
-        conda_env: # easydock conda environment
-        protein_preparation: # adfr, obabel, or protwizard
-        docking_program: # supported docking in easydock, refer to easydock github
-        protonation: # only supported protonation of easydock
-        config_fname: # easydock config file
+        input: docking
+        output: vina_output
+        conda_env: benchmark_easydock
+        protein_pdbqt_preparation: adfr
+        protein_pdbqt_executable: /opt/veincent/software/ADFRsuite-1.0/ADFRsuite_x86_64Linux_1.0/bin/prepare_receptor 
+        protein_preparation: /opt/schrodinger2025-4
+        docking_program: vina
+        protonation: null
+        config_fname: config/easydock_config_5HT2C.yml
 
       glide:
-        input: # input folder, mut exist in previous pipeline
-        output: # output folder
-        schrodinger_dir: # schrodinger root dir
-        reward_intra_hbonds: # whether to reward intramolecular hydrogen bond (bool)
-        protonation: # ligprep or none
-        protein_preparation: # protwizard or none
+        input: cheminformatics_input_prepared
+        output: glide_output
+        schrodinger_dir: /opt/schrodinger2025-4
+        reward_intra_hbonds: null
+        protonation: ligprep
+        protein_preparation: protwizard
 ```
 
-Note that there is two levels of protonation here: `protonation` key and within the `docking` key. This is provided in case that users want to protonate their molecules outside of `easydock` (e.g., `LigPrep`). However, since `easydock` can only take unique molecules, `ScrambleBench` does not support molecule inputs with multiple protonation/isomer. This will be supported in v0.2.0 or later.
+**Redocking Protonation Key**
+
+string: `protonation`
+
+| Field  | dtype | description                                                                                                       | required | default |
+|--------|-------|-------------------------------------------------------------------------------------------------------------------|----------|---------|
+| input  | str   | input directory path to prepared generated molecule                                                               | True     | N/A     |
+| output | str   | output directory path to ligand protonation                                                                       | True     | N/A     |
+| method | str   | protonation method (choose from [`molgpka`, `unipka`, `chemaxon`] via `easydock`* or `ligprep` via `schrodinger`) | True     | N/A     |
+| env    | str   | conda environment name to execute `easydock`  or  directory path to the `schrodinger` root dir                    | True     | N/A     |
+
+*: Note that these protonation method must be previously installed before running.
+
+**Redocking Docking Easydock Key**
+
+string: `easydock`
+
+| Field                     | dtype       | description                                                                                                                       | required | default                                                                          |
+|---------------------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------------------------------------------------------------|
+| input                     | str         | input directory path to prepared generated molecule                                                                               | True     | N/A                                                                              |
+| output                    | str         | output directory path to easydock docking                                                                                         | True     | N/A                                                                              |
+| conda_env                 | str         | conda environment name to execute easydock script                                                                                 | True     | N/A                                                                              |
+| config_fname              | None or str | path file to easydock config                                                                                                      | False*   | `src/scramblebench/script/utils/docking_utils/easydock_config.yml` for vina only |
+| protein_pdbqt_preparation | str or None | method to generation pdbqt file (choose from [`obabel` or `adfr`])                                                                | False    | obabel                                                                           |
+| protein_pdbqt_executable  | str         | file path to `prepare_receptor`, otherwise just `obabel`                                                                          | False    | obabel                                                                           |
+| protein_preparation       | str or None | method to prepare protein (choose from [`pdbfixer`, `obabel`] or write directory path to the `schrodinger` root dir )             | False    | obabel                                                                           |
+| docking_program           | str or None | method to dock ligand (choose from [`vina`, `gnina`, `smina`, `vina-gpu`, `qvina`, `server`])                                     | False    | vina                                                                             |
+| protonation               | None or str | method to protonate ligand (choose from [`molgpka`, `unipka`, `chemaxon`] or write directory path to the `schrodinger` root dir ) | False    | None                                                                             |
+| ncpu                      | None or int | parallel cpu to run easydock                                                                                                      | False    | None                                                                             |
+
+*: not required for vina only
+
+**Redocking Docking Glide Key**
+
+string: `glide`
+
+| Field               | dtype        | description                                                  | required | default |
+|---------------------|--------------|--------------------------------------------------------------|----------|---------|
+| input               | str          | input directory path to prepared generated molecule          | True     | N/A     |
+| output              | str          | output directory path to glide SP docking                    | True     | N/A     |
+| schrodinger_dir     | str          | directory path to the `schrodinger` root dir                 | True     | N/A     |
+| reward_intra_hbonds | bool or None | whether to reward intramolecular hydrogen bonds              | False    | None    |
+| protonation         | str or None  | method to protonate ligand (choose from `ligprep` or None)   | False    | None    |
+| protein_preparation | None or str  | method to prepare protein (choose from `protwizard` or None) | False    | None    |
+
 
 
 ```txt
@@ -652,10 +745,10 @@ paper: https://jcheminf.biomedcentral.com/articles/10.1186/s13321-024-00883-4
 ```yaml
 analysis:
   diversity:
-    input: # input folder (must exist in previous pipeline)
-    output: # output folder
-    conda_env: # conda environment for diversity metric
-    method: # support multiple distance and diversity in the hamdiv github
+    input: cheminformatics_input_prepared
+    output: diversity
+    conda_env: python_tsp
+    method:
     - distance: ecfp
       diversity: hamdiv
     - distance: mces
@@ -663,25 +756,36 @@ analysis:
     - distance: null
       diversity: generic_bm
 ```
+
+| Field     | dtype      | description                                                           | required | default                                       |
+|-----------|------------|-----------------------------------------------------------------------|----------|-----------------------------------------------|
+| input     | str        | input directory path to prepared generated molecule                   | True     | N/A                                           |
+| output    | str        | output directory path to diversity analysis                           | True     | N/A                                           |
+| conda_env | str        | conda environment name to execute diversity python_tsp script         | True     | N/A                                           |
+| method    | list[dict] | method to measure diversity of a ligand set (choose from table below) | False    | [{`distance`: `ecfp`, `diversity`: `hamdiv`}] |
+
+
 Supported `distance` and `diversity` combination (please refer to HamDiv paper for definition for the distance)
 
-| distance | diversity |
-| ---------| ----------|
-| ecfp | hamdiv | 
-| mces | hamdiv |
-| ecfp | average |
-| null | richness |
-| null | rs |
-| null| fg|
-| null | bm |
-| null | generic_bm|
-| null | intdiv|
-| null | sumdiv|
-| null | diam|
-| null | sumdiam|
-| null | sumbot|
-| null | bot|
-| null | dpp|
+**Do not attempt to do HamDiv MCES for > 500 ligands unless you have the huge RAM resources!**
+
+| distance | diversity  |
+|----------|------------|
+| ecfp     | hamdiv     |
+| mces     | hamdiv     |
+| ecfp     | average    |
+| null     | richness   |
+| null     | rs         |
+| null     | fg         |
+| null     | bm         |
+| null     | generic_bm |
+| null     | intdiv     |
+| null     | sumdiv     |
+| null     | diam       |
+| null     | sumdiam    |
+| null     | sumbot     |
+| null     | bot        |
+| null     | dpp        |
 
 ```
 usage: p4_analyse_diversity.py [-h] -i INPUT
@@ -729,6 +833,14 @@ folder
 ├── yaml_list.txt # from step 1
 ├── protein1 folder
 └── all.csv # output
+```
+
+Sample output:
+```csv
+,protein_name,mol_id,Model,FF_unminimised_Minimized Vina score,FF_unminimised_Vina score,FF_unminimised_Minimized Glide score,FF_unminimised_Glide score,FF_minimised_Minimized Vina score,FF_minimised_Vina score,FF_minimised_Minimized Glide score,FF_minimised_Glide score,easydock_redocking_rmsd,easydock_redocking_score,glide_redocking_rmsd,glide_redocking_score
+0,GPCR_5HT2C,Pocket2Mol_0,Pocket2Mol,-2.279,-2.071,-2.124,-2.014,-2.275,-1.777,-2.119,-1.977,5.032224972117204,-3.879,5.123656916811996,-3.140124946810722
+1,GPCR_5HT2C,Pocket2Mol_1,Pocket2Mol,-2.183,-2.032,-4.233,-3.825,-2.07,-1.86,-4.259,-3.819,5.54947453926946,-3.568,5.92211499618567,-4.6347445657091395
+2,GPCR_5HT2C,Pocket2Mol_10,Pocket2Mol,-2.423,-2.232,-4.403,-4.07,-2.349,-2.271,-4.37,-4.213,4.195787247347035,-3.435,5.830167941496112,-4.4475081845864093
 ```
 
 #### 6. Plotting
