@@ -422,8 +422,6 @@ output_folder
 ```
 
 
-  batch_parameter: {}
-
 #### 2.5. Parameter Key
 
 For further downstream analysis, this key is essential as all parts will require this information one way or another. This parameter key is auto-generated from `p1_generate_config.py` and hence does not need to be prefilled.
@@ -903,6 +901,10 @@ If you are using it for your own use, it is possible to just manually edit the s
 For docking program, another way is to integrate your desired docking program into `easydock`, which have a dedicated page for integrating their program viewed here https://easydock.readthedocs.io/en/latest/custom_docking/.
 
 I may release a documentation dedicated for developers for this in the future.
+
+**Q: How do I break down the `Validity3D` results from `genbench3d`?**
+
+**A:** In the `.json` file inside the `json_output` folder, you can see the breakdown from the `q-value` of the molecule based on the bond length, bond angle, and torsion angle. By default, `Validity3D` depends on whether the bond angle and bond length have passed the 0.001 threshold. `Validity3D` also depends on other factors (e.g., whether aromatic rings are planar). You can see further information at the paper below: https://arxiv.org/abs/2407.04424 
 
 **Q: I want to contribute to the `ScrambleBench`.**
 
