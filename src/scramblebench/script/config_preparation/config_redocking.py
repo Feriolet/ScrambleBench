@@ -303,7 +303,7 @@ class EasyDockConfig:
             if 'schrodinger' in self.protonation_value:
                 self.check_schrodinger_ligprep()
             
-            data[self.protonation_name] = self.protonation_value
+        data[self.protonation_name] = self.protonation_value
             
         if not self.protein_pdbqt_executable_value:
             if not self.protein_pdbqt_preparation_value:
