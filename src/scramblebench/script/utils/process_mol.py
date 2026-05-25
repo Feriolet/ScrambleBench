@@ -1,7 +1,43 @@
 import rdkit
 from rdkit import Chem
+import os
+import sys
 from rdkit.Chem import rdRascalMCES
+from enum import Enum, IntEnum
 from copy import deepcopy
+from rdkit import Chem
+from rdkit.Chem import Descriptors, Crippen, QED, RDConfig, rdRascalMCES
+
+sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
+import sascorer
+
+class PhysicoChemicalProperties(Enum):
+    MW = 'MW'
+    LOGP = 'logP'
+    QED = 'QED'
+    SA_SCORE = 'SAScore'
+
+MOL_PROPERTY_CALCULATORS = {PhysicoChemicalProperties.MW.value: Descriptors.MolWt,
+                            PhysicoChemicalProperties.LOGP.value: Crippen.MolLogP,
+                            PhysicoChemicalProperties.SA_SCORE.value: sascorer.calculateScore,
+                            PhysicoChemicalProperties.QED.value : QED.qed
+                            }
+
+
+def calculate_physicochemical_properties(mol: Chem.Mol) -> Chem.Mol:
+    """Calculate the four physicochemical properties of list of mol.
+    These properties are molecular weight, hydrophobicity, synthetic accessibility score and drug-likeness
+
+    Args:
+        mol (Chem.Mol): mol
+
+    Returns:
+        Chem.Mol: a ligand with physicochemical properties stored in SetProp of rdkit
+    """
+    for physicochemical_property, property_function in MOL_PROPERTY_CALCULATORS.items():
+        mol.SetProp(physicochemical_property, str(property_function(mol)))
+            
+    return mol
 
 
 def neutralize_atoms(mol):

@@ -30,3 +30,5 @@ CONFIG_BATCH_PARAMETERS = [{'key':[INPUT_KEY],
                             'type': 'int'},
                            {'key':[GENERATION_KEY, GENERATION_PARAMETER_KEY, 'box_size'],
                             'type': 'float'}]
+
+REPORT_KEY = 'report'

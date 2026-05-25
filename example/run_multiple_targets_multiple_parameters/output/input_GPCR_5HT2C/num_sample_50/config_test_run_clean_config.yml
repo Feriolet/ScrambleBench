@@ -84,3 +84,9 @@ analysis:
       diversity: hamdiv
     - distance: null
       diversity: generic_bm
+
+report:
+  plot: violin
+  rmsd: true
+  docking_score: true
+  qed: true

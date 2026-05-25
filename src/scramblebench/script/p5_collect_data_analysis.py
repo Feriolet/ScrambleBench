@@ -7,10 +7,10 @@ import logging
 import sys
 import subprocess
 import json
-from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking
+from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking, config_post_generation
 from scramblebench.script.utils.error_handler import DirNotFoundError
 from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex, fetch_model_file_from_model_dir
-from scramblebench.script.utils.process_mol import calculate_rms
+from scramblebench.script.utils.process_mol import calculate_rms, calculate_physicochemical_properties, PhysicoChemicalProperties
 import os
 import pandas as pd
 import tempfile
@@ -185,6 +185,7 @@ def collect_redocking_easydock_data(docking_data, parameter_class):
 def collect_redocking_data(analysis_data, parameter_class):
     redocking_data = config_redocking.RedockingConfig(analysis_data)
 
+
     redocking_df = pd.DataFrame()
     for docking_data in redocking_data.docking_value.valid_key_list:
         if isinstance(docking_data, config_redocking.GlideConfig):
@@ -201,6 +202,28 @@ def collect_redocking_data(analysis_data, parameter_class):
                 redocking_df = pd.merge(redocking_df, easydock_df, on=['mol_id', 'Model'], how='outer')        
 
     return redocking_df
+
+
+def collect_physicochemical_data(postgeneration_data: config_post_generation.PostGenerationConfig, parameter_class):
+
+    physicochemical_dict = defaultdict(list)
+    for model, input_fname in fetch_model_file_from_model_dir(dir_path=postgeneration_data.output_value,
+                                                              model_list=parameter_class.model_list_value).items():
+        if not Path(input_fname).suffix == '.sdf':
+            raise ValueError(f'please convert your glide fname from {Path(input_fname.suffix)} to .sdf')
+
+
+        input_mol_l = [mol for mol in Chem.SDMolSupplier(input_fname, removeHs=False) if mol]
+        output_mol_l = [calculate_physicochemical_properties(mol) for mol in input_mol_l]
+
+        physicochemical_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
+        physicochemical_dict['Model'] += [model] * len(output_mol_l)
+        physicochemical_dict[PhysicoChemicalProperties.MW.value] += [mol.GetProp(PhysicoChemicalProperties.MW.value) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.QED.value] += [mol.GetProp(PhysicoChemicalProperties.QED.value) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.LOGP.value] += [mol.GetProp(PhysicoChemicalProperties.LOGP.value) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.SA_SCORE.value] += [mol.GetProp(PhysicoChemicalProperties.SA_SCORE.value) for mol in output_mol_l]
+        
+    return pd.DataFrame.from_dict(physicochemical_dict)
 
 
 def combine_analysis_df_with_parameter(analysis_df, parameter_data: config_parameter.ParameterConfig):
@@ -236,6 +259,14 @@ def collect_analysis_metric(config_data):
                 analysis_df = redocking_df
             else:
                 analysis_df = pd.merge(analysis_df, redocking_df, on=['mol_id', 'Model'], how='outer')
+
+    postgeneration_data = config_post_generation.PostGenerationConfig(config_data=config_data)
+    physicochemical_df = collect_physicochemical_data(postgeneration_data=postgeneration_data, parameter_class=parameter_data)
+    if analysis_df.empty:
+        analysis_df = physicochemical_df
+    else:
+        analysis_df = pd.merge(analysis_df, physicochemical_df, on=['mol_id', 'Model'], how='outer')
+
 
     analysis_df = combine_analysis_df_with_parameter(analysis_df, parameter_data=parameter_data)
     

@@ -191,7 +191,7 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
                                         valid_molecule_file_dict={model: fname})   
 
             easydock_input_fname = prepare_easydock_ligand_input(input_fname=preprocessed_fname,
-                                                                          output_dir=temp_docking_dir)
+                                                                 output_dir=temp_docking_dir)
 
             model_cmd += ['-i', easydock_input_fname, '-o', temp_output_easydock_db]
 

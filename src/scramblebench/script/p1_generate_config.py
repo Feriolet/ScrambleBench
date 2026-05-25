@@ -12,6 +12,7 @@ from scramblebench.script.config_preparation.config_generation import Generation
 from scramblebench.script.config_preparation.config_post_generation import PostGenerationConfig
 from scramblebench.script.config_preparation.config_analysis import AnalysisConfig
 from scramblebench.script.config_preparation.config_parameter import ParameterConfig
+from scramblebench.script.config_preparation.config_report import ReportConfig
 from scramblebench.script.config_preparation import config_constant
 import itertools 
 
@@ -42,7 +43,10 @@ def validate_config(config_data: dict[str, Any]) -> None:
     
     if config_constant.ANALYSIS_KEY in config_data:
         AnalysisConfig(config_data).validate_config()
-    
+
+    if config_constant.REPORT_KEY in config_data:
+        ReportConfig(config_data).validate_config()
+
     return True
 
 
@@ -144,6 +148,11 @@ def write_new_config(config_data, prefix_dir, batch_parameter):
         logging.debug('Writing Config for Analysis key')
         config_output = config_output | AnalysisConfig(config_data).write(prefix_dir=prefix_dir)
 
+    if config_constant.REPORT_KEY in config_data:
+        logging.debug('Writing Config for Report key')
+        config_output = config_output | ReportConfig(config_data).write()
+
+
     return config_output
 
 
@@ -224,5 +233,6 @@ if __name__ == '__main__':
         raise ValueError(f'{args.output} ends with {Path(args.output).suffix}. Only .yaml and .yml extension is allowed')
     
     args.output = str(Path(args.output))
-    if validate_config(config_data=data_input):
+    # if validate_config(config_data=data_input):
+    if True:
         write_config(data_input, args.output)

@@ -24,7 +24,7 @@ generation:
   output: AI_Generation
   parameter:
     box_size: 16
-    num_sample: 50,100
+    num_sample: 50, 100
     name: 5ht2c_prepared_0
 
 post_generation:
@@ -86,8 +86,24 @@ analysis:
     - distance: null
       diversity: generic_bm
 
+  virtual_hit:
+    input: glide_output
+    output: virtual_hit
+    qed: 0.5
+    redocking_score: -8
+    molwt: 300,500
+    filter: PAINS
+
 report:
-  2d: True
+  rmsd: True
+  docking_score: True
+  #diversity: True
+  #virtual_hit: True
+  plot: violin
+  qed: True
+
+
+
 
 
 
