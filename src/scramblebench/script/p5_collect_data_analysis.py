@@ -270,7 +270,7 @@ def collect_analysis_metric(config_data):
 
     analysis_df = combine_analysis_df_with_parameter(analysis_df, parameter_data=parameter_data)
     
-    analysis_df.to_csv(Path(config_genbench3d.GenBench3DConfig(analysis_data).input_value).parent / 'all.csv')
+    analysis_df.to_csv(Path(config_genbench3d.GenBench3DConfig(analysis_data).input_value).parent / 'summary.csv')
 
     return analysis_df
 

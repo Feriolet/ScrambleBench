@@ -106,7 +106,73 @@ class InputStructure:
         check_complex_content(self.complex_value,
                             self.pdb_value,
                             self.sdf_value)
+
+
+    def get_pdb_sequence(self):
+
+        prot_seq, _ = get_residues_from_pdb(self.complex_value)
+
+        return prot_seq
     
+
+    def get_pocket_residue_info(self, chain):
+
+        prot_seq_num = [residue.id[1] for residue in chain]
+        prot_seq_name =  [residue.resname for residue in chain]
+        
+        return prot_seq_name, prot_seq_num
+    
+
+    def fetch_residue_is_pocket(self, cutoff: int=10):
+
+        d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
+        'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
+        'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
+        'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
+
+        if not self.pocket_path_value:
+            self.pocket_path_value = split_pocket_ligand(self.complex_value, cutoff=cutoff)
+
+        parser = PDBParser(QUIET=True)
+        structure = parser.get_structure('struct', self.pocket_path_value)    
+        prot_structure = parser.get_structure('struct', self.pdb_value)  
+
+        pocket_list = []
+        for prot_model, pocket_model in zip(prot_structure, structure):
+
+            pocket_chain = [chain.id for chain in pocket_model]
+
+            for chain in prot_model:
+                chain_data = []
+
+                if chain.id not in pocket_chain:
+                    pocket_list.append([(residue.id[1], d3to1[residue.resname], False) for residue in chain if residue.resname in d3to1])
+                    continue
+
+                for residue in chain:
+
+                    pocket_name_list, pocket_num_list = self.get_pocket_residue_info(pocket_model[chain.id])
+
+                    res_num = residue.id[1]
+
+                    if residue.resname in d3to1:
+                        if res_num in pocket_num_list and pocket_name_list[pocket_num_list.index(res_num)] == residue.resname:
+                            chain_data.append((res_num, d3to1[residue.resname], True))
+                
+                        else:
+                            chain_data.append((res_num, d3to1[residue.resname], False))
+
+                pocket_list.append(chain_data)
+
+        print(len(pocket_list))
+        return pocket_list
+
+
+    def get_sdf_mol(self):
+
+        return Chem.SDMolSupplier(self.sdf_value, removeHs=False)[0]
+
+
     def write(self, cutoff: int = 10) -> dict[str, Any]:
         lig_mol = Chem.SDMolSupplier(self.sdf_value)[0]
 
@@ -146,7 +212,7 @@ class InputDirConfig:
         self.pdb_name = 'pdb_path'
         self.sdf_name = 'sdf_path'
         self.input_data = InputConfig(self.search_for_filepath())
-
+        
         
     def search_for_filepath(self):
         
