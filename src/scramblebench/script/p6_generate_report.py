@@ -203,11 +203,12 @@ class ScrambleBenchInputReport:
 
 class ScrambleBenchPlotReport:
 
-    def __init__(self, summary_df, columns, title_caption=None):
+    def __init__(self, summary_df, columns, type='violin', title_caption=None):
         
         self.summary_df = summary_df
         self.columns = columns
         self.title_caption = title_caption
+        self.plot_type = type
 
         self.image_buffer_list = []
         self.title_font_size = 18
@@ -220,10 +221,22 @@ class ScrambleBenchPlotReport:
         Story = []
 
         Story.append(PageBreak())
-                       
-        image_buffer = self.plot_violin(dataframe=self.summary_df, 
-                                        columns=self.columns)
-        
+
+        print(f'{self.plot_type=}')
+        if self.plot_type == 'violin':
+            image_buffer = self.plot_violin(dataframe=self.summary_df, 
+                                            columns=self.columns)
+        elif self.plot_type == 'box':
+            image_buffer = self.plot_box(dataframe=self.summary_df, 
+                                            columns=self.columns)   
+        elif self.plot_type == 'raincloud':
+            image_buffer = self.plot_raincloud(dataframe=self.summary_df, 
+                                            columns=self.columns)           
+        else:
+            logging.warning(f'Plot type {self.plot_type} is not recognised. Defaulting to violin plot.')
+            image_buffer = self.plot_violin(dataframe=self.summary_df, 
+                                            columns=self.columns)
+                    
         self.image_buffer_list.append(image_buffer)
 
         if self.title_caption:
@@ -246,6 +259,87 @@ class ScrambleBenchPlotReport:
                                 hue=hue,
                                 width=0.5,
                                 bw_method= 0.2,
+                                orient= 'v', 
+                                dodge= True,
+                                linewidth=2)
+                
+            handles, labels = ax.get_legend_handles_labels()
+            ax.get_legend().remove()
+
+            ax.set_xlabel('Protein Name', fontsize=12)
+            ax.set_ylabel(' '.join([word.capitalize() for word in column.split('_')]), fontsize=12)
+            ax.tick_params(axis='both', which='major', labelsize=12)
+
+        plt.subplots_adjust(wspace=0.1, hspace=0.05)
+
+        buf = io.BytesIO()
+        plt.tight_layout(rect=[0, 0, 1, 0.93]) 
+
+        fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.98), ncol=len(handles), prop={'size': 12})
+
+        plt.savefig(buf, format = 'png', dpi=300)
+        buf.seek(0)
+        plt.close()
+
+        return buf
+    
+
+    def plot_raincloud(self, dataframe, columns, hue='Model', x='protein_name'):
+
+        import ptitprince as pt
+        fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+
+        for column, ax in zip(columns, np.ravel(axs)[:len(columns)]):
+
+            pt.RainCloud(hue=hue, 
+                        y=column, 
+                        x=x, 
+                        palette=COLORBLIND_PALETTE,  
+                        data=dataframe, 
+                        bw = 0.2,  
+                        pointplot = True,
+                        width_viol = 0.5, 
+                        ax = ax, 
+                        orient = 'v', 
+                        move = 0.2, 
+                        alpha = .7,  
+                        dodge = True, 
+                        box_zorder = 2, 
+                        linewidth=2) 
+                
+            handles, labels = ax.get_legend_handles_labels()
+            ax.get_legend().remove()
+
+            ax.set_xlabel('Protein Name', fontsize=12)
+            ax.set_ylabel(' '.join([word.capitalize() for word in column.split('_')]), fontsize=12)
+            ax.tick_params(axis='both', which='major', labelsize=12)
+
+        plt.subplots_adjust(wspace=0.1, hspace=0.05)
+
+        buf = io.BytesIO()
+        plt.tight_layout(rect=[0, 0, 1, 0.93]) 
+
+        fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.98), ncol=len(handles), prop={'size': 12})
+
+        plt.savefig(buf, format = 'png', dpi=300)
+        buf.seek(0)
+        plt.close()
+
+        return buf
+
+
+
+    def plot_box(self, dataframe, columns, hue='Model', x='protein_name'):
+        fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+
+        for column, ax in zip(columns, np.ravel(axs)[:len(columns)]):
+            sns.boxplot(data=dataframe,
+                                x=x,
+                                y=column,
+                                ax=ax,
+                                palette=COLORBLIND_PALETTE,
+                                hue=hue,
+                                width=0.5,
                                 orient= 'v', 
                                 dodge= True,
                                 linewidth=2)
@@ -321,26 +415,29 @@ def generate_report(yaml_file):
     report.add_section(ScrambleBenchParameterReport(parameter_data=parameter_data))
 
 
-    if config_constant.INPUT_KEY in config_data:
-        input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
-        report.add_section(ScrambleBenchInputReport(input_data=input_data))
+    # if config_constant.INPUT_KEY in config_data:
+    #     input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
+    #     report.add_section(ScrambleBenchInputReport(input_data=input_data))
 
     if report_data.docking_score_value:
         redocking_score_columns = [col for col in df.columns if 'redocking_score' in col.lower()]
         report.add_section(ScrambleBenchPlotReport(summary_df=df,
                                                 columns=redocking_score_columns,
+                                                type=report_data.plot_value,
                                                 title_caption='Redocking Score'))
 
     if report_data.rmsd_value:
         rmsd_columns = [col for col in df.columns if 'rmsd' in col.lower()]
         report.add_section(ScrambleBenchPlotReport(summary_df=df,
                                                 columns=rmsd_columns,
+                                                type=report_data.plot_value,
                                                 title_caption='RMSD Score'))
 
     if report_data.qed_value:
         qed_column = [col for col in df.columns if 'qed' in col.lower()]
         report.add_section(ScrambleBenchPlotReport(summary_df=df,
                                                 columns=qed_column,
+                                                type=report_data.plot_value,
                                                 title_caption='QED'))
     
     report.generate_report()
