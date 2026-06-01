@@ -58,11 +58,11 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 - **Batch runs**: Each YAML configs are generated for multiple possible parameters (`protein targets`, `num_sample`) which are suitables for batch runs in job schedulers.
 - **Flexible parameters**: `ScrambleBench` can be run with or without protein inputs
 - **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
-- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking and physicochemical analysis.
+- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, conformational, and physicochemical analysis.
 
 ## Future feature for v0.1.0
 
-- **Report summary**: Include report for diversity and conformational analysis.
+- **Report summary**: Include report for diversity analysis.
 - **Additional report**: JSON file that reports on `validity3d`, `uniqueness`, and `diversity`
 - **Pharmacophore Screening**: implements pharmacophore screening to reflect ideal target binding
 
@@ -889,6 +889,7 @@ report:
   #virtual_hit: True # to be implemented
   plot: violin
   qed: True
+  validity3d: True
 ```
 
 **Report Key**
@@ -901,6 +902,7 @@ string: `report`
 | docking_score    | bool        | whether to plot redocking score                           | False     | False                                           |
 | plot | str        | plot type (choose from `violin`, `box`, or `raincloud`)         | False     | violin                                           |
 | qed    | bool | whether to plot qed of generated ligand | False    | False |
+| validity3d    | bool | whether to plot validity3d of generated ligand | False    | False |
 
 ```txt
 usage: p6_generate_report.py [-h] -i INPUT

@@ -26,6 +26,12 @@ class GenBenchDockingMethod(Enum):
     GLIDE_MININPLACE = "Glide score"
     GLIDE_INPLACE = "Minimized Glide score"
 
+GENBENCH3D_VALIDITY_3D_STRING = 'Validity3D'
+
+class GenBenchValidity3D(Enum):
+    VALIDITY3D_BOND_LENGTH = 'Geometric mean bond q-value (Validity3D)'
+    VALIDITY3D_BOND_ANGLE = 'Geometric mean angle q-value (Validity3D)'
+    VALIDITY3D_BOND_TORSION = 'Geometric mean torsion q-value (Validity3D)'
 
 def fetch_valid_genbench3d_json_file(genbench3d_data: config_genbench3d.GenBench3DConfig, model) -> dict[str, str]:
 
@@ -84,10 +90,15 @@ def collect_genbench3d_data(analysis_data, parameter_class):
 
             for genbench3d_metric in genbench3d_docking_column:
                 if minimisation == 'minimised':
-                    genbench3d_dict[f'FF_minimised_{genbench3d_metric.value}'] += genbench3d_json_data[genbench3d_metric.value]
+                    genbench3d_dict[f'FF_minimised_{genbench3d_metric.name}'] += genbench3d_json_data[genbench3d_metric.value]
                 elif minimisation == 'unminimised':
-                    genbench3d_dict[f'FF_unminimised_{genbench3d_metric.value}'] += genbench3d_json_data[genbench3d_metric.value]
+                    genbench3d_dict[f'FF_unminimised_{genbench3d_metric.name}'] += genbench3d_json_data[genbench3d_metric.value]
 
+            for validity in GenBenchValidity3D:
+                if minimisation == 'minimised':
+                    genbench3d_dict[f'FF_minimised_{validity.name}'] += genbench3d_json_data[validity.value]
+                elif minimisation == 'unminimised':
+                    genbench3d_dict[f'FF_unminimised_{validity.name}'] += genbench3d_json_data[validity.value]
 
     return pd.DataFrame.from_dict(genbench3d_dict)
         

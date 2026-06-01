@@ -23,6 +23,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import io
+import math
 
 
 from reportlab.lib.pagesizes import letter
@@ -248,7 +249,12 @@ class ScrambleBenchPlotReport:
 
 
     def plot_violin(self, dataframe, columns, hue='Model', x='protein_name'):
-        fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+
+        if len(columns) < 3:
+            fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+
+        else:
+            fig, axs = plt.subplots(math.ceil(len(columns) / 2), 2, figsize=(12, 12), sharex=True)
 
         for column, ax in zip(columns, np.ravel(axs)[:len(columns)]):
             sns.violinplot(data=dataframe,
@@ -287,7 +293,11 @@ class ScrambleBenchPlotReport:
     def plot_raincloud(self, dataframe, columns, hue='Model', x='protein_name'):
 
         import ptitprince as pt
-        fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+        if len(columns) < 3:
+            fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+
+        else:
+            fig, axs = plt.subplots(math.ceil(len(columns) / 2), 2, figsize=(12, 12), sharex=True)
 
         for column, ax in zip(columns, np.ravel(axs)[:len(columns)]):
 
@@ -330,7 +340,11 @@ class ScrambleBenchPlotReport:
 
 
     def plot_box(self, dataframe, columns, hue='Model', x='protein_name'):
-        fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+        if len(columns) < 3:
+            fig, axs = plt.subplots(len(columns), 1, figsize=(7,7), sharex=True)
+
+        else:
+            fig, axs = plt.subplots(math.ceil(len(columns) / 2), 2, figsize=(12, 12), sharex=True)
 
         for column, ax in zip(columns, np.ravel(axs)[:len(columns)]):
             sns.boxplot(data=dataframe,
@@ -440,6 +454,13 @@ def generate_report(yaml_file):
                                                 type=report_data.plot_value,
                                                 title_caption='QED'))
     
+    if report_data.validity3d_value:
+        validity3d_column = [col for col in df.columns if 'validity3d' in col.lower()]
+        report.add_section(ScrambleBenchPlotReport(summary_df=df,
+                                                columns=validity3d_column,
+                                                type=report_data.plot_value,
+                                                title_caption='Validity3D Metric'))
+        
     report.generate_report()
 
     

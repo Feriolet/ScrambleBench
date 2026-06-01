@@ -21,24 +21,28 @@ class ReportConfig:
         self.docking_score_name = 'docking_score'
         self.plot_name = 'plot'
         self.qed_name = 'qed'
+        self.validity3d_name = 'validity3d'
 
         self.rmsd_value = report_data.get(self.rmsd_name) or False
         self.docking_score_value = report_data.get(self.docking_score_name) or False
         self.plot_value = report_data.get(self.plot_name) or 'violin'
         self.qed_value = report_data.get(self.qed_name) or False
-    
+        self.validity3d_value = report_data.get(self.validity3d_name) or False
+
     
     def validate_config(self):
 
         SUPPORTED_PLOT_TYPE = ['violin', 'box', 'raincloud']
 
         if not isinstance(self.rmsd_value, bool):
-            raise TypeError(f'Please put rmsd value as bool, not {type(self.input_value)}')
+            raise TypeError(f'Please put rmsd value as bool, not {type(self.rmsd_value)}')
         if not isinstance(self.docking_score_value, bool):
-            raise TypeError(f'Please put docking score as bool, not {type(self.input_value)}')
+            raise TypeError(f'Please put docking score as bool, not {type(self.docking_score_value)}')
         if not isinstance(self.qed_value, bool):
-            raise TypeError(f'Please put qed score as bool, not {type(self.input_value)}')
-        
+            raise TypeError(f'Please put qed score as bool, not {type(self.qed_value)}')
+        if not isinstance(self.validity3d_value, bool):
+            raise TypeError(f'Please put validity3d metric as bool, not {type(self.validity3d_value)}')
+         
         if self.plot_value.lower() not in SUPPORTED_PLOT_TYPE:
             raise ValueError(f'ScrambleBench do not support {self.plot_value}')
 
@@ -52,5 +56,7 @@ class ReportConfig:
             data[self.docking_score_name] = self.docking_score_value
         if self.qed_value:
             data[self.qed_name] = self.qed_value
+        if self.validity3d_value:
+            data[self.validity3d_name] = self.validity3d_value
 
         return {self.name: data}
