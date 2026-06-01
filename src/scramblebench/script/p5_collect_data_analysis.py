@@ -90,9 +90,9 @@ def collect_genbench3d_data(analysis_data, parameter_class):
 
             for genbench3d_metric in genbench3d_docking_column:
                 if minimisation == 'minimised':
-                    genbench3d_dict[f'FF_minimised_{genbench3d_metric.name}'] += genbench3d_json_data[genbench3d_metric.value]
+                    genbench3d_dict[f'FF_minimised_{genbench3d_metric.value}'] += genbench3d_json_data[genbench3d_metric.value]
                 elif minimisation == 'unminimised':
-                    genbench3d_dict[f'FF_unminimised_{genbench3d_metric.name}'] += genbench3d_json_data[genbench3d_metric.value]
+                    genbench3d_dict[f'FF_unminimised_{genbench3d_metric.value}'] += genbench3d_json_data[genbench3d_metric.value]
 
             for validity in GenBenchValidity3D:
                 if minimisation == 'minimised':
