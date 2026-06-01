@@ -58,11 +58,11 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 - **Batch runs**: Each YAML configs are generated for multiple possible parameters (`protein targets`, `num_sample`) which are suitables for batch runs in job schedulers.
 - **Flexible parameters**: `ScrambleBench` can be run with or without protein inputs
 - **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
-
+- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking and physicochemical analysis.
 
 ## Future feature for v0.1.0
 
-- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, diversity, and conformational analysis.
+- **Report summary**: Include report for diversity and conformational analysis.
 - **Additional report**: JSON file that reports on `validity3d`, `uniqueness`, and `diversity`
 - **Pharmacophore Screening**: implements pharmacophore screening to reflect ideal target binding
 
@@ -852,7 +852,9 @@ Expected output:
 ```
 folder
 ├── yaml_list.txt # from step 1
-├── protein1 folder
+├── protein1 folder # could be nested depending on the `batch_parameter`
+│   ├── config_output.yml
+│   └── summary.csv # output
 └── all.csv # output
 ```
 
@@ -866,7 +868,60 @@ Sample output:
 
 #### 6. Plotting
 
-To be supported in future release.
+This script will plot the necessary output from each `yaml` configurations. If `p1_generate_config.py` generates 8 different config files which is listed in the `yaml_list.txt`, then there will be 8 different `pdf` output from this script.
+
+
+
+Expected input:
+```
+folder
+├── yaml_list.txt # from step 1
+└── protein1 folder # could be nested depending on the `batch_parameter`
+   ├── config_output.yml
+   └── summary.csv # output
+```
+
+```yaml
+report:
+  rmsd: True
+  docking_score: True
+  #diversity: True  # to be implemented
+  #virtual_hit: True # to be implemented
+  plot: violin
+  qed: True
+```
+
+**Report Key**
+
+string: `report`
+
+| Field     | dtype      | description                                                           | required | default                                       |
+|-----------|------------|-----------------------------------------------------------------------|----------|-----------------------------------------------|
+| rmsd     | bool        | whether to plot redocking RMSD                   | False     | False                                           |
+| docking_score    | bool        | whether to plot redocking score                           | False     | False                                           |
+| plot | str        | plot type (choose from `violin`, `box`, or `raincloud`)         | False     | violin                                           |
+| qed    | bool | whether to plot qed of generated ligand | False    | False |
+
+```txt
+usage: p6_generate_report.py [-h] -i INPUT
+
+Generate report from p5_collect_data_analysis.py
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        config yaml input file or txt file containing yaml filepath
+```
+
+Expected output:
+```
+folder
+├── yaml_list.txt # from step 1
+└── protein1 folder # could be nested depending on the `batch_parameter`
+   ├── config_output.yml
+   ├── summary.csv
+   └── report.pdf
+```
 
 
 ## Data Availability

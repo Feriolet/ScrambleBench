@@ -30,7 +30,7 @@ class ReportConfig:
     
     def validate_config(self):
 
-        SUPPORTED_PLOT_TYPE = ['violin', 'box']
+        SUPPORTED_PLOT_TYPE = ['violin', 'box', 'raincloud']
 
         if not isinstance(self.rmsd_value, bool):
             raise TypeError(f'Please put rmsd value as bool, not {type(self.input_value)}')

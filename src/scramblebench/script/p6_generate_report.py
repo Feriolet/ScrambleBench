@@ -415,9 +415,9 @@ def generate_report(yaml_file):
     report.add_section(ScrambleBenchParameterReport(parameter_data=parameter_data))
 
 
-    # if config_constant.INPUT_KEY in config_data:
-    #     input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
-    #     report.add_section(ScrambleBenchInputReport(input_data=input_data))
+    if config_constant.INPUT_KEY in config_data:
+        input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
+        report.add_section(ScrambleBenchInputReport(input_data=input_data))
 
     if report_data.docking_score_value:
         redocking_score_columns = [col for col in df.columns if 'redocking_score' in col.lower()]
