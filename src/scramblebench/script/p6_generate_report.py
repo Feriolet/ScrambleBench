@@ -246,15 +246,16 @@ class ScrambleBenchSummaryJSONReport:
         diversity_df = pd.DataFrame()
         non_diversity_dict = defaultdict(dict)
         for model, data in self.json_data.items():
-            df = pd.DataFrame(data['diversity'])
-            df['model'] = model
+            if self.diversity:
+                df = pd.DataFrame(data['diversity'])
+                df['model'] = model
 
-            if diversity_df.empty:
-                diversity_df = df
-            else:
-                diversity_df = pd.concat([diversity_df, df])
+                if diversity_df.empty:
+                    diversity_df = df
+                else:
+                    diversity_df = pd.concat([diversity_df, df])
 
-            data.pop('diversity', None)
+                data.pop('diversity', None)
             non_diversity_dict[model] = data
         
         non_diversity_df = pd.DataFrame(non_diversity_dict).round(2).astype(object)
@@ -267,14 +268,15 @@ class ScrambleBenchSummaryJSONReport:
         non_diversity_df = non_diversity_df.reset_index(names='Metric')
 
         diversity_df_list = []
-        for method, data in diversity_df.groupby('method'):
-            df = data.drop(columns=['method']).set_index('model').T.round(2).astype(object)
-            df = self.bold_table(df=df,
-                            index='score',
-                            filter='max')  
-            
-            df = df.reset_index(names='Metric')
-            diversity_df_list.append((method, df))
+        if self.diversity:
+            for method, data in diversity_df.groupby('method'):
+                df = data.drop(columns=['method']).set_index('model').T.round(2).astype(object)
+                df = self.bold_table(df=df,
+                                index='score',
+                                filter='max')  
+                
+                df = df.reset_index(names='Metric')
+                diversity_df_list.append((method, df))
            
         return diversity_df_list, non_diversity_df
 
@@ -304,13 +306,14 @@ class ScrambleBenchSummaryJSONReport:
         
         Story.append(Spacer(1,10))
         
-        Story.append(Paragraph(f"<font size= 12>Diversity Analysis Result </font>", self.styles['Normal']))
-        Story.append(Spacer(1,6))
-        for diversity_tuple in diversity_df_list:
-            Story.append(Paragraph(f"<font size= 10><b>{diversity_tuple[0]}</b></font>", self.styles['Normal']))
-            diversity_df = diversity_tuple[-1]
-            Story.append(Table([diversity_df.columns[:,].values.astype(str).tolist()] + diversity_df.values.tolist(), hAlign='LEFT'))
+        if self.diversity:
+            Story.append(Paragraph(f"<font size= 12>Diversity Analysis Result </font>", self.styles['Normal']))
             Story.append(Spacer(1,6))
+            for diversity_tuple in diversity_df_list:
+                Story.append(Paragraph(f"<font size= 10><b>{diversity_tuple[0]}</b></font>", self.styles['Normal']))
+                diversity_df = diversity_tuple[-1]
+                Story.append(Table([diversity_df.columns[:,].values.astype(str).tolist()] + diversity_df.values.tolist(), hAlign='LEFT'))
+                Story.append(Spacer(1,6))
         # Story.append(Paragraph(f"<font size= 12>{batch_parameter_txt}</font>", self.styles['Normal']))
         # Story.append(Spacer(1,12))
 
