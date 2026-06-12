@@ -52,18 +52,17 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 
 ## Features
 
-- **Streamlined workflow**: from de novo molecule generation, molecule validation, and analysis to a single `.csv` file
+- **Streamlined workflow**: from de novo molecule generation, molecule validation, and analysis to a single `.csv` and `.json` file
 - **Integrated software**: This repository integrates multiple docking program supported by `easydock`, conformation analysis by `genbench3d`, and various molecular diversity, such as conventional `tanimoto ecfp`, `hamdiv`, and `generic BM scaffold`.
 - **Checkpoints**: Checkpoints are available for most of the worflow to resume process that got interrupted.
 - **Batch runs**: Each YAML configs are generated for multiple possible parameters (`protein targets`, `num_sample`) which are suitables for batch runs in job schedulers.
 - **Flexible parameters**: `ScrambleBench` can be run with or without protein inputs
 - **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
-- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, conformational, and physicochemical analysis.
+- **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, conformational, diversity, and physicochemical analysis.
 
 ## Future feature for v0.1.0
 
-- **Report summary**: Include report for diversity analysis.
-- **Additional report**: JSON file that reports on `validity3d`, `uniqueness`, and `diversity`
+- **Virtual Hit Criteria**: User can add virtual hit criteria that can be reflected in `report.pdf`
 - **Pharmacophore Screening**: implements pharmacophore screening to reflect ideal target binding
 
 
