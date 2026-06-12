@@ -164,7 +164,6 @@ class InputStructure:
 
                 pocket_list.append(chain_data)
 
-        print(len(pocket_list))
         return pocket_list
 
 

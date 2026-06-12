@@ -1,0 +1,50 @@
+{
+    "DiffSBDD": {
+        "total_mol": 100,
+        "uniqueness": 1.0,
+        "validity2d": 1.0,
+        "unminimised_Validity3D": 0.11,
+        "minimised_Validity3D": 0.95,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 83.66088581053287,
+                "time": 8.486847162246704
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 43.515270832835,
+                "time": 88.53976821899414
+            },
+            {
+                "method": "generic_bm",
+                "score": 83,
+                "time": 0.19144535064697266
+            }
+        ]
+    },
+    "Pocket2Mol": {
+        "total_mol": 112,
+        "uniqueness": 1.0,
+        "validity2d": 1.0,
+        "unminimised_Validity3D": 0.31,
+        "minimised_Validity3D": 1.0,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 63.782651665611624,
+                "time": 4.0122294425964355
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 27.350263968917215,
+                "time": 5.405097246170044
+            },
+            {
+                "method": "generic_bm",
+                "score": 9,
+                "time": 0.06488347053527832
+            }
+        ]
+    }
+}

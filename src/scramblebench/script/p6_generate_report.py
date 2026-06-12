@@ -178,7 +178,6 @@ class ScrambleBenchInputReport:
 
         Story = []
 
-
         Story.append(Paragraph(f"<font size= {self.font_size}>Protein Information</font>", self.styles['Heading2']))
         Story.append(Spacer(1,5))
         pocket_information = self.input_data.fetch_residue_is_pocket()
@@ -202,6 +201,122 @@ class ScrambleBenchInputReport:
             img.close()
 
 
+class ScrambleBenchSummaryJSONReport:
+
+    def __init__(self, input_data):
+        self.json_data = input_data
+        self.title_font_size = 18
+        self.parameter_font_size = 12
+        self.post_processing = False
+        self.diversity = False
+        self.genbench3d = False
+
+        self.styles = getSampleStyleSheet()
+        self.styles['Heading1'].alignment = TA_CENTER
+        self.styles['Normal'].leading = 16
+
+
+    def detect_analysis_type(self):
+        for value in self.json_data.values():
+            scramblebench_json_keys = value.keys()
+            if 'total_mol' in scramblebench_json_keys and 'uniqueness' in scramblebench_json_keys:
+                self.post_processing = True
+            if 'unminimised_Validity3D' in scramblebench_json_keys or 'minimised_Validity3D' in scramblebench_json_keys:
+                self.genbench3d = True
+            if 'diversity' in scramblebench_json_keys:
+                self.diversity = True
+    
+
+    def bold_table(self, df, index, filter='max'):
+        if not isinstance(index, list):
+            index = [index]
+        
+        for metric in index:
+            if filter == 'max':
+                value = df.loc[metric].max()
+            elif filter == 'min':
+                value = df.loc[metric].min()
+            
+            df.loc[metric, df.loc[metric] == value] = Paragraph(f"<b>{value}</b>")
+
+        return df
+    
+    def generate_summary_txt(self):
+
+        diversity_df = pd.DataFrame()
+        non_diversity_dict = defaultdict(dict)
+        for model, data in self.json_data.items():
+            df = pd.DataFrame(data['diversity'])
+            df['model'] = model
+
+            if diversity_df.empty:
+                diversity_df = df
+            else:
+                diversity_df = pd.concat([diversity_df, df])
+
+            data.pop('diversity', None)
+            non_diversity_dict[model] = data
+        
+        non_diversity_df = pd.DataFrame(non_diversity_dict).round(2).astype(object)
+
+
+        non_diversity_df = self.bold_table(df=non_diversity_df,
+                                           index=non_diversity_df.index.tolist(),
+                                           filter='max')
+        
+        non_diversity_df = non_diversity_df.reset_index(names='Metric')
+
+        diversity_df_list = []
+        for method, data in diversity_df.groupby('method'):
+            df = data.drop(columns=['method']).set_index('model').T.round(2).astype(object)
+            df = self.bold_table(df=df,
+                            index='score',
+                            filter='max')  
+            
+            df = df.reset_index(names='Metric')
+            diversity_df_list.append((method, df))
+           
+        return diversity_df_list, non_diversity_df
+
+    def render(self):
+
+        Story = []
+        Story.append(PageBreak())
+
+        Story.append(Paragraph(f"<font size={self.title_font_size}>ScrambleBench Analysis</font>", 
+                               self.styles['Heading1']))
+        
+        Story.append(Spacer(1,6))
+        self.detect_analysis_type()
+
+        parameter_txt = f"<b>Ran Analysis</b> <br/>\
+                        PostProcessing {add_space(16)}: {self.post_processing}<br/>\
+                        GenBench3D  {add_space(19)}: {self.genbench3d} <br/>\
+                        Diversity {add_space(27)}: {self.diversity}<br/>"
+        
+        Story.append(Paragraph(f"<font size= 12>{parameter_txt}</font>", self.styles['Normal']))
+        Story.append(Spacer(1,20))
+
+        diversity_df_list, non_diversity_df = self.generate_summary_txt()
+
+        Story.append(Paragraph(f"<font size= 12>General Analysis Result </font>", self.styles['Normal']))
+        Story.append(Table([non_diversity_df.columns[:,].values.astype(str).tolist()] + non_diversity_df.values.tolist(), hAlign='LEFT') )
+        
+        Story.append(Spacer(1,10))
+        
+        Story.append(Paragraph(f"<font size= 12>Diversity Analysis Result </font>", self.styles['Normal']))
+        Story.append(Spacer(1,6))
+        for diversity_tuple in diversity_df_list:
+            Story.append(Paragraph(f"<font size= 10><b>{diversity_tuple[0]}</b></font>", self.styles['Normal']))
+            diversity_df = diversity_tuple[-1]
+            Story.append(Table([diversity_df.columns[:,].values.astype(str).tolist()] + diversity_df.values.tolist(), hAlign='LEFT'))
+            Story.append(Spacer(1,6))
+        # Story.append(Paragraph(f"<font size= 12>{batch_parameter_txt}</font>", self.styles['Normal']))
+        # Story.append(Spacer(1,12))
+
+        return Story
+    
+
 class ScrambleBenchPlotReport:
 
     def __init__(self, summary_df, columns, type='violin', title_caption=None):
@@ -223,7 +338,6 @@ class ScrambleBenchPlotReport:
 
         Story.append(PageBreak())
 
-        print(f'{self.plot_type=}')
         if self.plot_type == 'violin':
             image_buffer = self.plot_violin(dataframe=self.summary_df, 
                                             columns=self.columns)
@@ -394,6 +508,7 @@ class ScrambleBenchReport:
         self.section.append(section)
 
     def generate_report(self):
+
         doc = SimpleDocTemplate(str(Path(self.yaml_file).parent / 'report.pdf'), pagesize=letter,
                                 rightMargin=inch/2, leftMargin=inch/2,
                                 topMargin=40, bottomMargin=18)
@@ -417,7 +532,13 @@ class ScrambleBenchReport:
 
 def generate_report(yaml_file):
 
-    input_csv=Path(yaml_file).parent / 'summary.csv'
+    input_csv = Path(yaml_file).parent / 'summary.csv'
+    input_json = Path(yaml_file).parent / 'summary.json'
+
+    json_data = None
+    with open(input_json, 'r') as json_f:
+        json_data = json.load(json_f)
+
     df = pd.read_csv(input_csv)
 
     config_data = yaml.safe_load(open(yaml_file, 'r'))
@@ -432,6 +553,9 @@ def generate_report(yaml_file):
     if config_constant.INPUT_KEY in config_data:
         input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
         report.add_section(ScrambleBenchInputReport(input_data=input_data))
+
+    if json_data:
+        report.add_section(ScrambleBenchSummaryJSONReport(input_data=json_data))
 
     if report_data.docking_score_value:
         redocking_score_columns = [col for col in df.columns if 'redocking_score' in col.lower()]
@@ -460,7 +584,7 @@ def generate_report(yaml_file):
                                                 columns=validity3d_column,
                                                 type=report_data.plot_value,
                                                 title_caption='Validity3D Metric'))
-        
+
     report.generate_report()
 
     

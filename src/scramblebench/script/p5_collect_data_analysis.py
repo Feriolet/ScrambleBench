@@ -68,6 +68,7 @@ def collect_genbench3d_data(analysis_data, parameter_class):
                                                                     model_list=parameter_class.model_list_value)    
 
     genbench3d_dict = defaultdict(list)
+    single_validity_dict = defaultdict(dict)
     for model, input_sdf_fname in valid_molecule_file_dict.items():
         input_mol = Chem.SDMolSupplier(input_sdf_fname, removeHs=False)
         name_l = [mol.GetProp('_Name') for mol in input_mol]
@@ -97,10 +98,13 @@ def collect_genbench3d_data(analysis_data, parameter_class):
             for validity in GenBenchValidity3D:
                 if minimisation == 'minimised':
                     genbench3d_dict[f'FF_minimised_{validity.name}'] += genbench3d_json_data[validity.value]
+                    single_validity_dict[model][f'minimised_Validity3D'] = genbench3d_json_data['Validity3D']
                 elif minimisation == 'unminimised':
                     genbench3d_dict[f'FF_unminimised_{validity.name}'] += genbench3d_json_data[validity.value]
+                    single_validity_dict[model][f'unminimised_Validity3D'] = genbench3d_json_data['Validity3D']
 
-    return pd.DataFrame.from_dict(genbench3d_dict)
+
+    return pd.DataFrame.from_dict(genbench3d_dict), single_validity_dict
         
 
 def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class):
@@ -237,7 +241,7 @@ def collect_physicochemical_data(postgeneration_data: config_post_generation.Pos
     return pd.DataFrame.from_dict(physicochemical_dict)
 
 
-def combine_analysis_df_with_parameter(analysis_df, parameter_data: config_parameter.ParameterConfig):
+def combine_analysis_df_with_parameter(analysis_df, parameter_data):
 
     parameter_order = []
     analysis_columns = analysis_df.columns
@@ -252,16 +256,58 @@ def combine_analysis_df_with_parameter(analysis_df, parameter_data: config_param
     return analysis_df
 
 
+def deep_merge(dict1, dict2):
+    """Recursively merges dict2 into dict1 without mutating the inputs."""
+    result = dict1.copy()  # Create a shallow copy to prevent modifying dict1
+    for key, value in dict2.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def collect_model_general_performance(json_fname):
+
+    with open(json_fname) as json_f:
+
+        return json.load(json_f)
+
+
+def collect_diversity_data(analysis_data, parameter_class: config_parameter.ParameterConfig):
+
+    diversity_data = config_diversity.DiversityConfig(analysis_data)
+    diversity_dict = defaultdict(dict)
+    for model in parameter_class.model_list_value:
+
+        diversity_fname = Path(Path(diversity_data.output_value) / model / 'diversity_output.json')
+        if diversity_fname.is_file():
+            with open(diversity_fname) as diversity_f:
+                diversity_output = json.load(diversity_f)
+            diversity_dict[model]['diversity'] =diversity_output[model]
+    
+
+    return diversity_dict
+
+
 def collect_analysis_metric(config_data):
 
     analysis_data = config_data[config_constant.ANALYSIS_KEY]
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
+    postgeneration_data = config_post_generation.PostGenerationConfig(config_data=config_data)
 
+    config_dir = Path(postgeneration_data.input_value).parent
     analysis_df = pd.DataFrame()
+
+    model_dict = collect_model_general_performance(config_dir / 'data.json')
+
     if config_constant.ANALYSIS_GENBENCH3D_KEY in analysis_data:
-        genbench3d_df = collect_genbench3d_data(analysis_data=analysis_data, parameter_class = parameter_data)
+        genbench3d_df, validity3d_dict = collect_genbench3d_data(analysis_data=analysis_data, parameter_class = parameter_data)
         if analysis_df.empty:
             analysis_df = genbench3d_df
+        
+        model_dict = deep_merge(model_dict, validity3d_dict)
+
 
     if config_constant.ANALYSIS_REDOCKING_KEY in analysis_data:
         if config_constant.ANALYSIS_REDOCKING_DOCKING_KEY in analysis_data[config_constant.ANALYSIS_REDOCKING_KEY]:
@@ -271,7 +317,7 @@ def collect_analysis_metric(config_data):
             else:
                 analysis_df = pd.merge(analysis_df, redocking_df, on=['mol_id', 'Model'], how='outer')
 
-    postgeneration_data = config_post_generation.PostGenerationConfig(config_data=config_data)
+
     physicochemical_df = collect_physicochemical_data(postgeneration_data=postgeneration_data, parameter_class=parameter_data)
     if analysis_df.empty:
         analysis_df = physicochemical_df
@@ -279,11 +325,20 @@ def collect_analysis_metric(config_data):
         analysis_df = pd.merge(analysis_df, physicochemical_df, on=['mol_id', 'Model'], how='outer')
 
 
+    if config_constant.ANALYSIS_DIVERSITY_KEY in analysis_data:
+
+        diversity_dict = collect_diversity_data(analysis_data=analysis_data, parameter_class = parameter_data)
+        model_dict = deep_merge(model_dict, diversity_dict)
+
     analysis_df = combine_analysis_df_with_parameter(analysis_df, parameter_data=parameter_data)
     
-    analysis_df.to_csv(Path(config_genbench3d.GenBench3DConfig(analysis_data).input_value).parent / 'summary.csv')
 
-    return analysis_df
+    analysis_df.to_csv(config_dir / 'summary.csv')
+
+    with open(config_dir / 'summary.json', 'w') as json_f:
+        json.dump(model_dict, json_f, indent=4)
+
+    return analysis_df, model_dict
 
 
 if __name__ == '__main__':
@@ -303,16 +358,18 @@ if __name__ == '__main__':
     yaml_file_list = read_input(args.input)
 
     output_analysis_fname = Path(args.input).parent / 'compiled_result.csv'
+    output_json_fname = Path(args.input).parent / 'compiled_result.json'
     output_df = pd.DataFrame()
 
     for yaml_file in yaml_file_list:
         checkpoint_json = Path(yaml_file).parent
         data_input = yaml.safe_load(open(yaml_file, 'r'))
 
-        analysis_df = collect_analysis_metric(data_input) 
+        analysis_df, model_dict = collect_analysis_metric(data_input) 
         if output_df.empty:
             output_df = analysis_df
         else:
             output_df = pd.concat([output_df, analysis_df])
     
+
     output_df.to_csv(output_analysis_fname)
