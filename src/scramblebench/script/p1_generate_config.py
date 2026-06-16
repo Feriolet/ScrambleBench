@@ -19,7 +19,6 @@ from scramblebench.script.config_preparation.config_report import ReportConfig
 from scramblebench.script.config_preparation import config_constant
 
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -280,8 +279,8 @@ def process_single_batch_combination(root_dir: str,
             value = list(value.keys())[0]
         root_dir = Path(root_dir) / f'{key[-1]}_{value}'
 
-
     return config_data, root_dir, param_config_batch_parameter_dict
+
 
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     """Main function for the script. This function will prepare and write the config provided by user 
@@ -312,12 +311,11 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     # [ [val, val, val], [val, val, val] ]
     for assigned_parameter_values in list(itertools.product(*parameter_value_lists)):
 
-        assigned_config_data = deepcopy(config_data)
-
         result = process_single_batch_combination(root_dir=generation_dirpath,
                                                 assigned_parameter_values=assigned_parameter_values,
                                                 batch_parameters=batch_parameters,
-                                                config_data=assigned_config_data)
+                                                config_data=deepcopy(config_data))
+
         assigned_config_data, analysis_dirpath, param_config_batch_parameter_dict = result
 
         config_output = write_new_config(config_data=assigned_config_data,
