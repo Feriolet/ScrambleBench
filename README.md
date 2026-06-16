@@ -59,11 +59,11 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 - **Flexible parameters**: `ScrambleBench` can be run with or without protein inputs
 - **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
 - **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, conformational, diversity, and physicochemical analysis.
-
+- **Pharmacophore Screening (Easydock)**: implements pharmacophore screening to reflect ideal target binding
 ## Future feature for v0.1.0
 
 - **Virtual Hit Criteria**: User can add virtual hit criteria that can be reflected in `report.pdf`
-- **Pharmacophore Screening**: implements pharmacophore screening to reflect ideal target binding
+- **Pharmacophore Screening (Glide)**: implements pharmacophore screening to reflect ideal target binding
 
 
 ## Installation
@@ -703,18 +703,20 @@ string: `protonation`
 
 string: `easydock`
 
-| Field                     | dtype       | description                                                                                                                       | required | default                                                                          |
-|---------------------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------------------------------------------------------------|
-| input                     | str         | input directory path to prepared generated molecule                                                                               | True     | N/A                                                                              |
-| output                    | str         | output directory path to easydock docking                                                                                         | True     | N/A                                                                              |
-| conda_env                 | str         | conda environment name to execute easydock script                                                                                 | True     | N/A                                                                              |
-| config_fname              | None or str | path file to easydock config                                                                                                      | False*   | `src/scramblebench/script/utils/docking_utils/easydock_config.yml` for vina only |
-| protein_pdbqt_preparation | str or None | method to generation pdbqt file (choose from [`obabel` or `adfr`])                                                                | False    | obabel                                                                           |
-| protein_pdbqt_executable  | str         | file path to `prepare_receptor`, otherwise just `obabel`                                                                          | False    | obabel                                                                           |
-| protein_preparation       | str or None | method to prepare protein (choose from [`pdbfixer`, `obabel`] or write directory path to the `schrodinger` root dir )             | False    | obabel                                                                           |
-| docking_program           | str or None | method to dock ligand (choose from [`vina`, `gnina`, `smina`, `vina-gpu`, `qvina`, `server`])                                     | False    | vina                                                                             |
-| protonation               | None or str | method to protonate ligand (choose from [`molgpka`, `unipka`, `chemaxon`] or write directory path to the `schrodinger` root dir ) | False    | None                                                                             |
-| ncpu                      | None or int | parallel cpu to run easydock                                                                                                      | False    | None                                                                             |
+| Field                     | dtype                | description                                                                                                                                                    | required | default                                                                          |
+|---------------------------|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------------------------------------------------------------|
+| input                     | str                  | input directory path to prepared generated molecule                                                                                                            | True     | N/A                                                                              |
+| output                    | str                  | output directory path to easydock docking                                                                                                                      | True     | N/A                                                                              |
+| conda_env                 | str                  | conda environment name to execute easydock script                                                                                                              | True     | N/A                                                                              |
+| config_fname              | None or str          | path file to easydock config                                                                                                                                   | False*   | `src/scramblebench/script/utils/docking_utils/easydock_config.yml` for vina only |
+| protein_pdbqt_preparation | str or None          | method to generation pdbqt file (choose from [`obabel` or `adfr`])                                                                                             | False    | obabel                                                                           |
+| protein_pdbqt_executable  | str                  | file path to `prepare_receptor`, otherwise just `obabel`                                                                                                       | False    | obabel                                                                           |
+| protein_preparation       | str or None          | method to prepare protein (choose from [`pdbfixer`, `obabel`] or write directory path to the `schrodinger` root dir )                                          | False    | obabel                                                                           |
+| docking_program           | str or None          | method to dock ligand (choose from [`vina`, `gnina`, `smina`, `vina-gpu`, `qvina`, `server`])                                                                  | False    | vina                                                                             |
+| protonation               | None or str          | method to protonate ligand (choose from [`molgpka`, `unipka`, `chemaxon`] or write directory path to the `schrodinger` root dir )                              | False    | None                                                                             |
+| ncpu                      | None or int          | parallel cpu to run easydock                                                                                                                                   | False    | None                                                                             |
+| ref_plif                  | None, bool, or str   | whether to do PLIF based on reference ligand in `input` key. If desired, user can provide list of plif interaction based on PROLIF (resname.chain.interaction) | False    | None                                                                             |
+| plif_similarity           | None or float or int | PLIF similarity threshold based on the ligand in `input_key`                                                                                                   | False    | `None` if ref_plif = False/None, `0.8` otherwise as default     |
 
 *: not required for vina only
 
