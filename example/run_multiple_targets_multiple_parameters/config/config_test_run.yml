@@ -62,7 +62,7 @@ analysis:
         docking_program: vina
         protonation: null
         config_fname: config/easydock_config_5HT2C.yml
-        plif: True
+        ref_plif: True
 
       glide:
         input: cheminformatics_input_prepared

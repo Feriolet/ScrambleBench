@@ -277,6 +277,7 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
                                   protein_fname=input_data.pdb_value,
                                   output_fname=str(Path(docking_data.output_value) / model / 'plif' / f'{Path(fname).stem}_easydock_plif.sdf'),
                                   reference_fname=input_data.sdf_value,
+                                  similarity=docking_data.plif_similarity_value
                                   )
 
 def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data, input_data):

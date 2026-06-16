@@ -196,7 +196,8 @@ class EasyDockConfig:
         self.protein_pdbqt_preparation_name = 'protein_pdbqt_preparation'
         self.protein_preparation_name = 'protein_preparation'
         self.protein_pdbqt_executable_name = 'protein_pdbqt_executable'
-        self.plif_name = 'plif'
+        self.plif_name = 'ref_plif'
+        self.plif_similarity_name = 'plif_similarity_threshold'
 
         self.input_value = easydock_data[self.input_name]
         self.output_value = easydock_data[self.output_name]
@@ -209,9 +210,12 @@ class EasyDockConfig:
         self.protein_pdbqt_preparation_value = easydock_data.get(self.protein_pdbqt_preparation_name) or 'obabel'
         self.protein_pdbqt_executable_value = easydock_data.get(self.protein_pdbqt_executable_name) or 'obabel'
         self.plif_value = easydock_data.get(self.plif_name)
+        self.plif_similarity_value = easydock_data.get(self.plif_similarity_name)
 
         if isinstance(self.plif_value, str):
             self.plif_value = self.plif_value.split(',')
+        if isinstance(self.plif_similarity_value, str):
+            self.plif_similarity_value = float(self.plif_similarity_value)
 
         if self.config_value is None:
             if self.docking_value == 'vina':
@@ -275,8 +279,12 @@ class EasyDockConfig:
                 for plif in self.plif_value:
                     if len(plif.split('.')) != 3:
                         raise ValueError(f'plif value should follow the residue.chain.interaction format, not {plif}')
+            else:
+                raise ValueError(f'unsupported type {type(self.plif_value)}')
 
 
+        if self.plif_similarity_value and not isinstance(self.plif_similarity_value, (int, float)):
+            raise ValueError(f'please write plif similarity value as float')
 
         if not isinstance(self.docking_value, str):
             raise TypeError(f'Please put docking method as string, not {type(self.input_value)}')
@@ -303,6 +311,7 @@ class EasyDockConfig:
 
     def write(self, prefix_dir=None):
 
+        DEFAULT_PLIF_SIMILARITY_THRESHOLD = 0.8
         if prefix_dir:
             self.update_input_output(prefix_dir)
         
@@ -337,6 +346,11 @@ class EasyDockConfig:
                 data[self.plif_name] = ','.join(self.plif_value)
             elif isinstance(self.plif_value, bool):
                 data[self.plif_name] = True
+
+            if not self.plif_similarity_value:
+                self.plif_similarity_value = DEFAULT_PLIF_SIMILARITY_THRESHOLD
+            
+            data[self.plif_similarity_name] = self.plif_similarity_value
 
         data[self.protein_pdbqt_preparation_name] = self.protein_pdbqt_preparation_value
         data[self.protein_preparation_name] = self.protein_preparation_value
