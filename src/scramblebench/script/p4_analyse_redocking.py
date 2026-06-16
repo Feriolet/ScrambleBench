@@ -6,6 +6,7 @@ import subprocess
 import os
 import tempfile
 import rdkit
+import pandas as pd
 
 from rdkit import Chem
 from typing import Any, Callable
@@ -140,6 +141,64 @@ def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_
     return new_config_fname
 
 
+def run_easydock_plif( environment, db_fname, protein_fname, output_fname, 
+                      reference_fname, ncpu=1, reference_plif=None, similarity=0.8):
+    
+    if not Path(output_fname).parent.is_dir():
+        Path(output_fname).parent.mkdir(parents=True, exist_ok=True)
+
+    if not reference_plif:
+    
+        reference_output = Path(db_fname).parent / 'ref_similarity.csv'
+        subprocess.run(['conda', 'run', '-n', environment,
+                        'easydock_plif', '-i', reference_fname, '-p', protein_fname,
+                        '-o', reference_output, '-c', str(4)])
+
+        reference_plif = [col for col in pd.read_csv(reference_output, delimiter='\t').columns.tolist() if col != 'Name']
+    
+    plif_result = Path(db_fname).parent / 'similarity.csv'
+    cmd = ['conda', 'run', '-n', environment,
+           'easydock_plif', '-i', db_fname, '-p', protein_fname, '-o',
+            plif_result, '--ref_plif']
+    
+    cmd += reference_plif
+    cmd += ['-c', str(ncpu)]
+
+    logging.info(f'Running easydock PLIF with cmd: {cmd}')
+    subprocess.run(cmd)
+    
+    plif_df = pd.read_csv(plif_result, delimiter='\t')
+
+    filtered_plif_df = plif_df[plif_df['plif_sim'] >= similarity]
+
+    total_mol = []
+    for pose, df in filtered_plif_df.groupby('pose'):
+        output_pose_sdf = Path(db_fname).parent / f'filtered_sdf_{pose}.sdf'
+        mol_name_list = df['id'].tolist() # assuming only 1 stereoisomer
+
+        cmd = ['conda', 'run', '-n', environment,
+               'get_sdf_from_easydock', '-i', db_fname]
+        cmd += ['-d'] + mol_name_list + ['--poses', str(pose)]
+        cmd += ['-o', output_pose_sdf, '--fields', 'docking_score']
+        
+        print(cmd)
+        subprocess.run(cmd)
+
+        print(os.listdir(Path(db_fname).parent))
+        with open(output_pose_sdf, 'r') as open_f:
+            print(open_f.read())
+        total_mol += [mol for mol in Chem.SDMolSupplier(output_pose_sdf, removeHs=False)]
+
+
+    if len(total_mol) > 0:
+        temp_output = Path(db_fname).parent / f'filtered_sdf_{pose}.sdf'
+        with Chem.SDWriter(temp_output) as output_f:
+            for mol in total_mol:
+                output_f.write(mol)
+        
+        processed_temp_output = process_easydock_docking_output(temp_output)
+        subprocess.run(['cp', processed_temp_output, output_fname], text=True)
+
 def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, parameter_data, input_data):
     
     cmd = ['conda', 'run', '-n', docking_data.environment_value,
@@ -148,7 +207,7 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
     Path(docking_data.output_value).mkdir(parents=True, exist_ok=True)
 
     config_fname = prepare_easydock_files(docking_data, input_data, output_dir=docking_data.output_value)
-    cmd += ['--config', config_fname]
+    cmd += ['--config', str(config_fname)]
 
     valid_molecule_file_dict = fetch_model_file_from_model_dir(dir_path=docking_data.input_value,
                                                                model_list=parameter_data.model_list_value)
@@ -170,11 +229,21 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
 
     for model, fname in valid_molecule_file_dict.items():
 
+        if model == 'DiffSBDD':
+            continue
         output_easydock_sdf =  str(Path(docking_data.output_value) / model / f'{Path(fname).stem}_easydock_redocked.sdf')
         Path(output_easydock_sdf).parent.mkdir(parents=True, exist_ok=True)
+        
         if Path(output_easydock_sdf).is_file():
-            logging.info(f'Easydock Docking with {output_easydock_sdf} has been done. Skipping...')
-            continue
+            if docking_data.plif_value:
+                output_easydock_plif =  str(Path(docking_data.output_value) / model / f'{Path(fname).stem}_easydock_plif.sdf')
+                if Path(output_easydock_plif).is_file():
+                    logging.info(f'Easydock Docking with {output_easydock_sdf} has been done. Skipping...')
+                    continue
+
+            else:
+                logging.info(f'Easydock Docking with {output_easydock_sdf} has been done. Skipping...')
+                continue
 
         with tempfile.TemporaryDirectory() as temp_docking_dir:      
             temp_output_easydock_db = str(Path(temp_docking_dir) / f'{Path(fname).stem}_redocked.db')
@@ -182,18 +251,19 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
             
             model_cmd = deepcopy(cmd)  
             
-            if docking_data.protonation_value and 'schrodinger' not in docking_data.protonation_value:
-                model_cmd += ['--protonation', docking_data.protonation_value]
-                preprocessed_fname = fname               
-            elif 'schrodinger' in docking_data.protonation_value:
-                preprocessed_fname = run_ligprep_protonation(schrodinger_dir=docking_data.protonation_value, 
-                                        output_dir=temp_docking_dir, 
-                                        valid_molecule_file_dict={model: fname})   
+            preprocessed_fname = deepcopy(fname) 
+            if docking_data.protonation_value:
+                if 'schrodinger' not in docking_data.protonation_value:
+                    model_cmd += ['--protonation', docking_data.protonation_value]            
+                else:
+                    preprocessed_fname = run_ligprep_protonation(schrodinger_dir=docking_data.protonation_value, 
+                                            output_dir=temp_docking_dir, 
+                                            valid_molecule_file_dict={model: fname})   
 
             easydock_input_fname = prepare_easydock_ligand_input(input_fname=preprocessed_fname,
                                                                  output_dir=temp_docking_dir)
 
-            model_cmd += ['-i', easydock_input_fname, '-o', temp_output_easydock_db]
+            model_cmd += ['-i', str(easydock_input_fname), '-o', temp_output_easydock_db]
 
             logging.info(f'Easydock docking with cmd: {model_cmd=}')
             subprocess.run(model_cmd, text=True)
@@ -201,6 +271,13 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
             post_processed_docking_fname = process_easydock_docking_output(temp_output_easydock_sdf)
             subprocess.run(['cp', post_processed_docking_fname, output_easydock_sdf], text=True)
 
+            if docking_data.plif_value:
+                run_easydock_plif(environment=docking_data.environment_value,
+                                  db_fname=temp_output_easydock_db,
+                                  protein_fname=input_data.pdb_value,
+                                  output_fname=str(Path(docking_data.output_value) / model / 'plif' / f'{Path(fname).stem}_easydock_plif.sdf'),
+                                  reference_fname=input_data.sdf_value,
+                                  )
 
 def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data, input_data):
 

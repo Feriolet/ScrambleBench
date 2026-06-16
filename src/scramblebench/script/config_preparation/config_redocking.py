@@ -196,6 +196,7 @@ class EasyDockConfig:
         self.protein_pdbqt_preparation_name = 'protein_pdbqt_preparation'
         self.protein_preparation_name = 'protein_preparation'
         self.protein_pdbqt_executable_name = 'protein_pdbqt_executable'
+        self.plif_name = 'plif'
 
         self.input_value = easydock_data[self.input_name]
         self.output_value = easydock_data[self.output_name]
@@ -207,6 +208,10 @@ class EasyDockConfig:
         self.protein_preparation_value = easydock_data.get(self.protein_preparation_name) or 'pdbfixer'
         self.protein_pdbqt_preparation_value = easydock_data.get(self.protein_pdbqt_preparation_name) or 'obabel'
         self.protein_pdbqt_executable_value = easydock_data.get(self.protein_pdbqt_executable_name) or 'obabel'
+        self.plif_value = easydock_data.get(self.plif_name)
+
+        if isinstance(self.plif_value, str):
+            self.plif_value = self.plif_value.split(',')
 
         if self.config_value is None:
             if self.docking_value == 'vina':
@@ -262,7 +267,15 @@ class EasyDockConfig:
                 raise TypeError(f'Please put protonation method as string, not {type(self.input_value)}')
             if self.protonation_value.lower() not in EASYDOCK_PROTONATION_PROGRAM and 'schrodinger' not in self.protonation_value:
                 raise ValueError(f'{self.protonation_value} is not supported by easydock')
-            
+
+        if self.plif_value:
+            if isinstance(self.plif_value, bool):
+                pass
+            elif isinstance(self.plif_value, list):
+                for plif in self.plif_value:
+                    if len(plif.split('.')) != 3:
+                        raise ValueError(f'plif value should follow the residue.chain.interaction format, not {plif}')
+
 
 
         if not isinstance(self.docking_value, str):
@@ -318,7 +331,13 @@ class EasyDockConfig:
 
         if self.cpu_value:
             data[self.cpu_name] = self.cpu_value
-            
+        
+        if self.plif_value:
+            if isinstance(self.plif_value, list):
+                data[self.plif_name] = ','.join(self.plif_value)
+            elif isinstance(self.plif_value, bool):
+                data[self.plif_name] = True
+
         data[self.protein_pdbqt_preparation_name] = self.protein_pdbqt_preparation_value
         data[self.protein_preparation_name] = self.protein_preparation_value
         data[self.protein_pdbqt_executable_name] = self.protein_pdbqt_executable_value

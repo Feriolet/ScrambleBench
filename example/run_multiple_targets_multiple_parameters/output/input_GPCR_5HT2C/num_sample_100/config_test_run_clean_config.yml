@@ -64,6 +64,7 @@ analysis:
         docking_program: vina
         config_fname: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/config/easydock_config_5HT2C.yml
         protonation: null
+        plif: true
         protein_pdbqt_preparation: adfr
         protein_preparation: pdbfixer
         protein_pdbqt_executable: /opt/veincent/software/ADFRsuite-1.0/ADFRsuite_x86_64Linux_1.0/bin/prepare_receptor
