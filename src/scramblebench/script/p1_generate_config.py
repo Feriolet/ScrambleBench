@@ -247,6 +247,42 @@ def write_new_config(config_data: dict[str, Any],
     return config_output
 
 
+def process_single_batch_combination(root_dir: str,
+                                     config_data: dict[str, Any],
+                                     batch_parameters: list[dict[str, Any]],
+                                     assigned_parameter_values: list[list[Any]]) \
+                                    -> tuple[dict[str, Any], str, dict[str,Any]]:
+    """assigned config data according to the each combination of batch parameters
+
+    Args:
+        root_dir (str): output root dir
+        config_data (dict[str, Any]): user YAML config data that has been prepared into the correct structure
+        batch_parameters (list[dict[str, Any]]): list of dictionary of batch parameter (1 value)
+        assigned_parameter_values (list[list[Any]]): assigned values of the batch parameter
+
+    Returns:
+        tuple[dict[str, Any], str, dict[str,Any]]: (assigned/final config data, 
+                                                    analysis root directory, 
+                                                    parameter config as dictionary)
+    """
+    param_config_batch_parameter_dict = {}
+
+    parameter_key_lists = [parameter_dict['key'] for parameter_dict in batch_parameters]
+    parameter_dtype_lists = [parameter_dict['type'] for parameter_dict in batch_parameters]
+
+    for key, value, dtype in zip(parameter_key_lists, assigned_parameter_values, parameter_dtype_lists):
+        config_data = deep_assign(config_data, key, value=forcetype(value, dtype))
+
+        if key[0] != config_constant.INPUT_KEY:
+            param_config_batch_parameter_dict[key[-1]] = value
+
+        if isinstance(value, dict):
+            value = list(value.keys())[0]
+        root_dir = Path(root_dir) / f'{key[-1]}_{value}'
+
+
+    return config_data, root_dir, param_config_batch_parameter_dict
+
 def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     """Main function for the script. This function will prepare and write the config provided by user 
     to run ScrambleBench.
@@ -269,7 +305,6 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     batch_parameters: list[dict[str, list]] = fetch_batch_parameters(config_data=config_data)
 
     parameter_value_lists = [parameter_dict['value'] for parameter_dict in batch_parameters]
-    parameter_key_lists = [parameter_dict['key'] for parameter_dict in batch_parameters]
 
     yaml_list = []
     generation_dirpath = Path(GenerationConfig(config_data).input_value).resolve()
@@ -278,19 +313,12 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
     for assigned_parameter_values in list(itertools.product(*parameter_value_lists)):
 
         assigned_config_data = deepcopy(config_data)
-        param_config_batch_parameter_dict = {}
-        analysis_dirpath = generation_dirpath
 
-        parameter_dtype_lists = [parameter_dict['type'] for parameter_dict in batch_parameters]
-        for key, value, dtype in zip(parameter_key_lists, assigned_parameter_values, parameter_dtype_lists):
-            assigned_config_data = deep_assign(assigned_config_data, key, value=forcetype(value, dtype))
-
-            if key[0] != config_constant.INPUT_KEY:
-                param_config_batch_parameter_dict[key[-1]] = value
-
-            if isinstance(value, dict):
-                value = list(value.keys())[0]
-            analysis_dirpath = Path(analysis_dirpath) / f'{key[-1]}_{value}'
+        result = process_single_batch_combination(root_dir=generation_dirpath,
+                                                assigned_parameter_values=assigned_parameter_values,
+                                                batch_parameters=batch_parameters,
+                                                config_data=assigned_config_data)
+        assigned_config_data, analysis_dirpath, param_config_batch_parameter_dict = result
 
         config_output = write_new_config(config_data=assigned_config_data,
                                          prefix_dir=analysis_dirpath,
