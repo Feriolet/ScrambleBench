@@ -381,7 +381,7 @@ class GlideConfig:
         self.reward_intra_hbonds_name = 'reward_intra_hbonds'
         self.protonation_name = 'protonation'
         self.protein_preparation_name = 'protein_preparation'
-  
+        self.plif_name = 'plif_input'
 
         self.input_value = glide_data[self.input_name]
         self.output_value = glide_data[self.output_name]
@@ -389,6 +389,7 @@ class GlideConfig:
         self.reward_intra_hbonds_value = glide_data.get(self.reward_intra_hbonds_name) or False
         self.protonation_value = glide_data.get(self.protonation_name) or None
         self.protein_preparation_value = glide_data.get(self.protein_preparation_name) or None
+        self.plif_value = glide_data.get(self.plif_name)
 
     def update(self, key, value):
         pass
@@ -427,6 +428,13 @@ class GlideConfig:
         if self.reward_intra_hbonds_value is not None:
             assert isinstance(self.reward_intra_hbonds_value, bool)
 
+        if self.plif_value:
+            if isinstance(self.plif_value, str):
+                assert Path(self.plif_value).is_file()
+            elif not isinstance(self.plif_value, bool):
+                raise ValueError(f'plif must be either string, NoneType, or bool, not {type(self.plif_value)}')
+            
+
     def update_input_output(self, prefix_dir):
         if '/' in self.input_value[0]:
             logging.warning('prefix dir for generation is provide. Ignoring absolute path provided by input key and only take the last dir')
@@ -454,5 +462,8 @@ class GlideConfig:
         if self.reward_intra_hbonds_value:
             data[self.reward_intra_hbonds_name] = self.reward_intra_hbonds_value
 
+        if self.plif_value:
+            data[self.plif_name] = self.plif_value
+            
         return {self.name   : data}
 

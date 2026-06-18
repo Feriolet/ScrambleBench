@@ -210,6 +210,7 @@ class ScrambleBenchSummaryJSONReport:
         self.post_processing = False
         self.diversity = False
         self.genbench3d = False
+        self.virtual_hit = False
 
         self.styles = getSampleStyleSheet()
         self.styles['Heading1'].alignment = TA_CENTER
@@ -225,7 +226,9 @@ class ScrambleBenchSummaryJSONReport:
                 self.genbench3d = True
             if 'diversity' in scramblebench_json_keys:
                 self.diversity = True
-    
+            if 'virtual_hit' in scramblebench_json_keys:
+                self.virtual_hit = True
+
 
     def bold_table(self, df, index, filter='max'):
         if not isinstance(index, list):
@@ -244,7 +247,8 @@ class ScrambleBenchSummaryJSONReport:
     def generate_summary_txt(self):
 
         diversity_df = pd.DataFrame()
-        non_diversity_dict = defaultdict(dict)
+        virtual_hit_df = pd.DataFrame()
+        single_digit_dict = defaultdict(dict)
         for model, data in self.json_data.items():
             if self.diversity:
                 df = pd.DataFrame(data['diversity'])
@@ -256,16 +260,36 @@ class ScrambleBenchSummaryJSONReport:
                     diversity_df = pd.concat([diversity_df, df])
 
                 data.pop('diversity', None)
-            non_diversity_dict[model] = data
+
+            if self.virtual_hit:
+                virtual_hit_dict = data['virtual_hit']
+                virtual_hit_filter = virtual_hit_dict['filter']
+                virtual_hit_query = virtual_hit_dict['query']
+                mol_ids = virtual_hit_dict['name']
+
+                virtual_hit_dict = {'rate' : virtual_hit_dict['rate'],
+                                    'model': model}
+
+                df = pd.DataFrame(virtual_hit_dict, index=[0])
+                df['name'] = ',\n'.join(mol_ids)
+
+                if virtual_hit_df.empty:
+                    virtual_hit_df = df
+                else:
+                    virtual_hit_df = pd.concat([virtual_hit_df, df])
+                    
+                data.pop('virtual_hit', None)
+
+            single_digit_dict[model] = data
         
-        non_diversity_df = pd.DataFrame(non_diversity_dict).round(2).astype(object)
+        single_digit_df = pd.DataFrame(single_digit_dict).round(2).astype(object)
 
 
-        non_diversity_df = self.bold_table(df=non_diversity_df,
-                                           index=non_diversity_df.index.tolist(),
+        single_digit_df = self.bold_table(df=single_digit_df,
+                                           index=single_digit_df.index.tolist(),
                                            filter='max')
         
-        non_diversity_df = non_diversity_df.reset_index(names='Metric')
+        single_digit_df = single_digit_df.reset_index(names='Metric')
 
         diversity_df_list = []
         if self.diversity:
@@ -277,8 +301,18 @@ class ScrambleBenchSummaryJSONReport:
                 
                 df = df.reset_index(names='Metric')
                 diversity_df_list.append((method, df))
+        
+        virtual_hit_data_tuple = (pd.DataFrame(), (),)
+        if self.virtual_hit:
+            virtual_hit_df = virtual_hit_df.set_index('model').T.astype(object)
+            virtual_hit_df = self.bold_table(df=virtual_hit_df,
+                                 index='rate',
+                                 filter='max')
+            virtual_hit_df = virtual_hit_df.reset_index(names='Metric')
+
+            virtual_hit_data_tuple = (virtual_hit_df, (virtual_hit_filter, virtual_hit_query),)
            
-        return diversity_df_list, non_diversity_df
+        return diversity_df_list, virtual_hit_data_tuple, single_digit_df
 
     def render(self):
 
@@ -299,13 +333,21 @@ class ScrambleBenchSummaryJSONReport:
         Story.append(Paragraph(f"<font size= 12>{parameter_txt}</font>", self.styles['Normal']))
         Story.append(Spacer(1,20))
 
-        diversity_df_list, non_diversity_df = self.generate_summary_txt()
+        diversity_df_list, virtual_hit_data_tuple, non_diversity_df = self.generate_summary_txt()
 
         Story.append(Paragraph(f"<font size= 12>General Analysis Result </font>", self.styles['Normal']))
-        Story.append(Table([non_diversity_df.columns[:,].values.astype(str).tolist()] + non_diversity_df.values.tolist(), hAlign='LEFT') )
+        Story.append(Table([non_diversity_df.columns[:,].values.astype(str).tolist()] + non_diversity_df.values.tolist(), hAlign='LEFT'))
         
         Story.append(Spacer(1,10))
-        
+
+        if self.virtual_hit:
+            virtual_hit_df, virtual_hit_metadata = virtual_hit_data_tuple
+
+            Story.append(Paragraph(f"<font size= 12>Virtual Hit Analysis Result </font>", self.styles['Normal']))
+            Story.append(Paragraph(f"<font size= 10>Filter: {virtual_hit_metadata[0]}, Query: {virtual_hit_metadata[1]} </font>", self.styles['Normal']))
+            Story.append(Table([virtual_hit_df.columns[:,].values.astype(str).tolist()] + virtual_hit_df.values.tolist(), hAlign='LEFT'))
+            Story.append(Spacer(1,6))
+
         if self.diversity:
             Story.append(Paragraph(f"<font size= 12>Diversity Analysis Result </font>", self.styles['Normal']))
             Story.append(Spacer(1,6))
@@ -314,6 +356,8 @@ class ScrambleBenchSummaryJSONReport:
                 diversity_df = diversity_tuple[-1]
                 Story.append(Table([diversity_df.columns[:,].values.astype(str).tolist()] + diversity_df.values.tolist(), hAlign='LEFT'))
                 Story.append(Spacer(1,6))
+        
+
         # Story.append(Paragraph(f"<font size= 12>{batch_parameter_txt}</font>", self.styles['Normal']))
         # Story.append(Spacer(1,12))
 

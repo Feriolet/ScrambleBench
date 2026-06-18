@@ -75,6 +75,7 @@ analysis:
         schrodinger_dir: /opt/schrodinger2025-4
         protonation: ligprep
         protein_preparation: protwizard
+        plif_input: true
   diversity:
     input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/cheminformatics_input_prepared
     output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/diversity
@@ -86,9 +87,15 @@ analysis:
       diversity: hamdiv
     - distance: null
       diversity: generic_bm
+  virtual_hit:
+    input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/glide_output
+    output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/virtual_hit
+    query: QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500
+    filter: PAINS
 
 report:
   plot: violin
   rmsd: true
   docking_score: true
   qed: true
+  virtual_hit: true

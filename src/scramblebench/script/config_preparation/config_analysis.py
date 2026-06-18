@@ -6,6 +6,7 @@ from scramblebench.script.config_preparation import config_constant
 from scramblebench.script.config_preparation.config_genbench3d import GenBench3DConfig
 from scramblebench.script.config_preparation.config_redocking import RedockingConfig
 from scramblebench.script.config_preparation.config_diversity import DiversityConfig
+from scramblebench.script.config_preparation.config_virtual_hit import VirtualHitConfig
 
 import Bio
 import rdkit
@@ -34,6 +35,8 @@ class AnalysisConfig:
             self.valid_key_list.append(RedockingConfig(analysis_data))
         if config_constant.ANALYSIS_DIVERSITY_KEY in analysis_data.keys():
             self.valid_key_list.append(DiversityConfig(analysis_data))
+        if config_constant.ANALYSIS_VIRTUAL_HIT_KEY in analysis_data.keys():
+            self.valid_key_list.append(VirtualHitConfig(analysis_data))
 
     def update(self, key, value):
         pass

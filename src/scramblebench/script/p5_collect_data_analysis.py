@@ -7,7 +7,7 @@ import logging
 import sys
 import subprocess
 import json
-from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking, config_post_generation
+from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking, config_post_generation, config_virtual_hit
 from scramblebench.script.utils.error_handler import DirNotFoundError
 from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex, fetch_model_file_from_model_dir
 from scramblebench.script.utils.process_mol import calculate_rms, calculate_physicochemical_properties, PhysicoChemicalProperties
@@ -19,6 +19,7 @@ from collections import defaultdict
 import rdkit
 from rdkit import Chem
 from enum import Enum, IntEnum
+from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
 
 class GenBenchDockingMethod(Enum):
     VINA_MININPLACE = "Vina score"
@@ -151,7 +152,7 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
         glide_dict['glide_redocking_rmsd'] += [calculate_rms(mol_dict[mol_name]['input'], mol_dict[mol_name]['output']) for mol_name in output_mol_name_l]
         glide_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
         glide_dict['Model'] += [model] * len(output_mol_l)
-        glide_dict['glide_redocking_score'] += [mol.GetProp('r_i_docking_score') for mol in output_mol_l]
+        glide_dict['glide_redocking_score'] += [float(mol.GetProp('r_i_docking_score')) for mol in output_mol_l]
 
     return pd.DataFrame.from_dict(glide_dict)
 
@@ -192,7 +193,7 @@ def collect_redocking_easydock_data(docking_data, parameter_class):
         easydock_dict['easydock_redocking_rmsd'] += [calculate_rms(mol_dict[mol_name]['input'], mol_dict[mol_name]['output']) for mol_name in output_mol_name_l]
         easydock_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
         easydock_dict['Model'] += [model] * len(output_mol_l)
-        easydock_dict['easydock_redocking_score'] += [mol.GetProp('docking_score') for mol in output_mol_l]
+        easydock_dict['easydock_redocking_score'] += [float(mol.GetProp('docking_score')) for mol in output_mol_l]
 
     return pd.DataFrame.from_dict(easydock_dict)
 
@@ -233,10 +234,11 @@ def collect_physicochemical_data(postgeneration_data: config_post_generation.Pos
 
         physicochemical_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
         physicochemical_dict['Model'] += [model] * len(output_mol_l)
-        physicochemical_dict[PhysicoChemicalProperties.MW.value] += [mol.GetProp(PhysicoChemicalProperties.MW.value) for mol in output_mol_l]
-        physicochemical_dict[PhysicoChemicalProperties.QED.value] += [mol.GetProp(PhysicoChemicalProperties.QED.value) for mol in output_mol_l]
-        physicochemical_dict[PhysicoChemicalProperties.LOGP.value] += [mol.GetProp(PhysicoChemicalProperties.LOGP.value) for mol in output_mol_l]
-        physicochemical_dict[PhysicoChemicalProperties.SA_SCORE.value] += [mol.GetProp(PhysicoChemicalProperties.SA_SCORE.value) for mol in output_mol_l]
+        physicochemical_dict['SMILES'] += [Chem.MolToSmiles(mol) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.MW.value] += [float(mol.GetProp(PhysicoChemicalProperties.MW.value)) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.QED.value] += [float(mol.GetProp(PhysicoChemicalProperties.QED.value)) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.LOGP.value] += [float(mol.GetProp(PhysicoChemicalProperties.LOGP.value)) for mol in output_mol_l]
+        physicochemical_dict[PhysicoChemicalProperties.SA_SCORE.value] += [float(mol.GetProp(PhysicoChemicalProperties.SA_SCORE.value)) for mol in output_mol_l]
         
     return pd.DataFrame.from_dict(physicochemical_dict)
 
@@ -290,12 +292,60 @@ def collect_diversity_data(analysis_data, parameter_class: config_parameter.Para
     return diversity_dict
 
 
+def filter_catalogue(smi, catalog):
+    mol = Chem.MolFromSmiles(smi)
+    if catalog.HasMatch(mol):
+        return 0
+    
+    return 1
+
+def collect_virtual_hit(virtual_hit_data, analysis_df):
+
+    virtual_hit_dict = defaultdict(dict)
+    for model, df in analysis_df.groupby(['Model']):
+        mol_length = len(df)
+
+        has_been_filtered = False
+        if virtual_hit_data.query_value:
+            df = df.query(virtual_hit_data.query_value)
+
+            virtual_hit_count = len(df)
+            has_been_filtered = True
+
+        if virtual_hit_data.filter_value:
+            params_chembl = FilterCatalogParams()
+
+            if virtual_hit_data.filter_value.lower() == 'pains':
+                params_chembl.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS)
+            else:
+                raise ValueError(f'{virtual_hit_data.filter_value} is not supported')
+            
+            catalog_chembl = FilterCatalog(params_chembl)
+
+            df['PAINS'] = df['SMILES'].apply(filter_catalogue, catalog=catalog_chembl)
+            df = df[df['PAINS'] == 1]
+
+            virtual_hit_count = len(df)
+            has_been_filtered = True
+
+        if not has_been_filtered:
+            return None
+        
+        virtual_hit_dict[model[0]]['virtual_hit'] = {'rate': f'{(virtual_hit_count / mol_length):.2f}',
+                                                      'name': df['mol_id'].tolist(),
+                                                      'filter': virtual_hit_data.filter_value,
+                                                      'query': virtual_hit_data.query_value}
+    
+    return virtual_hit_dict
+
+
 def collect_analysis_metric(config_data):
 
     analysis_data = config_data[config_constant.ANALYSIS_KEY]
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
     postgeneration_data = config_post_generation.PostGenerationConfig(config_data=config_data)
 
+    
     config_dir = Path(postgeneration_data.input_value).parent
     analysis_df = pd.DataFrame()
 
@@ -332,6 +382,10 @@ def collect_analysis_metric(config_data):
 
     analysis_df = combine_analysis_df_with_parameter(analysis_df, parameter_data=parameter_data)
     
+    if config_constant.ANALYSIS_VIRTUAL_HIT_KEY in data_input[config_constant.ANALYSIS_KEY].keys():
+        virtual_hit_dict = collect_virtual_hit(config_virtual_hit.VirtualHitConfig(analysis_data), analysis_df)
+        if virtual_hit_dict:
+            model_dict = deep_merge(model_dict, virtual_hit_dict)
 
     analysis_df.to_csv(config_dir / 'summary.csv')
 
@@ -366,6 +420,9 @@ if __name__ == '__main__':
         data_input = yaml.safe_load(open(yaml_file, 'r'))
 
         analysis_df, model_dict = collect_analysis_metric(data_input) 
+
+
+
         if output_df.empty:
             output_df = analysis_df
         else:

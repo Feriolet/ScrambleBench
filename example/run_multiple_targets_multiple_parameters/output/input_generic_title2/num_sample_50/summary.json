@@ -21,7 +21,13 @@
                 "score": 48,
                 "time": 0.1114954948425293
             }
-        ]
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
     },
     "Pocket2Mol": {
         "total_mol": 51,
@@ -45,6 +51,12 @@
                 "score": 8,
                 "time": 0.03554177284240723
             }
-        ]
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
     }
 }

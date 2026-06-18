@@ -71,6 +71,7 @@ analysis:
         reward_intra_hbonds: null
         protonation: ligprep
         protein_preparation: protwizard
+        plif_input: True
 
   diversity:
     input: cheminformatics_input_prepared
@@ -87,16 +88,14 @@ analysis:
   virtual_hit:
     input: glide_output
     output: virtual_hit
-    qed: 0.5
-    redocking_score: -8
-    molwt: 300,500
+    query: 'QED >= 0.5 and glide_redocking_score <= -8 AND MW >= 300 and MW <= 500'
     filter: PAINS
 
 report:
   rmsd: True
   docking_score: True
   #diversity: True
-  #virtual_hit: True
+  virtual_hit: True
   plot: violin
   qed: True
 

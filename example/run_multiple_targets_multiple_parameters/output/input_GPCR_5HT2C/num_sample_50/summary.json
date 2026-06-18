@@ -21,7 +21,15 @@
                 "score": 44,
                 "time": 0.2306685447692871
             }
-        ]
+        ],
+        "virtual_hit": {
+            "rate": "0.02",
+            "name": [
+                "DiffSBDD_47_num_sample_50"
+            ],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
     },
     "Pocket2Mol": {
         "total_mol": 52,
@@ -45,6 +53,12 @@
                 "score": 6,
                 "time": 0.0314483642578125
             }
-        ]
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
     }
 }
