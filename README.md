@@ -44,6 +44,7 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
       - [4c. Diversity Analysis](#4c-diversity-analysis)
       - [4d. Pharmacophore-based screening](#4d-pharmacophore-based-screening)
       - [5. Compilation of data analysis](#5-compilation-of-data-analysis)
+      - [5x. Virtual Hit Rate Collection](#5x-virtual-hit-rate-collection)
       - [6. Plotting](#6-plotting)
   - [Data Availability](#data-availability)
   - [Reproducing Figures](#reproducing-figures)
@@ -60,9 +61,10 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 - **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
 - **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, conformational, diversity, and physicochemical analysis.
 - **Pharmacophore Screening (Easydock)**: implements pharmacophore screening to reflect ideal target binding
+- **Virtual Hit Criteria**: User can add virtual hit criteria that can be reflected in `report.pdf`
+  
 ## Future feature for v0.1.0
 
-- **Virtual Hit Criteria**: User can add virtual hit criteria that can be reflected in `report.pdf`
 - **Pharmacophore Screening (Glide)**: implements pharmacophore screening to reflect ideal target binding
 
 
@@ -855,6 +857,7 @@ folder
 ├── yaml_list.txt # from step 1
 ├── protein1 folder # could be nested depending on the `batch_parameter`
 │   ├── config_output.yml
+│   ├── summary.json # output
 │   └── summary.csv # output
 └── all.csv # output
 ```
@@ -866,6 +869,52 @@ Sample output:
 1,GPCR_5HT2C,Pocket2Mol_1,Pocket2Mol,-2.183,-2.032,-4.233,-3.825,-2.07,-1.86,-4.259,-3.819,5.54947453926946,-3.568,5.92211499618567,-4.6347445657091395
 2,GPCR_5HT2C,Pocket2Mol_10,Pocket2Mol,-2.423,-2.232,-4.403,-4.07,-2.349,-2.271,-4.37,-4.213,4.195787247347035,-3.435,5.830167941496112,-4.4475081845864093
 ```
+
+#### 5x. Virtual Hit Rate Collection
+
+In order to get virtual hit rate shown in the `analysis` key, the dataframe from step `5. Compilation of data analysis` should be present. The virtual hit rate calculation is immediately run when executing the `p5_collect_data_analysis.py` and it will be saved in `summary.json` file.
+
+```yaml
+analysis:
+  virtual_hit:
+    query: QED >= 0.5 and `FF_minimised_Vina score` <= -1 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500
+    filter: PAINS
+```
+
+string: `virtual_hit`
+| Field  | dtype | description                                                                        | required | default |
+|--------|-------|------------------------------------------------------------------------------------|----------|---------|
+| query  | str   | string used to define virtual hit (must be `df.query` compatible)                  | False    | N/A     |
+| filter | str   | filter unwanted chemical structure using rdkit catalogues (choose from: [`PAINS`]) | False    | N/A     |
+
+Compatible dataframe columns for filter:
+
+| Field (case sensitive)                 | dtype | description                                                    | source               |
+|----------------------------------------|-------|----------------------------------------------------------------|----------------------|
+| FF_unminimised_Minimized Vina score    | float | mininplace vina score without MMFF94 FF                        | GenBench3D           |
+| FF_unminimised_Vina score              | float | inplace vina score without MMFF94                              | GenBench3D           |
+| FF_unminimised_Minimized Glide score   | float | mininplace Glide score without MMFF94                          | GenBench3D           |
+| FF_unminimised_Glide score             | float | inplace Glide score without MMFF94                             | GenBench3D           |
+| FF_unminimised_VALIDITY3D_BOND_LENGTH  | float | q-score of Validity3D in terms of bond length without MMFF94   | GenBench3D           |
+| FF_unminimised_VALIDITY3D_BOND_ANGLE   | float | q-score of Validity3D in terms of bond angle without MMFF94    | GenBench3D           |
+| FF_unminimised_VALIDITY3D_BOND_TORSION | float | q-score of Validity3D in terms of torsion angle without MMFF94 | GenBench3D           |
+| FF_minimised_Minimized Vina score      | float | mininplace vina score after MMFF94 FF                          | GenBench3D           |
+| FF_minimised_Vina score                | float | inplace vina score after MMFF94                                | GenBench3D           |
+| FF_minimised_Minimized Glide score     | float | mininplace Glide score after MMFF94                            | GenBench3D           |
+| FF_minimised_Glide score               | float | inplace Glide score after MMFF94                               | GenBench3D           |
+| FF_minimised_VALIDITY3D_BOND_LENGTH    | float | q-score of Validity3D in terms of bond length after MMFF94     | GenBench3D           |
+| FF_minimised_VALIDITY3D_BOND_ANGLE     | float | q-score of Validity3D in terms of bond angle after MMFF94      | GenBench3D           |
+| FF_minimised_VALIDITY3D_BOND_TORSION   | float | q-score of Validity3D in terms of torsion angle after MMFF94   | GenBench3D           |
+| easydock_redocking_rmsd                | float | RMSD of docking score between redocked and AI pose             | redocking (easydock) |
+| easydock_redocking_score               | float | redocking score                                                | redocking (easydock) |
+| glide_redocking_rmsd                   | float | RMSD of docking score between redocked and AI pose             | redocking (Glide SP) |
+| glide_redocking_score                  | float | redocking score                                                | redocking (Glide SP) |
+| MW                                     | float | molecular weight of AI generated ligand                        | Automatic            |
+| QED                                    | float | QED of AI generated ligand                                     | Automatic            |
+| logP                                   | float | logP of AI generated ligand                                    | Automatic            |
+| SAScore                                | float | synthetic accessibility score of AI generated ligand           | Automatic            |
+| SMILES                                 | str   | SMILES of AI generated ligand                                  | Automatic            |
+
 
 #### 6. Plotting
 
@@ -887,7 +936,7 @@ report:
   rmsd: True
   docking_score: True
   #diversity: True  # to be implemented
-  #virtual_hit: True # to be implemented
+  virtual_hit: True
   plot: violin
   qed: True
   validity3d: True
@@ -904,7 +953,7 @@ string: `report`
 | plot | str        | plot type (choose from `violin`, `box`, or `raincloud`)         | False     | violin                                           |
 | qed    | bool | whether to plot qed of generated ligand | False    | False |
 | validity3d    | bool | whether to plot validity3d of generated ligand | False    | False |
-
+| virtual_hit    | bool | whether to show virtual hit rate | False    | False |
 ```txt
 usage: p6_generate_report.py [-h] -i INPUT
 
