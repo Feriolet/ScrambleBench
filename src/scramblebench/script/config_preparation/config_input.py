@@ -6,6 +6,7 @@ access the subkey field easily.
 import logging
 
 from pathlib import Path
+from collections.abc import Iterable, ItemsView
 from typing import Any, Optional
 from typing_extensions import Self
 
@@ -33,7 +34,7 @@ class InputConfig:
         """initialize class
 
         Args:
-            input_dict (dict[str, Any]): user's prepared YAML config as dictionary
+            input_dict (dict[str, Any]): user's prepared YAML config with input key as dictionary
             key (_type_, optional): the key that contains input data. Defaults to config_constant.INPUT_KEY.
         """
 
@@ -266,11 +267,11 @@ class InputNonDirpathConfig:
                                     for input_keyname, structinput_data in input_data.items()}
 
 
-    def __iter__(self) -> list[dict]:
+    def __iter__(self) -> Iterable[ItemsView[str, InputConfig]]:
         """custom iteration method to return the list of InputConfig as dictionary
 
         Returns:
-            list[dict]: list of user's {"protein name" : InputConfig} as dictionary
+            Iterable[ItemsView[str, InputConfig]]: list of user's (protein name, InputConfig)
         """
         return iter(list(self.inputstructure_dict.items()))
 

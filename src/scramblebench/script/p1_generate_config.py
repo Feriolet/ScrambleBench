@@ -251,7 +251,10 @@ def process_single_batch_combination(root_dir: str,
                                      batch_parameters: list[dict[str, Any]],
                                      assigned_parameter_values: list[list[Any]]) \
                                     -> tuple[dict[str, Any], str, dict[str,Any]]:
-    """assigned config data according to the each combination of batch parameters
+    """assigned config data according to the each combination of batch parameters.
+    This function will also act to get a new directory, where the final .yml config will be
+    stored. As users may submit multiple batch parameters (e.g., num_sample), this will create
+    each subfolder consisting of each parameter combination (output/num_sample_50 and output/num_sample_100).
 
     Args:
         root_dir (str): output root dir
