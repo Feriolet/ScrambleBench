@@ -16,6 +16,7 @@ from scramblebench.script.config_preparation.config_post_generation import PostG
 from scramblebench.script.config_preparation.config_analysis import AnalysisConfig
 from scramblebench.script.config_preparation.config_parameter import ParameterConfig
 from scramblebench.script.config_preparation.config_report import ReportConfig
+from scramblebench.script.config_preparation.config_input import InputConfig as InputUserConfig
 from scramblebench.script.config_preparation import config_constant
 
 
@@ -57,8 +58,7 @@ def validate_config(config_data: dict[str, Any]) -> Optional[bool]:
     Returns:
         _type_: returns True if a user config is validated
     """
-
-    compulsory_config_list = [InputConfig, ModelConfig, GenerationConfig, PostGenerationConfig]
+    compulsory_config_list = [InputUserConfig, ModelConfig, GenerationConfig, PostGenerationConfig]
 
     for config_class in compulsory_config_list:
         config_class(config_data).validate_config()
@@ -178,7 +178,7 @@ def prepare_config(config_data: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict[str, Any]: the prepared config with the correct structure of input and generation config
     """
-    config_data |= InputConfig(config_data).write()
+    config_data |= InputUserConfig(config_data).write()
     config_data |= GenerationConfig(config_data).write()
 
     return config_data
@@ -223,7 +223,7 @@ def write_new_config(config_data: dict[str, Any],
     """
     config_output = {}
     logging.debug('Writing Config for Input key')
-    config_output = config_output | InputConfig(config_data).write_inputstruct(cutoff=10)
+    config_output = config_output | InputUserConfig(config_data).write_inputstruct(cutoff=10)
     logging.debug('Writing Config for Model key')
     config_output = config_output | ModelConfig(config_data).write()
     logging.debug('Writing Config for Generation key')
@@ -360,9 +360,9 @@ if __name__ == '__main__':
 
     if args.dirpath_input:
         logging.info('Dirpath_input mode: expecting to read directories given a directory')
-        from scramblebench.script.config_preparation.config_input import InputDirConfig as InputConfig
+        from scramblebench.script.config_preparation.config_input import InputDirpathConfig as InputUserConfig
     else:
-        from scramblebench.script.config_preparation.config_input import InputConfig
+        from scramblebench.script.config_preparation.config_input import InputNonDirpathConfig as InputUserConfig
 
     if not args.output:
         args.output = Path(args.input).parent / f'{Path(args.input).stem}_clean_config.yml'

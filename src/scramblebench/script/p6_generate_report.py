@@ -80,7 +80,7 @@ class ScrambleBenchParameterReport:
 
 class ScrambleBenchInputReport:
 
-    def __init__(self, input_data: config_input.InputStructure):
+    def __init__(self, input_data: config_input.InputConfig):
         self.input_data = input_data
         self.font_size = 15
         self.styles = getSampleStyleSheet()
@@ -598,7 +598,7 @@ def generate_report(yaml_file):
 
 
     if config_constant.INPUT_KEY in config_data:
-        input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
+        input_data = config_input.InputConfig(config_data)
         report.add_section(ScrambleBenchInputReport(input_data=input_data))
 
     if json_data:

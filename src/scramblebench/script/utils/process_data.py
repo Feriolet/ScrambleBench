@@ -43,15 +43,7 @@ def fetch_model_file_from_dir(dir_path, model_list) -> dict[str, str]:
     
     valid_molecule_file_dict = {}
     for model in model_list:
-
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath))
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
+        valid_molecule_file_dict[model] = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(generation_folder_dirpath))
     
     return valid_molecule_file_dict
 
@@ -67,14 +59,7 @@ def fetch_model_file_from_model_dir(dir_path, model_list) -> dict[str, str]:
     for model in model_list:
 
         model_dir = Path(generation_folder_dirpath) / model
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(model_dir))
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
+        valid_molecule_file_dict[model] = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(model_dir))
     
     return valid_molecule_file_dict
 
@@ -90,14 +75,7 @@ def fetch_model_plif_file_from_model_dir(dir_path, model_list) -> dict[str, str]
     for model in model_list:
 
         model_dir = Path(generation_folder_dirpath) / model / 'plif'
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(model_dir))
-        if len(matched_fname_list) > 1:
-            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
-        elif len(matched_fname_list) == 0:
-            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
-        else:
-            valid_molecule_file_dict[model] = str(matched_fname_list[0])
+        valid_molecule_file_dict[model] = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(model_dir))
     
     return valid_molecule_file_dict
 
@@ -112,4 +90,11 @@ def find_file_name_through_regex(character, file_format, dirname):
     glob_matching_fname = f'*{create_case_insensitive_regex(character)}*{file_format}'
     regex_pattern_non_alphanumeric_left_and_right = re.compile(f'(?<![A-Za-z0-9]){create_case_insensitive_regex(character)}(?![A-Za-z0-9])')
 
-    return [fname for fname in dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
+    matched_fname_list = [fname for fname in dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
+    if len(matched_fname_list) > 1:
+        logging.exception(f'We found more than 1 matching file for {character} characters: {matched_fname_list}. Please ensure only 1 is detected')
+        raise ValueError(f'We found more than 1 matching file for {character} characters: {matched_fname_list}. Please ensure only 1 is detected')
+    elif len(matched_fname_list) == 0:
+        logging.warning(f'There are no matched file for {character} characters in {dirname}. Make sure this is intended')
+    else:
+        return str(matched_fname_list[0])

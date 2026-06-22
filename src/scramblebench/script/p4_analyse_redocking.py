@@ -110,7 +110,7 @@ def run_protonation(config_data):
                                  valid_molecule_file_dict=valid_molecule_file_dict)
 
 
-def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_data: config_input.InputStructure, output_dir):
+def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_data: config_input.InputConfig, output_dir):
     config_fname = docking_data.config_value
     protein_pdb = input_data.pdb_value
     grid_fname = str(Path(protein_pdb).parent / f'{input_data.protein_value}_grid.txt')
@@ -414,7 +414,7 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
 def run_docking(config_data):
     redocking_data = config_redocking.RedockingConfig(config_data[config_constant.ANALYSIS_KEY])
     parameter_data = config_parameter.ParameterConfig(config_data=config_data)
-    input_data = config_input.InputStructure(config_data[config_constant.INPUT_KEY])
+    input_data = config_input.InputConfig(config_data)
     docking_data_list = redocking_data.docking_value.valid_key_list
 
     for docking_data in docking_data_list:

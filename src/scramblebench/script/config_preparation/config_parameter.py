@@ -36,7 +36,7 @@ class ParameterConfig:
     def create(self, config_data: dict[str, Any], batch_parameter):
 
         self.name = config_constant.PARAMETER_KEY
-        input_data = config_input.InputStructure(input_dict=config_data[config_constant.INPUT_KEY])
+        input_data = config_input.InputConfig(input_dict=config_data)
         self.protein_name = 'protein_name'
         self.protein_value = input_data.protein_value
 

@@ -138,7 +138,7 @@ def prepare_genbench3d_cmd(config_data):
         if genbench3d_data.do_complex_forcefield_minimisation_value:
             complex_minimisation.append('minimised')
 
-        input_pdb, input_sdf = prepare_genbench3d_input(input_data=config_input.InputStructure(config_data[config_constant.INPUT_KEY]),
+        input_pdb, input_sdf = prepare_genbench3d_input(input_data=config_input.InputConfig(config_data),
                                                         genbench3d_data=genbench3d_data)
     
         cmd  = ["conda", "run", "-n", genbench3d_data.conda_env_value, 
