@@ -167,26 +167,22 @@ def run_easydock_plif( environment, db_fname, protein_fname, output_fname,
     logging.info(f'Running easydock PLIF with cmd: {cmd}')
     subprocess.run(cmd)
     
-    plif_df = pd.read_csv(plif_result, delimiter='\t')
+    plif_df = pd.read_csv(plif_result, delimiter='\t').set_index('id')
 
-    filtered_plif_df = plif_df[plif_df['plif_sim'] >= similarity]
+    filtered_plif_df = plif_df[plif_df['plif_sim'] >= 0.2]
 
     total_mol = []
     for pose, df in filtered_plif_df.groupby('pose'):
         output_pose_sdf = Path(db_fname).parent / f'filtered_sdf_{pose}.sdf'
-        mol_name_list = df['id'].tolist() # assuming only 1 stereoisomer
+        mol_name_list = df.index.tolist() # assuming only 1 stereoisomer
 
         cmd = ['conda', 'run', '-n', environment,
                'get_sdf_from_easydock', '-i', db_fname]
         cmd += ['-d'] + mol_name_list + ['--poses', str(pose)]
         cmd += ['-o', output_pose_sdf, '--fields', 'docking_score']
         
-        print(cmd)
         subprocess.run(cmd)
 
-        print(os.listdir(Path(db_fname).parent))
-        with open(output_pose_sdf, 'r') as open_f:
-            print(open_f.read())
         total_mol += [mol for mol in Chem.SDMolSupplier(output_pose_sdf, removeHs=False)]
 
 
@@ -194,11 +190,15 @@ def run_easydock_plif( environment, db_fname, protein_fname, output_fname,
         temp_output = Path(db_fname).parent / f'filtered_sdf_{pose}.sdf'
         with Chem.SDWriter(temp_output) as output_f:
             for mol in total_mol:
+                similarity_score = filtered_plif_df.loc[mol.GetProp('_Name').rsplit(':', 1)[0], 'plif_sim']
+                mol.SetProp('plif_similarity', str(similarity_score))
                 output_f.write(mol)
         
         processed_temp_output = process_easydock_docking_output(temp_output)
 
         subprocess.run(['cp', processed_temp_output, output_fname], text=True)
+    else:
+        logging.warning('No molecule matching with PLIF')
 
 
 def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, parameter_data, input_data):
@@ -300,7 +300,6 @@ def prepare_hypothesis(schrodinger_env, rec_file, lig_file, center_coord):
             '-f', '7', '-site_dist', '2.0', '-pair_dist', '4.0', '-xvol', '-scale', 
             '0.5', '-buff', '2.0', '-limit', '5.0', '-HOST', 'localhost', '-WAIT']
     
-        print(' '.join(cmd))
         subprocess.run(cmd)
         
         phypo_file = f'{jobname}.phypo'
@@ -333,13 +332,13 @@ def run_schrodinger_phase_plif(working_dir, environment, protein_fname, library_
 
 
     subprocess.run(['cp', hypo_input, 'hypo.phypo'])
-    print(os.listdir())
+
     cmd = [f'{environment}/phase_screen', library_fname, 'hypo.phypo', 
            jobname, '-inplace', '-keep', '999999999', '-report', '1', 
            '-ex', '-HOST', 'localhost:10', '-TMPLAUNCHDIR', '-osd', '-WAIT']
 
     subprocess.run(cmd)
-    print(' '.join(cmd))
+
     subprocess.run(['cp', temp_output, f'{output_fname}.gz'])
     subprocess.run(['gunzip', f'{output_fname}.gz'], text=True)
 

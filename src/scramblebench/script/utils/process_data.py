@@ -78,6 +78,30 @@ def fetch_model_file_from_model_dir(dir_path, model_list) -> dict[str, str]:
     
     return valid_molecule_file_dict
 
+
+def fetch_model_plif_file_from_model_dir(dir_path, model_list) -> dict[str, str]:
+
+    generation_folder_dirpath = Path(dir_path)
+    if not generation_folder_dirpath.is_dir():
+        logging.exception('You have prepared your molecule yet!')
+        raise DirNotFoundError(f'{generation_folder_dirpath} is not found! Please make sure you run p3_prepare_molecule.py')
+    
+    valid_molecule_file_dict = {}
+    for model in model_list:
+
+        model_dir = Path(generation_folder_dirpath) / model / 'plif'
+        matched_fname_list = find_file_name_through_regex(character=model, file_format='.sdf', dirname=Path(model_dir))
+        if len(matched_fname_list) > 1:
+            logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
+            raise ValueError(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')
+        elif len(matched_fname_list) == 0:
+            logging.warning(f'There are no matched file for {model} model in {generation_folder_dirpath}. Make sure this is intended')
+        else:
+            valid_molecule_file_dict[model] = str(matched_fname_list[0])
+    
+    return valid_molecule_file_dict
+
+
 def create_case_insensitive_regex(pattern: str) -> str:
     return f"{''.join([ '[' + char.upper() + char.lower() + ']' for char in pattern])}"
 

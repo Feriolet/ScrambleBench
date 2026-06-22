@@ -9,7 +9,7 @@ import subprocess
 import json
 from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking, config_post_generation, config_virtual_hit
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex, fetch_model_file_from_model_dir
+from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex, fetch_model_file_from_model_dir, fetch_model_plif_file_from_model_dir
 from scramblebench.script.utils.process_mol import calculate_rms, calculate_physicochemical_properties, PhysicoChemicalProperties
 import os
 import pandas as pd
@@ -108,6 +108,22 @@ def collect_genbench3d_data(analysis_data, parameter_class):
     return pd.DataFrame.from_dict(genbench3d_dict), single_validity_dict
         
 
+def replace_best_score_with_plif(input_mol_list, plif_mol_list):
+
+    new_mol_list = []
+
+    input_mol_names = [mol.GetProp("_Name") for mol in input_mol_list]
+    plif_mol_names = [mol.GetProp('_Name') for mol in plif_mol_list]
+
+    for index, mol_name in enumerate(input_mol_names):
+        if mol_name not in plif_mol_names:
+            new_mol_list.append(input_mol_list[index])
+        else:
+            new_mol_list.append(plif_mol_list[plif_mol_names.index(mol_name)])
+
+    return new_mol_list
+
+
 def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class):
 
     valid_glide_input_output_dict = defaultdict(dict)
@@ -119,6 +135,11 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
     for model, output_fname in fetch_model_file_from_model_dir(dir_path=docking_data.output_value,
                                                                     model_list=parameter_class.model_list_value).items():
         valid_glide_input_output_dict[model]['output'] = output_fname
+
+    if docking_data.plif_value:
+        for model, plif_fname in fetch_model_plif_file_from_model_dir(dir_path=docking_data.output_value,
+                                                                        model_list=parameter_class.model_list_value).items():
+            valid_glide_input_output_dict[model]['plif'] = plif_fname
 
     glide_dict = defaultdict(list)
     for model, glide_fnames in valid_glide_input_output_dict.items():
@@ -145,12 +166,24 @@ def collect_redocking_glide_data(docking_data, schrodinger_dir, parameter_class)
 
             output_mol_l = [mol for mol in Chem.SDMolSupplier(best_score_sdf_fname, removeHs=False) if mol]
 
+            if docking_data.plif_value:
+                try:
+                    plif_mol_l =  [mol for mol in Chem.SDMolSupplier(glide_fnames['plif'], removeHs=False) if mol]
+                    output_mol_l = replace_best_score_with_plif(output_mol_l, plif_mol_l)
+                except OSError:
+                    logging.warning(f'PLIF file exists {glide_fnames["plif"]} but is empty. Skipping integration of PLIF to Glide')
+                except KeyError:
+                    pass
+                
         output_mol_name_l = [mol.GetProp('_Name') for mol in output_mol_l]
         for mol in output_mol_l:
             mol_dict[mol.GetProp("_Name")]['output'] = mol
 
+
         glide_dict['glide_redocking_rmsd'] += [calculate_rms(mol_dict[mol_name]['input'], mol_dict[mol_name]['output']) for mol_name in output_mol_name_l]
         glide_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
+        if docking_data.plif_value:
+            glide_dict['glide_plif'] += [float(mol.GetProp('r_phase_PhaseScreenScore')) if mol.HasProp('r_phase_PhaseScreenScore') else 0 for mol in output_mol_l ]
         glide_dict['Model'] += [model] * len(output_mol_l)
         glide_dict['glide_redocking_score'] += [float(mol.GetProp('r_i_docking_score')) for mol in output_mol_l]
 
@@ -169,6 +202,11 @@ def collect_redocking_easydock_data(docking_data, parameter_class):
                                                                     model_list=parameter_class.model_list_value).items():
         valid_easydock_input_output_dict[model]['output'] = output_fname
 
+    if docking_data.plif_value:
+        for model, plif_fname in fetch_model_plif_file_from_model_dir(dir_path=docking_data.output_value,
+                                                                        model_list=parameter_class.model_list_value).items():
+            valid_easydock_input_output_dict[model]['plif'] = plif_fname
+
     easydock_dict = defaultdict(list)
     for model, easydock_fnames in valid_easydock_input_output_dict.items():
 
@@ -186,12 +224,26 @@ def collect_redocking_easydock_data(docking_data, parameter_class):
             mol_dict[mol.GetProp("_Name")]['input'] = mol
 
         output_mol_l = [mol for mol in Chem.SDMolSupplier(output_fname, removeHs=False) if mol]
+
+
         output_mol_name_l = [mol.GetProp('_Name') for mol in output_mol_l]
         for mol in output_mol_l:
             mol_dict[mol.GetProp("_Name")]['output'] = mol
 
+        if docking_data.plif_value:
+            try:
+                plif_mol_l =  [mol for mol in Chem.SDMolSupplier(easydock_fnames['plif'], removeHs=False) if mol]
+                output_mol_l = replace_best_score_with_plif(output_mol_l, plif_mol_l)
+            except OSError:
+                logging.warning(f'PLIF file exists {easydock_fnames["plif"]} but is empty. Skipping integration of PLIF to easydock')
+            except KeyError:
+                pass
+
         easydock_dict['easydock_redocking_rmsd'] += [calculate_rms(mol_dict[mol_name]['input'], mol_dict[mol_name]['output']) for mol_name in output_mol_name_l]
         easydock_dict['mol_id'] += [mol.GetProp('_Name') for mol in output_mol_l]
+        if docking_data.plif_value:
+            easydock_dict['easydock_plif'] += [float(mol.GetProp('plif_similarity')) if mol.HasProp('plif_similarity') else 0 for mol in output_mol_l ]
+
         easydock_dict['Model'] += [model] * len(output_mol_l)
         easydock_dict['easydock_redocking_score'] += [float(mol.GetProp('docking_score')) for mol in output_mol_l]
 

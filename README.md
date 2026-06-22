@@ -12,7 +12,6 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
-  - [Future feature for v0.1.0](#future-feature-for-v010)
   - [Installation](#installation)
     - [Method 1: Install through environment.yaml (Recommended)](#method-1-install-through-environmentyaml-recommended)
     - [Method 2: Install manually](#method-2-install-manually)
@@ -60,13 +59,9 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 - **Flexible parameters**: `ScrambleBench` can be run with or without protein inputs
 - **Multiple program model**: `ScrambleBench` supports open-source program (`easydock`) and commercial program (`Schrödinger`).
 - **Report summary**: Generate a PDF report for each config YAML detailing the results of each analysis of docking, conformational, diversity, and physicochemical analysis.
-- **Pharmacophore Screening (Easydock)**: implements pharmacophore screening to reflect ideal target binding
+- **Pharmacophore Screening (Easydock, Glide)**: implements pharmacophore screening to reflect ideal target binding
 - **Virtual Hit Criteria**: User can add virtual hit criteria that can be reflected in `report.pdf`
   
-## Future feature for v0.1.0
-
-- **Pharmacophore Screening (Glide)**: implements pharmacophore screening to reflect ideal target binding
-
 
 ## Installation
 
@@ -906,8 +901,10 @@ Compatible dataframe columns for filter:
 | FF_minimised_VALIDITY3D_BOND_ANGLE     | float | q-score of Validity3D in terms of bond angle after MMFF94      | GenBench3D           |
 | FF_minimised_VALIDITY3D_BOND_TORSION   | float | q-score of Validity3D in terms of torsion angle after MMFF94   | GenBench3D           |
 | easydock_redocking_rmsd                | float | RMSD of docking score between redocked and AI pose             | redocking (easydock) |
+| easydock_plif                  | float | plif similarity score                                                | redocking (easydock) |
 | easydock_redocking_score               | float | redocking score                                                | redocking (easydock) |
 | glide_redocking_rmsd                   | float | RMSD of docking score between redocked and AI pose             | redocking (Glide SP) |
+| glide_plif                  | float | schrodinger phase score                                                | redocking (Glide SP) |
 | glide_redocking_score                  | float | redocking score                                                | redocking (Glide SP) |
 | MW                                     | float | molecular weight of AI generated ligand                        | Automatic            |
 | QED                                    | float | QED of AI generated ligand                                     | Automatic            |
