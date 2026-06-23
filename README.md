@@ -713,7 +713,7 @@ string: `easydock`
 | protonation               | None or str          | method to protonate ligand (choose from [`molgpka`, `unipka`, `chemaxon`] or write directory path to the `schrodinger` root dir )                              | False    | None                                                                             |
 | ncpu                      | None or int          | parallel cpu to run easydock                                                                                                                                   | False    | None                                                                             |
 | ref_plif                  | None, bool, or str   | whether to do PLIF based on reference ligand in `input` key. If desired, user can provide list of plif interaction based on PROLIF (resname.chain.interaction) | False    | None                                                                             |
-| plif_similarity           | None or float or int | PLIF similarity threshold based on the ligand in `input_key`                                                                                                   | False    | `None` if ref_plif = False/None, `0.8` otherwise as default     |
+| plif_similarity           | None or float or int | PLIF similarity threshold based on the ligand in `input_key`, from [0,1]                                                                                                   | False    | `None` if ref_plif = False/None, `0.8` otherwise as default     |
 
 *: not required for vina only
 
@@ -729,8 +729,9 @@ string: `glide`
 | reward_intra_hbonds | bool or None | whether to reward intramolecular hydrogen bonds              | False    | None    |
 | protonation         | str or None  | method to protonate ligand (choose from `ligprep` or None)   | False    | None    |
 | protein_preparation | None or str  | method to prepare protein (choose from `protwizard` or None) | False    | None    |
+| plif_input | None or str or bool  | whether to run phase screening. In case of str, `.phypo` file is needed | False    | None    |
 
-
+Note: The default pharmacophore match is all sites for Phase Screening. In case you prefer to manually define your hypothesis, please create your own `.phypo` files and add it into the `plif_input` field.
 
 ```txt
 usage: p4_analyse_redocking.py [-h] -i INPUT
@@ -828,7 +829,7 @@ output_folder
 
 #### 4d. Pharmacophore-based screening
 
-In our manuscript, we did our pharmacophore-based screening using Schrödinger Phase. Unfortunately, we currently do not have an open-source pipeline for this. However, feel free to explore Easydock PLIF option which I might use to integrate this in v0.2.0
+Please refer to step 4c. for PLIF and Glide Phase parameters. To run PLIF on easydock, you can refer to this website for further details: https://easydock.readthedocs.io/en/latest/plif/
 
 #### 5. Compilation of data analysis
 
