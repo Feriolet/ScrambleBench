@@ -1,11 +1,13 @@
-import glob
+
 import os
-from rdkit import Chem
-from rdkit.Chem import rdmolops
+import argparse
+
+from pathlib import Path
+
 from oddt.toolkits.extras.rdkit import fixer
 from openbabel import pybel
-import argparse
-from pathlib import Path
+import rdkit
+from rdkit import Chem
 '''
 obtain pocket and ligand from the complex file
 '''

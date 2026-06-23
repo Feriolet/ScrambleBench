@@ -118,15 +118,27 @@ def prepare_easydock_files(docking_data: config_redocking.EasyDockConfig, input_
     prepare_easydock_grid(pocket_coordinates=input_data.pocket_coord_value,
                           write_fname=grid_fname)
 
+
     with open(config_fname, 'r') as config_f:
         config_data = yaml.load(config_f, Loader=yaml.SafeLoader)
     
-    config_data['protein'] = VinaProtein(pdb_filepath=protein_pdb, 
-                                         prepare_receptor_bin_path=docking_data.protein_pdbqt_executable_value,
-                                         protonation_method=docking_data.protein_preparation_value,
-                                         preparation_method=docking_data.protein_pdbqt_preparation_value).pdbqt_filepath 
+        prepared_protein = VinaProtein(pdb_filepath=protein_pdb, 
+                                        prepare_receptor_bin_path=docking_data.protein_pdbqt_executable_value,
+                                        protonation_method=docking_data.protein_preparation_value,
+                                        preparation_method=docking_data.protein_pdbqt_preparation_value)
     
-    config_data['protein_setup'] = grid_fname
+        if docking_data.docking_value != 'server':
+
+            config_data['protein'] = prepared_protein.pdbqt_filepath
+            config_data['protein_setup'] = grid_fname
+
+        elif config_data['init_server'].get('program') == 'vina-gpu':
+            config_data['init_server']['protein'] = prepared_protein.pdbqt_filepath
+            config_data['init_server']['protein_setup'] = grid_fname
+        
+        else:
+            config_data['init_server']['protein'] = prepared_protein.protein_clean_filepath
+
 
     if str(docking_data.docking_value).lower().strip() == 'vina':
         config_data = prepare_easydock_vina_parameter(config_data=config_data)
@@ -230,21 +242,19 @@ def run_easydock_docking(docking_data: config_redocking.EasyDockConfig, paramete
         cmd += ['-c', str(calculate_easydock_cpu())]
 
     for model, fname in valid_molecule_file_dict.items():
-        if model == 'DiffSBDD':
-            continue
+
         output_easydock_sdf =  str(Path(docking_data.output_value) / model / f'{Path(fname).stem}_easydock_redocked.sdf')
         Path(output_easydock_sdf).parent.mkdir(parents=True, exist_ok=True)
-        
-        if Path(output_easydock_sdf).is_file():
-            if docking_data.plif_value:
-                output_easydock_plif =  str(Path(docking_data.output_value) / model / 'plif' / f'{Path(fname).stem}_easydock_plif_processed.sdf')
-                if Path(output_easydock_plif).is_file():
-                    logging.info(f'Easydock Docking with {output_easydock_sdf} has been done. Skipping...')
-                    continue
 
-            else:
-                logging.info(f'Easydock Docking with {output_easydock_sdf} has been done. Skipping...')
+        if docking_data.plif_value:
+            output_easydock_plif =  str(Path(docking_data.output_value) / model / 'plif' / f'{Path(fname).stem}_easydock_plif_processed.sdf')
+            if Path(output_easydock_plif).is_file():
+                logging.info(f'Easydock Docking and PLIF with {output_easydock_sdf} has been done. Skipping...')
                 continue
+
+        if Path(output_easydock_sdf).is_file() and not docking_data.plif_value:
+            logging.info(f'Easydock Docking with {output_easydock_sdf} has been done. Skipping...')
+            continue
 
         with tempfile.TemporaryDirectory() as temp_docking_dir:      
             temp_output_easydock_db = str(Path(temp_docking_dir) / f'{Path(fname).stem}_redocked.db')
@@ -313,7 +323,7 @@ def prepare_hypothesis(schrodinger_env, rec_file, lig_file, center_coord):
 
 
 
-def run_schrodinger_phase_plif(working_dir, environment, protein_fname, library_fname, output_fname,
+def run_schrodinger_phase_plif(environment, protein_fname, library_fname, output_fname,
                       reference_fname, center_coord, hypo_input=None):
 
     if not Path(output_fname).parent.is_dir():
@@ -356,8 +366,6 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
     current_dir = Path.cwd()
     for model, fname in valid_molecule_file_dict.items():
 
-        if model == 'DiffSBDD':
-            continue
         if docking_data.protonation_value:
             output_glide_fname = Path(docking_data.output_value) / model / f'{Path(fname).stem}_protonated_glide.sdf.gz'
         else:
@@ -365,17 +373,15 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
 
         Path(output_glide_fname).parent.mkdir(parents=True, exist_ok=True)
 
-        if Path(Path(output_glide_fname).parent / output_glide_fname.stem).is_file():
-
-            if docking_data.plif_value:
-                output_phase_plif = str(Path(docking_data.output_value) / model / 'plif' / f'{Path(fname).stem}_phase_plif.sdf')
-                if Path(output_phase_plif).is_file():
-                    logging.info(f'Phase Pharmacophore  with {output_phase_plif} has been done. Skipping...')
-                    continue
-            
-            else:
-                logging.info(f'Glide docking with {Path(fname).name} has been done. Skipping...')
+        if docking_data.plif_value:
+            output_phase_plif = str(Path(docking_data.output_value) / model / 'plif' / f'{Path(fname).stem}_phase_plif.sdf')
+            if Path(output_phase_plif).is_file():
+                logging.info(f'Phase Pharmacophore  with {output_phase_plif} has been done. Skipping...')
                 continue
+
+        if Path(Path(output_glide_fname).parent / output_glide_fname.stem).is_file() and not docking_data.plif_value:
+            logging.info(f'Glide docking with {Path(fname).name} has been done. Skipping...')
+            continue
 
         with tempfile.TemporaryDirectory() as tempdir:  
             os.chdir(tempdir)
@@ -406,7 +412,7 @@ def run_glide_docking(docking_data: config_redocking.GlideConfig, parameter_data
             subprocess.run(['gunzip', output_glide_fname], text=True)
 
             if docking_data.plif_value:
-                run_schrodinger_phase_plif(tempdir, docking_data.dir_value, protein_fname=input_data.pdb_value, output_fname=output_phase_plif, library_fname=temp_glide_sdf_output,
+                run_schrodinger_phase_plif(docking_data.dir_value, protein_fname=input_data.pdb_value, output_fname=output_phase_plif, library_fname=temp_glide_sdf_output,
                                            reference_fname=input_data.sdf_value, center_coord=input_data.pocket_coord_value, hypo_input=docking_data.plif_value)
     os.chdir(current_dir)           
 

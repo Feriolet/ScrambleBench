@@ -10,6 +10,7 @@ from typing import Any
 from typing_extensions import Self
 
 from scramblebench.script.config_preparation import config_constant
+from scramblebench.script.config_preparation.config_utils import check_file_start_with_number
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +226,7 @@ class GenerationConfig:
         else:
             self.output_value = Path(prefix_dir) / self.output_value
 
+
     def write(self, prefix_dir: str=None) -> dict[str, dict]:
         """Write the standardised config format for GenerationConfig
 
@@ -241,18 +243,3 @@ class GenerationConfig:
                                                   self.output_name: str(Path(self.output_value).resolve()),
                                                   self.script_name: str(Path(self.script_value).resolve())} |
                                                   self.parameter_value.write()}
-
-def check_file_start_with_number(fname: str):
-    """check if filename starts with a number. Having numbers at start may cause an issue in processing
-
-    Args:
-        fname (str): filename
-
-    Raises:
-        TypeError: if filename starts with a number
-    """
-    try:
-        float(Path(fname).name[0])
-        raise TypeError(f'please do not use number as starting filename. change {fname}')
-    except ValueError:
-        pass

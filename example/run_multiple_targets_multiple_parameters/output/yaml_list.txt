@@ -1,4 +1,0 @@
-/mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/config_test_run_clean_config.yml 
-/mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/config_test_run_clean_config.yml 
-/mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_50/config_test_run_clean_config.yml 
-/mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_generic_title2/num_sample_100/config_test_run_clean_config.yml 

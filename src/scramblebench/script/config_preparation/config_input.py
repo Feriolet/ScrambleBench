@@ -4,6 +4,7 @@ access the subkey field easily.
 """
 
 import logging
+import subprocess
 
 from pathlib import Path
 from collections.abc import Iterable, ItemsView
@@ -30,12 +31,12 @@ class InputConfig:
     """class of InputConfig used for downstream analysis
     """
 
-    def __init__(self, input_dict: dict[str, Any], key=config_constant.INPUT_KEY):
+    def __init__(self, input_dict: dict[str, Any], key: str=config_constant.INPUT_KEY):
         """initialize class
 
         Args:
             input_dict (dict[str, Any]): user's prepared YAML config with input key as dictionary
-            key (_type_, optional): the key that contains input data. Defaults to config_constant.INPUT_KEY.
+            key (str, optional): the key that contains input data. Defaults to config_constant.INPUT_KEY.
         """
 
         self.name = key
@@ -75,6 +76,8 @@ class InputConfig:
             self.pdb_value = value
         elif key == self.sdf_name:
             self.sdf_value = value
+        elif key == self.protein_name:
+            self.protein_value = value
         else:
             raise TypeError(f'no key called {key}')
 
@@ -201,10 +204,36 @@ class InputConfig:
         if len(mol_l) > 1:
             raise FileDataError(f'There is more than 1 ligand in {self.sdf_value}')
 
-        return mol_l
+        return mol_l[0]
 
 
-    def write(self, cutoff: int = 10) -> dict[str, Any]:
+    def replace_input_fnames(self, prefix_dir: str) -> None:
+        """function to replace input filenames in p1_generate_config.py This is done as I
+        do not want to mix intermediate files involving the input folders, so I decided that
+        I want to copy the filenames to the output folder instead.
+
+        Args:
+            prefix_dir (str): directory path to copy the filenames to
+
+        Raises:
+            TypeError: if prefix_dir is not a string
+        """
+
+        if not isinstance(prefix_dir, (str, Path)):
+            raise TypeError(f'{prefix_dir} is not a string or pathlib, but {type(prefix_dir)}')
+
+
+        prefix_dir = Path(prefix_dir) / f'{config_constant.INPUT_KEY}_{self.protein_value}' / 'input_intermediates'
+        prefix_dir.mkdir(parents=True, exist_ok=True)
+
+        subprocess.run(['cp', self.pdb_value, self.sdf_value, self.complex_value, prefix_dir], check=True)
+
+        self.pdb_value = str(prefix_dir / Path(self.pdb_value).name)
+        self.sdf_value = str(prefix_dir / Path(self.sdf_value).name)
+        self.complex_value = str(prefix_dir / Path(self.complex_value).name)
+
+
+    def write(self, cutoff: int = 10, prefix_dir: str = False) -> dict[str, Any]:
         """Write the standardised config format for InputConfig
 
         Args:
@@ -217,6 +246,9 @@ class InputConfig:
             dict[str, Any]: InputConfig as dictionary
         """
         lig_mol = Chem.SDMolSupplier(self.sdf_value)[0]
+
+        if prefix_dir:
+            self.replace_input_fnames(prefix_dir=prefix_dir)
 
         if not self.pocket_path_value:
             self.pocket_path_value = split_pocket_ligand(self.complex_value, cutoff=cutoff)
@@ -314,8 +346,8 @@ class InputNonDirpathConfig:
         return [inputstruct.input_name_value for inputstruct in self.inputstructure_dict.values()]
 
 
-    def write(self, cutoff:int=10) -> dict[str, Any]:
-        """Return standardised dictionary for list of InputConfig
+    def write(self, cutoff:int=10, prefix_dir=None) -> dict[str, Any]:
+        """Return standardised dictionary without changing the input structure format
 
         Args:
             cutoff (int, optional): cutoff of pocket residues from ligand. Defaults to 10.
@@ -323,9 +355,11 @@ class InputNonDirpathConfig:
         Returns:
             dict[str, Any]: standardised dictionary for user's input config
         """
+
         input_data = {}
         for key, inputstruct in self.inputstructure_dict.items():
-            input_data[key] = inputstruct.write(cutoff=cutoff)
+            input_data[key] = inputstruct.update(key=inputstruct.protein_name, value=key)\
+                                         .write(cutoff=cutoff, prefix_dir=prefix_dir)
 
         return {self.name: input_data}
 

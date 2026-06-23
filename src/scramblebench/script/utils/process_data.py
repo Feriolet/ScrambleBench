@@ -2,7 +2,7 @@ from pathlib import Path
 
 import logging
 import re
-from scramblebench.script.config_preparation import config_constant, config_parameter
+
 from scramblebench.script.utils.error_handler import DirNotFoundError
 
 def read_input(input_fname: str) -> list[str]:
@@ -98,3 +98,12 @@ def find_file_name_through_regex(character, file_format, dirname):
         logging.warning(f'There are no matched file for {character} characters in {dirname}. Make sure this is intended')
     else:
         return str(matched_fname_list[0])
+
+def find_file_name_through_regex_allow_multiple_match(character, file_format, dirname):
+    assert file_format[0] == '.'
+
+    glob_matching_fname = f'*{create_case_insensitive_regex(character)}*{file_format}'
+    regex_pattern_non_alphanumeric_left_and_right = re.compile(f'(?<![A-Za-z0-9]){create_case_insensitive_regex(character)}(?![A-Za-z0-9])')
+
+    matched_fname_list = [fname for fname in dirname.glob(glob_matching_fname) if regex_pattern_non_alphanumeric_left_and_right.search(fname.name)]
+    return matched_fname_list

@@ -17,6 +17,7 @@ from scramblebench.script.config_preparation.config_analysis import AnalysisConf
 from scramblebench.script.config_preparation.config_parameter import ParameterConfig
 from scramblebench.script.config_preparation.config_report import ReportConfig
 from scramblebench.script.config_preparation.config_input import InputConfig as InputUserConfig
+from scramblebench.script.config_preparation.config_utils import deep_get, deep_assign, forcetype, MyDumper
 from scramblebench.script.config_preparation import config_constant
 
 
@@ -75,100 +76,6 @@ def validate_config(config_data: dict[str, Any]) -> Optional[bool]:
     return True
 
 
-#https://github.com/yaml/pyyaml/issues/127
-class MyDumper(yaml.SafeDumper):
-    """YAML Dumper to provide spacing between key/field
-    """
-    # HACK: insert blank lines between top-level objects
-    # inspired by https://stackoverflow.com/a/44284819/3786245
-    def write_line_break(self, data=None):
-        super().write_line_break(data)
-
-        if len(self.indents) == 1:
-            super().write_line_break()
-
-
-def deep_get(dictionary: dict, nested_key: list) -> Any:
-
-    """fetch the value of nested dictionaries given a key/subkeys in a list
-
-    Raises:
-        KeyError: if the key/subkey does not exist in the dictionary
-
-    Returns:
-        Any: value of subkey/key
-    """
-    copied_dict = deepcopy(dictionary)
-    for key in nested_key:
-        copied_dict = copied_dict.get(key)
-
-        if copied_dict is None:
-            logging.exception(f'The dictionary {dictionary} has no value for key {key}')
-            raise KeyError(f'Key {key} not found for dictionary {dictionary}')
-        if not isinstance(copied_dict, dict) and key != nested_key[-1]:
-            logging.warning(f'Your dictionary {dictionary} overshoot the nested key. \
-                            The value for {key} is not a dictionary. Ignoring subsequent keys')
-            return copied_dict
-
-    return copied_dict
-
-#https://stackoverflow.com/questions/13687924/setting-a-value-in-a-nested-python-dictionary-given-a-list-of-indices-and-value
-def deep_assign(dictionary: dict, nested_key: list, value: Any, create_missing=False) -> dict:
-    """assign a value to nested dictionaries given key/subkeys as a list
-
-    Args:
-        dictionary (dict): the dictionary that needs to be updated
-        nested_key (list): the key or subkey that exists in the dictionary
-        value (Any): the value that will update the dictionary
-        create_missing (bool, optional): whether to create the key/subkey into the dictionary. Defaults to False.
-
-    Returns:
-        dict: the updated dictionary
-    """
-    d = dictionary
-    for key in nested_key[:-1]:
-        if key in d:
-            d = d[key]
-        elif create_missing:
-            d = d.setdefault(key, {})
-        else:
-            return dictionary
-    if nested_key[-1] in d or create_missing:
-        d[nested_key[-1]] = value
-
-    return dictionary
-
-
-def forcetype(value: Any, dtype='int') -> Any:
-    """Force the type of the value given the dtype
-
-    Args:
-        value (Any): the value that will be updated to new dtype
-        dtype (str, optional): dtype. Defaults to 'int'.
-
-    Raises:
-        ValueError: if dtype does not match [int, float, str, dict]
-
-    Returns:
-        Any: updated value with the assigned dtype
-    """
-    if dtype == 'int':
-        return int(value)
-    if dtype == 'float':
-        return float(value)
-    if dtype == 'str':
-        return str(value)
-    if dtype == 'dict':
-        if isinstance(value, dict):
-            return value
-
-        logging.exception(f'{value} type is not dict, but instead {type(value)}')
-        raise ValueError(f'value {value} is not a dictionary, but {type(value)}')
-
-    logging.exception(f'{value} has unsupported type of {dtype} requested')
-    raise ValueError(f'unsupported dtype {dtype}. Please enter int, float, or str only')
-
-
 def prepare_config(config_data: dict[str, Any]) -> dict[str, Any]:
     """prepare ScrambleBench config to match the "write_config" functions.
 
@@ -178,7 +85,9 @@ def prepare_config(config_data: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict[str, Any]: the prepared config with the correct structure of input and generation config
     """
-    config_data |= InputUserConfig(config_data).write()
+
+    new_input_dir = str(Path(GenerationConfig(config_data).input_value))
+    config_data |= InputUserConfig(config_data).write(prefix_dir=new_input_dir)
     config_data |= GenerationConfig(config_data).write()
 
     return config_data
@@ -241,7 +150,6 @@ def write_new_config(config_data: dict[str, Any],
     if config_constant.REPORT_KEY in config_data:
         logging.debug('Writing Config for Report key')
         config_output = config_output | ReportConfig(config_data).write()
-
 
     return config_output
 
@@ -310,6 +218,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
 
     yaml_list = []
     generation_dirpath = Path(GenerationConfig(config_data).input_value).resolve()
+
 
     # [ [val, val, val], [val, val, val] ]
     for assigned_parameter_values in list(itertools.product(*parameter_value_lists)):

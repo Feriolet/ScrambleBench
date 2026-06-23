@@ -17,23 +17,7 @@ from scramblebench.script.config_preparation import config_post_generation, conf
 from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_dir
 from scramblebench.script.utils.process_mol import validate_mol_list, compute_generation_performance
 
-
 logger = logging.getLogger(__name__)
-
-
-def deep_get(dictionary: dict, nested_key: list):
-    copied_dict = deepcopy(dictionary)
-    for key in nested_key:
-        copied_dict = copied_dict.get(key)
-
-        if copied_dict is None:
-            logging.exception(f'The dictionary {dictionary} has no value for key {key}')
-            raise KeyError(f'Key {key} not found for dictionary {dictionary}')
-        if not isinstance(copied_dict, dict) and key != nested_key[-1]:
-            logging.warning(f'Your dictionary {dictionary} overshoot the nested key. The value for {key} is not a dictionary. Ignoring subsequent keys')
-            return copied_dict
-    
-    return copied_dict
 
 
 def add_property_to_mol(mol_l, model_name, parameter_data: config_parameter.ParameterConfig):

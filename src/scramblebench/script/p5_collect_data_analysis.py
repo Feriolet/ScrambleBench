@@ -9,7 +9,7 @@ import subprocess
 import json
 from scramblebench.script.config_preparation import config_constant, config_parameter, config_diversity, config_genbench3d, config_redocking, config_post_generation, config_virtual_hit
 from scramblebench.script.utils.error_handler import DirNotFoundError
-from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex, fetch_model_file_from_model_dir, fetch_model_plif_file_from_model_dir
+from scramblebench.script.utils.process_data import read_input, find_file_name_through_regex_allow_multiple_match, fetch_model_file_from_model_dir, fetch_model_plif_file_from_model_dir
 from scramblebench.script.utils.process_mol import calculate_rms, calculate_physicochemical_properties, PhysicoChemicalProperties
 import os
 import pandas as pd
@@ -49,7 +49,7 @@ def fetch_valid_genbench3d_json_file(genbench3d_data: config_genbench3d.GenBench
 
     for minimisation in complex_minimisation:
 
-        matched_fname_list = find_file_name_through_regex(character=model, file_format='.json', dirname=Path(output_dirpath) / 'json_output')
+        matched_fname_list = find_file_name_through_regex_allow_multiple_match(character=model, file_format='.json', dirname=Path(output_dirpath) / 'json_output')
         matched_fname_list = [matched_fname for matched_fname in matched_fname_list if f'_{minimisation}' in str(matched_fname)]
         if len(matched_fname_list) > 1:
             logging.exception(f'We found more than 1 matching file for {model} model: {matched_fname_list}. Please ensure only 1 is detected')

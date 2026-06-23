@@ -3,7 +3,6 @@ Mainly used for p1_generate_config.py and other downstream path to
 access the subkey field easily.
 """
 
-import subprocess
 import logging
 
 from pathlib import Path
@@ -13,7 +12,7 @@ from typing_extensions import Self
 
 from scramblebench.script.utils.error_handler import DirNotFoundError
 from scramblebench.script.config_preparation import config_constant
-
+from scramblebench.script.config_preparation.config_utils import check_conda_env
 
 logger = logging.getLogger(__name__)
 
@@ -183,29 +182,3 @@ class ModelConfig:
             model_data[key] = modelstruct.write()
 
         return {config_constant.MODEL_KEY: model_data}
-
-
-def check_conda_env(conda_env: str) -> None:
-    """check if conda environment is active and present
-
-    Args:
-        conda_env (str): name of conda environment
-
-    Raises:
-        ValueError: if conda environment is not in the 'conda env list'
-    """
-
-    # Run 'conda env list' command and capture the output
-    output = subprocess.run(
-        "conda env list | awk '{ print $1}'",
-        shell=True,
-        capture_output=True,
-        text=True,
-        check=True
-    ).stdout.split('\n')
-
-    if not conda_env in output:
-        if conda_env == 'not_applicable' or conda_env is None:
-            logging.warning('Please note that your conda is explicitly left out')
-        else:
-            raise ValueError(f'Conda environment {conda_env} does not exist')
