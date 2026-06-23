@@ -1,0 +1,64 @@
+{
+    "DiffSBDD": {
+        "total_mol": 50,
+        "uniqueness": 1.0,
+        "validity2d": 1.0,
+        "unminimised_Validity3D": 0.08,
+        "minimised_Validity3D": 0.9375,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 42.049553721720265,
+                "time": 2.1722412109375
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 21.711694621812804,
+                "time": 105.39783215522766
+            },
+            {
+                "method": "generic_bm",
+                "score": 46,
+                "time": 0.09909486770629883
+            }
+        ],
+        "virtual_hit": {
+            "rate": "0.02",
+            "name": [
+                "DiffSBDD_29"
+            ],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
+    },
+    "Pocket2Mol": {
+        "total_mol": 52,
+        "uniqueness": 1.0,
+        "validity2d": 1.0,
+        "unminimised_Validity3D": 0.28,
+        "minimised_Validity3D": 1.0,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 31.911894341842178,
+                "time": 1.5943918228149414
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 16.114138750826058,
+                "time": 1.6651523113250732
+            },
+            {
+                "method": "generic_bm",
+                "score": 6,
+                "time": 0.03110027313232422
+            }
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
+    }
+}

@@ -1,0 +1,67 @@
+{
+    "DiffSBDD": {
+        "total_mol": 99,
+        "uniqueness": 0.98989898989899,
+        "validity2d": 0.98989898989899,
+        "unminimised_Validity3D": 0.08163265306122448,
+        "minimised_Validity3D": 0.9381443298969072,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 81.17658217778343,
+                "time": 4.831419944763184
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 38.36286124285344,
+                "time": 663.9412863254547
+            },
+            {
+                "method": "generic_bm",
+                "score": 79,
+                "time": 0.18249130249023438
+            }
+        ],
+        "virtual_hit": {
+            "rate": "0.04",
+            "name": [
+                "DiffSBDD_25",
+                "DiffSBDD_28",
+                "DiffSBDD_41",
+                "DiffSBDD_47"
+            ],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
+    },
+    "Pocket2Mol": {
+        "total_mol": 112,
+        "uniqueness": 1.0,
+        "validity2d": 1.0,
+        "unminimised_Validity3D": 0.31,
+        "minimised_Validity3D": 1.0,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 63.90168628893241,
+                "time": 3.6256344318389893
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 27.729761890380743,
+                "time": 4.454275608062744
+            },
+            {
+                "method": "generic_bm",
+                "score": 9,
+                "time": 0.06440925598144531
+            }
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "DiffSBDD": {
+        "total_mol": 50,
+        "uniqueness": 1.0,
+        "validity2d": 1.0
+    },
+    "Pocket2Mol": {
+        "total_mol": 52,
+        "uniqueness": 1.0,
+        "validity2d": 1.0
+    }
+}

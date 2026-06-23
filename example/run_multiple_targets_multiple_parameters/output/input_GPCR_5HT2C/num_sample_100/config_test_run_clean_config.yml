@@ -1,0 +1,101 @@
+input:
+  complex_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/input_intermediates/gpcr_5ht2c_6bqh_complex_autoprepared.pdb
+  pdb_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/input_intermediates/gpcr_5ht2c_6bqh_protein_autoprepared.pdb
+  sdf_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/input_intermediates/gpcr_5ht2c_6bqh_ligand.sdf
+  pocket_path: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/input_intermediates/gpcr_5ht2c_6bqh_complex_autopreparedcut10/gpcr_5ht2c_6bqh_complex_autopreparedcut10_pocket_withH.pdb
+  pocket_coord: 38.87,31.02,56.85
+  name: GPCR_5HT2C
+
+model:
+  diffsbdd:
+    name: DiffSBDD
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/DiffSBDD
+    conda_env: benchmark_diffsbdd
+  pocket2mol:
+    name: Pocket2Mol
+    dir: /opt/veincent/GenAI_manuscript/ScrambleBench/models/Pocket2Mol
+    conda_env: benchmark_pocket2mol
+
+generation:
+  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output
+  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/AI_Generation
+  script_pathfile: /mnt/sod/Veincent/manuscript/ScrambleBench/src/scramblebench/script/utils/generation_utils/generation_template.sh
+  parameter:
+    box_size: 16
+    num_sample: 100
+    name: 5ht2c_prepared_0
+
+parameter:
+  protein_name: GPCR_5HT2C
+  model_list:
+  - DiffSBDD
+  - Pocket2Mol
+  num_sample: 100
+  batch_parameter:
+    num_sample: 100
+
+post_generation:
+  input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/AI_Generation
+  output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/cheminformatics_input_prepared
+  pick_last: Pocket2Mol
+
+analysis:
+  genbench3d:
+    input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/cheminformatics_input_prepared
+    output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/cheminformatics_analysis
+    conda_env: benchmark_genbench3d
+    genbench3d_dir: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d
+    genbench3d_config: /mnt/sod/Veincent/manuscript/ScrambleBench/models/genbench3d/GenAI_evaluation.yaml
+    do_complex_forcefield_minimisation: true
+    do_docking_forcefield_minimisation: true
+    skip_genbench3d_protonation: true
+    schrodinger_dir: /opt/schrodinger2025-4
+  redocking:
+    protonation:
+      input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/cheminformatics_input_prepared
+      output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/docking
+      env: benchmark_easydock
+      method: molgpka
+    docking:
+      easydock:
+        input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/docking
+        output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/vina_output
+        conda_env: benchmark_easydock
+        docking_program: vina
+        config_fname: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/config/easydock_config_5HT2C.yml
+        protonation: null
+        ref_plif: true
+        plif_similarity_threshold: 0.8
+        protein_pdbqt_preparation: adfr
+        protein_preparation: pdbfixer
+        protein_pdbqt_executable: /opt/veincent/software/ADFRsuite-1.0/ADFRsuite_x86_64Linux_1.0/bin/prepare_receptor
+      glide:
+        input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/cheminformatics_input_prepared
+        output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/glide_output
+        schrodinger_dir: /opt/schrodinger2025-4
+        protonation: ligprep
+        protein_preparation: protwizard
+        plif_input: true
+  diversity:
+    input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/cheminformatics_input_prepared
+    output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/diversity
+    conda_env: python_tsp
+    method:
+    - distance: ecfp
+      diversity: hamdiv
+    - distance: mces
+      diversity: hamdiv
+    - distance: null
+      diversity: generic_bm
+  virtual_hit:
+    input: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/glide_output
+    output: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_100/virtual_hit
+    query: QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500
+    filter: PAINS
+
+report:
+  plot: violin
+  rmsd: true
+  docking_score: true
+  qed: true
+  virtual_hit: true

@@ -1,0 +1,62 @@
+{
+    "DiffSBDD": {
+        "total_mol": 100,
+        "uniqueness": 0.97,
+        "validity2d": 0.97,
+        "unminimised_Validity3D": 0.12371134020618557,
+        "minimised_Validity3D": 0.9278350515463918,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 81.05475726037042,
+                "time": 5.3587634563446045
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 40.2058006116558,
+                "time": 1021.9956772327423
+            },
+            {
+                "method": "generic_bm",
+                "score": 95,
+                "time": 0.19712185859680176
+            }
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
+    },
+    "Pocket2Mol": {
+        "total_mol": 103,
+        "uniqueness": 1.0,
+        "validity2d": 1.0,
+        "unminimised_Validity3D": 0.4,
+        "minimised_Validity3D": 1.0,
+        "diversity": [
+            {
+                "method": "HamDiv ECFP",
+                "score": 58.82681331267939,
+                "time": 3.663085460662842
+            },
+            {
+                "method": "HamDiv MCES",
+                "score": 23.253196190280846,
+                "time": 5.285634994506836
+            },
+            {
+                "method": "generic_bm",
+                "score": 13,
+                "time": 0.07894682884216309
+            }
+        ],
+        "virtual_hit": {
+            "rate": "0.00",
+            "name": [],
+            "filter": "PAINS",
+            "query": "QED >= 0.5 and glide_redocking_score <= -8 and MW >= 300 and MW <= 500"
+        }
+    }
+}

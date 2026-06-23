@@ -1,0 +1,6 @@
+protein: /opt/veincent/GenAI_manuscript/output_test_multiple_numsample/Docking/vina_input/gpcr_5ht2c_6bqh_protein_autoprepared.pdbqt
+protein_setup: /opt/veincent/GenAI_manuscript/output_test_multiple_numsample/Docking/vina_input/gpcr_5ht2c_6bqh_grid.txt
+exhaustiveness: 32
+seed: 42
+n_poses: 5
+ncpu: 5

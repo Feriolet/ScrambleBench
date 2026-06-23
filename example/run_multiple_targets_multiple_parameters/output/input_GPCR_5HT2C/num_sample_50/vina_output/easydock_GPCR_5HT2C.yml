@@ -1,0 +1,6 @@
+exhaustiveness: 32
+n_poses: 5
+ncpu: 5
+protein: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/input_intermediates/gpcr_5ht2c_6bqh_protein_autoprepared.pdbqt
+protein_setup: /mnt/sod/Veincent/manuscript/ScrambleBench/example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/input_intermediates/GPCR_5HT2C_grid.txt
+seed: 42
