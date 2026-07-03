@@ -1,9 +1,10 @@
+"""This file handles checkpoint manager for downstream analysis"""
 import json
 
 from enum import Enum
 from typing import Optional
-from typing_extensions import Self
 from pathlib import Path
+from typing_extensions import Self
 
 class CheckpointStatus(Enum):
     """enumeration of checkpoint status

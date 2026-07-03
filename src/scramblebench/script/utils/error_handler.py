@@ -1,5 +1,4 @@
-
-
+"""Handle different kinds of error. To be expanded in future releases"""
 
 class FileTypeError(TypeError):
     pass
