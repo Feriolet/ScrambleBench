@@ -22,8 +22,8 @@ class RedockingConfig:
         """initialize the class
 
         Args:
-            config_data (dict[str, Any]): user's prepared YAML config with analysis redocking
-                                          key as dictionary
+            config_data (dict[str, Any]): user's analysis dictionary with analysis redocking
+                                          key as dictionary.
         """
 
         self.name = config_constant.ANALYSIS_REDOCKING_KEY
@@ -87,7 +87,7 @@ class RedockingProtonationConfig:
         """initialize class
 
         Args:
-            config_data (dict[str, Any]): user's prepared YAML config with analysis redocking protonation
+            config_data (dict[str, Any]): uuser's redocking dictionary with analysis redocking protonation
                                           key as dictionary
         """
 
@@ -207,7 +207,7 @@ class DockingConfig:
         """initialize class
 
         Args:
-            config_data (dict[str, Any]): user's prepared YAML config with analysis redocking
+            config_data (dict[str, Any]): user's analysis dictionary with analysis redocking
                                           key as dictionary
 
         Raises:
@@ -276,8 +276,8 @@ class EasyDockConfig:
         """initialize classes
 
         Args:
-            config_data (dict[str, Any]): user's prepared YAML config with analysis redocking easydock
-                                          key as dictionary
+            config_data (dict[str, Any]): user's analysis redocking dictionary with analysis redocking 
+                                          easydock key as dictionary
 
         Raises:
             ValueError: if easydock key is not in the redocking dictionary
@@ -372,7 +372,8 @@ class EasyDockConfig:
         """check if easydock plif config is valid
 
         Raises:
-            ValueError: if reference plif is not added with the suitable format of residue.chain.interaction
+            ValueError: if reference plif is not added with the suitable format of 
+                        [residue_name][residue_number].[chain].[interaction_type]
             ValueError: if reference plif is not a bool or list
             ValueError: if plif similarity is not a number
             ValueError: if plif similarity is less than 0
@@ -383,15 +384,17 @@ class EasyDockConfig:
             elif isinstance(self.plif_value, list):
                 for plif in self.plif_value:
                     if len(plif.split('.')) != 3:
-                        raise ValueError(f'plif value should follow the residue.chain.interaction format, not {plif}')
+                        raise ValueError(f'plif value should follow the\
+                                          [residue_name][residue_number].[chain].[interaction_type] format, not {plif}')
             else:
                 raise ValueError(f'unsupported type {type(self.plif_value)}')
 
 
-        if self.plif_similarity_value and not isinstance(self.plif_similarity_value, (int, float)):
-            raise ValueError('please write plif similarity value as float')
-        if self.plif_similarity_value < 0:
-            raise ValueError(f'please add a positive number to {self.plif_similarity_name}')
+        if self.plif_similarity_value:
+            if not isinstance(self.plif_similarity_value, (int, float)):
+                raise ValueError('please write plif similarity value as float')
+            if self.plif_similarity_value < 0:
+                raise ValueError(f'please add a positive number to {self.plif_similarity_name}')
 
 
     def validate_easydock_cli_config(self):
@@ -561,8 +564,8 @@ class GlideConfig:
         """initialize class
 
         Args:
-            config_data (dict[str, Any]): user's prepared YAML config with analysis redocking Glide
-                                          key as dictionary
+            config_data (dict[str, Any]): user's analysis redockingdictionary with analysis 
+                                          redocking Glide key as dictionary
         """
 
         self.name = config_constant.ANALYSIS_DOCKING_SCHRODINGER_KEY
@@ -680,7 +683,7 @@ class GlideConfig:
             self.output_value = Path(prefix_dir) / self.output_value
 
 
-    def write(self, prefix_dir: Optional[str]=None):
+    def write(self, prefix_dir: Optional[str]=None) -> dict[str, dict]:
         """"Write the standardised config format for GlideConfig.
 
         Args:

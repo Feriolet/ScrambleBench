@@ -1,19 +1,36 @@
-from typing import Any, Callable
-from pathlib import Path
-
-import yaml
+"""Check and execute de novo ligand generation."""
 import argparse
 import logging
 import sys
 import subprocess
-from scramblebench.script.config_preparation import config_constant, config_generation, config_model
+
+from typing import Optional
+from pathlib import Path
+
+import yaml
+
+from scramblebench.script.config_preparation import config_generation, config_model
 from scramblebench.script.utils.process_data import read_input
 
 
 logger = logging.getLogger(__name__)
-    
 
-def validate_generation_script(config_data: dict) -> None:
+
+def validate_generation_script(config_data: dict[str, dict]) -> Optional[bool]:
+    """validate if the bash script contains the conda environment for each model's generation.
+    model's with 'non_applicable' or NoneType conda environment will be skipped
+
+    Args:
+        config_data (dict[str, dict]): user's prepared YAML config dictionary prepared in
+                                       p1_generate_config.py
+
+    Raises:
+        ValueError: if conda environment is not detected as variable in the bash script.
+                    Naming should follow the convention {model_key}_{model_name}_{conda_env}
+
+    Returns:
+        Optional[bool]: Yes/No, where No is represented as NoneType
+    """
     generation_data = config_generation.GenerationConfig(config_data=config_data)
     model_data = config_model.ModelConfig(config_data=config_data)
 
@@ -22,25 +39,34 @@ def validate_generation_script(config_data: dict) -> None:
     script_file = generation_data.script_value
     script_pathfile = Path(script_file)
     assert script_pathfile.is_file() and script_pathfile.suffix == '.sh'
-    script_text = script_pathfile.read_text()
+    script_text = script_pathfile.read_text(encoding='utf-8')
 
     for model, modelstruct in model_data.modelstructure_dict.items():
-        modelstruct.conda_env_value
+
         if modelstruct.conda_env_value is None or modelstruct.conda_env_value == 'non_applicable':
             logging.warning(f'{model} is detected not to be inferred.')
             continue
 
         if f'${model_data.name}_{model}_{modelstruct.conda_env_name}' not in script_text:
             raise ValueError(f"We did not detect {model} for the inference in the {script_file}. \
-                             We detect each model by checking the string '${model_data.name}_{model}_{modelstruct.conda_env_name}'")
-    
+                             We detect each model by checking the string \
+                             '${model_data.name}_{model}_{modelstruct.conda_env_name}'")
+
     return True
 
 
-def run_inference(yaml_file, config_data, log_status=False) -> None:
+def run_inference(yaml_file: str, config_data: dict[str, dict], log_status:bool=False) -> None:
+    """run de novo ligand generation
+
+    Args:
+        yaml_file (str): user's prepared YAML filename
+        config_data (dict[str, dict]): config data parsed from the yaml_file argument
+        log_status (bool, optional): whether user wants to write a separate log file for generation.
+                                     Defaults to False.
+    """
     generation_data = config_generation.GenerationConfig(config_data=config_data)
     cmd = ['/bin/bash', generation_data.script_value, yaml_file]
-    
+
     if log_status:
         log_msg = subprocess.run(cmd, check=True, text=True, capture_output=True)
         logging.info(log_msg)
@@ -51,7 +77,8 @@ def run_inference(yaml_file, config_data, log_status=False) -> None:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run de novo molecule generation after p1_generate_config.py")
 
-    parser.add_argument("-i", "--input", help="config yaml input file or txt file containing yaml filepath", required=True, type=str)
+    parser.add_argument("-i", "--input", help="config yaml input file or txt file containing yaml filepath",
+                        required=True, type=str)
     parser.add_argument('--log', help="config yaml input file or txt file containing yaml filepath", type=str)
     args = parser.parse_args()
 
@@ -67,14 +94,15 @@ if __name__ == '__main__':
                         level=logging.INFO,
                         format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
-    
+
     logging.info('Running p2_execute_generation.py')
     logging.info('Reading the config filename :)')
 
     yaml_file_list = read_input(args.input)
-    for yaml_file in yaml_file_list:
-        data_input = yaml.safe_load(open(yaml_file, 'r'))
+    for user_yaml_file in yaml_file_list:
+        with open(user_yaml_file, 'r', encoding='utf-8') as yaml_f:
+            data_input = yaml.safe_load(yaml_f)
 
         if validate_generation_script(config_data=data_input):
             logging.info('Running inference!')
-            run_inference(yaml_file, data_input, args.log)
+            run_inference(user_yaml_file, data_input, args.log)

@@ -1,29 +1,45 @@
-
-import yaml
+"""Validate and prepare de novo ligand for subsequent analysis. This will also ensure that
+there is no invalid molecules along the way when reading the .sdf file, unless mol went
+invalid throughout the analyses."""
 import argparse
 import logging
 import sys
-import numpy as np
 import json
+
+from typing import Any
+from pathlib import Path
+from collections import defaultdict
+
+import numpy as np
+import yaml
 import rdkit
 
 from rdkit import Chem
-from typing import Any, Callable
-from pathlib import Path
-from copy import deepcopy
-from collections import defaultdict
 
 from scramblebench.script.config_preparation import config_post_generation, config_parameter
 from scramblebench.script.utils.process_data import read_input, fetch_model_file_from_dir
 from scramblebench.script.utils.process_mol import validate_mol_list, compute_generation_performance
 
+
 logger = logging.getLogger(__name__)
 
 
-def add_property_to_mol(mol_l, model_name, parameter_data: config_parameter.ParameterConfig):
+def add_property_to_mol(mol_l: list[Chem.Mol], model_name: str,
+                        protein_name: str, batch_parameter: dict[str, Any]) -> list[Chem.Mol]:
+    """add all necessary property to each Mol object. This is done, so that it is easier to
+    get information from the .sdf file in subsequent analysis. 
 
-    protein_name = parameter_data.protein_value
-    batch_parameter = parameter_data.batch_parameter_dict
+    Args:
+        mol_l (list[Chem.Mol]): list of generated ligands as Chem.Mol
+        model_name (str): model name obtained from ParameterConfig
+        protein_name (str): protein name used to design the ligand
+        batch_parameter(dict[str, Any]): batch parameters obtained from ParameterConfig with multiple
+                                         values. Mainly saved for p6_generate_report.py
+
+    Returns:
+        list[Chem.Mol]: list of generated ligands with added information through mol.SetProp()
+    """
+
     for index, m in enumerate(mol_l):
         m.SetProp('GenAI_Model', model_name)
         m.SetProp('Protein', protein_name)
@@ -41,22 +57,25 @@ def add_property_to_mol(mol_l, model_name, parameter_data: config_parameter.Para
     return mol_l
 
 
-def prepare_mol(mol_l: list[Chem.Mol], 
+def prepare_mol(mol_l: list[Chem.Mol],
                 model_name: str,
-                config_data: dict[str, Any]) -> list[Chem.Mol]:
+                parameter_data: config_parameter.ParameterConfig,
+                post_generation_data: config_post_generation.PostGenerationConfig) -> list[Chem.Mol]:
     """Check if the generated ligand is below or equal to num_sample parameter (default 100).
     Invalid ligands will be removed, and announced in the print output.
 
     Args:
-        sdf_file (str): generated sdf filename. In this context, this should be the 'summary' folder
-        config_data (dict[Any]): The config data parsed by yaml.
+        mol_l (list[Chem.Mol]): list of generated ligands as Chem.Mol
+        model_name (str): model name obtained from ParameterConfig
+        parameter_data (config_parameter.ParameterConfig): ParameterConfig
+        post_generation_data (config_post_generation.PostGenerationConfig): PostGenerationConfig
+
+    Returns:
+        list[Chem.Mol]: list of valid and parsable generated ligands with filtered num_sample
     """
 
-    postgeneration_data = config_post_generation.PostGenerationConfig(config_data=config_data)
-    parameter_data = config_parameter.ParameterConfig(config_data=config_data)
-
-    model_pick_last = postgeneration_data.pick_last_value or []
-    model_pick_random = postgeneration_data.pick_random_value or []
+    model_pick_last = post_generation_data.pick_last_value or []
+    model_pick_random = post_generation_data.pick_random_value or []
 
     if model_pick_last:
         model_pick_last = [model.lower() for model in model_pick_last]
@@ -74,30 +93,41 @@ def prepare_mol(mol_l: list[Chem.Mol],
         elif model_name.lower() in model_pick_random:
             logging.info(f'trimming {model_name} by picking randomly')
             mol_l = np.random.choice(mol_l, num_sample, replace=False).tolist()
-            
+
         else:
             logging.warning(f'The model {model_name} has ligand more than {num_sample} and you have \
                             not specified how you want to filter it through the model_pick_last_l or model_pick_random_l. \
                             Picking random ligand instead')
             mol_l = np.random.choice(mol_l, num_sample, replace=False).tolist()
-    
-    return add_property_to_mol(mol_l, model_name=model_name, parameter_data=parameter_data)
+
+    return add_property_to_mol(mol_l, model_name=model_name,
+                               protein_name=parameter_data.protein_value,
+                               batch_parameter=parameter_data.batch_parameter_dict)
 
 
-def prepare_molecule(config_data):
+def execute_mol_pipeline(config_data: dict[str, dict]) -> None:
+    """main function for p2_execute_generation.py
+    This function will do the following:
+    1) Fetch .sdf file from the output folder for each model
+    2) For each model, parse and filter the generated ligands to desired num_sample
+    3) Tag information such as protein name, model name for each valid mol
+    4) Save model performance such as total uniqueness and validity2d
+
+    Args:
+        config_data (dict[str, dict]): user's prepared YAML config as dictionary
+    """
 
     post_generation_data = config_post_generation.PostGenerationConfig(config_data)
-    postgen_input_dir = f'{post_generation_data.input_value}/summary'
-    postgen_output_root_dirpath = Path(post_generation_data.output_value)
+    parameter_data = config_parameter.ParameterConfig(config_data=config_data)
 
-    model_list = config_parameter.ParameterConfig(config_data=config_data).model_list_value
-    valid_molecule_file_dict = fetch_model_file_from_dir(dir_path=postgen_input_dir, model_list=model_list)
+    input_dir = f'{post_generation_data.input_value}/summary'
+    output_root_dirpath = Path(post_generation_data.output_value)
 
-    json_dir = postgen_output_root_dirpath.parent
-    json_content = defaultdict(dict)
-    for model, fname in valid_molecule_file_dict.items():
+    model_performance_dict = defaultdict(dict)
+    for model, fname in fetch_model_file_from_dir(dir_path=input_dir,
+                                                  model_list=parameter_data.model_list_value).items():
 
-        output_dir = postgen_output_root_dirpath / model
+        output_dir = output_root_dirpath / model
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / f'{Path(fname).stem}_prepared.sdf'
 
@@ -107,9 +137,12 @@ def prepare_molecule(config_data):
 
         mol_l = Chem.SDMolSupplier(fname, removeHs=False)
 
-        json_content[model] = compute_generation_performance(mol_l=mol_l)
+        model_performance_dict[model] = compute_generation_performance(mol_l=mol_l)
 
-        mol_l = prepare_mol(validate_mol_list(mol_l), model, config_data=config_data)
+        mol_l = prepare_mol(validate_mol_list(mol_l),
+                            model,
+                            post_generation_data=post_generation_data,
+                            parameter_data=parameter_data)
 
         with Chem.SDWriter(output_file) as w:
             for mol in mol_l:
@@ -117,26 +150,28 @@ def prepare_molecule(config_data):
 
         logging.info(f'Prepared molecule saved in {output_file}')
 
-    with open(Path(json_dir) / 'data.json', 'w') as file:
-        json.dump(json_content, file, indent=4)
+    with open(Path(output_root_dirpath.parent) / 'data.json', 'w', encoding='utf-8') as file:
+        json.dump(model_performance_dict, file, indent=4)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prepare generated molecules for downstream analysis")
 
-    parser.add_argument("-i", "--input", help="config yaml input file or txt file containing yaml filepath", required=True, type=str)
+    parser.add_argument("-i", "--input", help="config yaml input file or txt file containing yaml filepath",
+                        required=True, type=str)
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout,
                     level=logging.INFO,
                     format='%(asctime)s - %(module)s: - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-    
+
     logging.info('Running p3_prepare_molecule.py')
     logging.info('Reading the config filename :)')
 
     yaml_file_list = read_input(args.input)
 
     for yaml_file in yaml_file_list:
-        data_input = yaml.safe_load(open(yaml_file, 'r'))
-        prepare_molecule(config_data=data_input)
+        with open(yaml_file, 'r', encoding='utf-8') as yaml_f:
+            data_input = yaml.safe_load(yaml_f)
+        execute_mol_pipeline(config_data=data_input)

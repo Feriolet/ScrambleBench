@@ -76,7 +76,7 @@ def validate_config(config_data: dict[str, Any]) -> Optional[bool]:
     return True
 
 
-def prepare_config(config_data: dict[str, Any]) -> dict[str, Any]:
+def process_config(config_data: dict[str, Any]) -> dict[str, Any]:
     """prepare ScrambleBench config to match the "write_config" functions.
 
     Args:
@@ -210,7 +210,7 @@ def write_config(config_data: dict[str, Any], output_fname: str) -> None:
         output_fname (str): output filename (not absolute directory, will be appended by prefix)
     """
 
-    config_data = prepare_config(config_data=config_data)
+    config_data = process_config(config_data=config_data)
 
     batch_parameters: list[dict[str, list]] = fetch_batch_parameters(config_data=config_data)
 

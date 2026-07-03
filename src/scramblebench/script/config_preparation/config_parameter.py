@@ -78,7 +78,7 @@ class ParameterConfig:
         self.name = config_constant.PARAMETER_KEY
 
         input_data = config_input.InputConfig(input_dict=config_data)
-        self.protein_name = input_data.protein_name
+
         self.protein_value = input_data.protein_value
 
         self.model_list_value = config_model.ModelConfig(config_data=config_data).get_model_list()

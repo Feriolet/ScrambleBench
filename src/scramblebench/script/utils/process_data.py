@@ -99,7 +99,7 @@ def find_file_name_through_regex(character, file_format, dirname):
     else:
         return str(matched_fname_list[0])
 
-def find_file_name_through_regex_allow_multiple_match(character, file_format, dirname):
+def find_file_name_through_regex_multiple_match(character, file_format, dirname):
     assert file_format[0] == '.'
 
     glob_matching_fname = f'*{create_case_insensitive_regex(character)}*{file_format}'

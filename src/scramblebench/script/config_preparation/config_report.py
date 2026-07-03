@@ -1,20 +1,35 @@
-from scramblebench.script.config_preparation import config_constant, config_input, config_model, config_generation
-from pathlib import Path
-from typing import Any
+"""This file handles the report key of user's YAML config. 
+Mainly used for p1_generate_config.py and other downstream path to
+access the subkey field easily.
+"""
+
 import logging
-from copy import deepcopy
+
+from typing import Any
+from scramblebench.script.config_preparation import config_constant
 
 
 logger = logging.getLogger(__name__)
 
 class ReportConfig:
+    """class containing information regarding what to put in report
+    """
 
     def __init__(self, config_data: dict[str, Any]=None):
+        """initialize class
+
+        Args:
+            config_data (dict[str, Any], optional): user's prepared YAML config with report
+                                                    key as dictionary. Defaults to None.
+
+        Raises:
+            KeyError: if report key is not in the config dictionary
+        """
         self.name = config_constant.REPORT_KEY
 
         if self.name not in config_data:
             raise KeyError(f'You forgot to put "{self.name}" key in your config file!')
-        
+
         report_data = config_data[self.name]
 
         self.rmsd_name = 'rmsd'
@@ -30,8 +45,18 @@ class ReportConfig:
         self.qed_value = report_data.get(self.qed_name) or False
         self.validity3d_value = report_data.get(self.validity3d_name) or False
         self.virtual_hit_value = report_data.get(self.virtual_hit_name) or False
-    
-    def validate_config(self):
+
+    def validate_config(self) -> None:
+        """check if ReportConfig is valid
+
+        Raises:
+            TypeError: if rmsd subfield is not a bool or NoneType
+            TypeError: if docking score subfield is not a bool or NoneType
+            TypeError: if qed value subfield is not a bool or NoneType
+            TypeError: if validity3d subfield is not a bool or NoneType
+            TypeError: if virtual hit rate subfield is not a bool or NoneType
+            ValueError: if plot type subfield is not supported
+        """
 
         SUPPORTED_PLOT_TYPE = ['violin', 'box', 'raincloud']
 
@@ -49,7 +74,12 @@ class ReportConfig:
         if self.plot_value.lower() not in SUPPORTED_PLOT_TYPE:
             raise ValueError(f'ScrambleBench do not support {self.plot_value}')
 
-    def write(self):
+    def write(self) -> dict[str, dict]:
+        """write a standardized config format for ReportConfig
+
+        Returns:
+            dict[str, dict]: ReportConfig as a dictionary
+        """
 
         data = {self.plot_name: self.plot_value}
 
@@ -63,5 +93,5 @@ class ReportConfig:
             data[self.validity3d_name] = self.validity3d_value
         if self.virtual_hit_value:
             data[self.virtual_hit_name] = self.virtual_hit_value
-            
+
         return {self.name: data}

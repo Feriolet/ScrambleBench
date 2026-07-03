@@ -1,7 +1,4 @@
-"""This file handles the genbench3d analysis key of user's YAML config. 
-Mainly used for p1_generate_config.py and other downstream path to
-access the subkey field easily.
-"""
+"""protonate and dock de novo ligand."""
 
 import logging
 
