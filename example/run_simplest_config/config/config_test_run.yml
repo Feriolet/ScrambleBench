@@ -32,7 +32,10 @@ analysis:
     method:
     - distance: ecfp
       diversity: hamdiv
-
+    
+report:
+  plot: violin
+  qed: True
 
 
 

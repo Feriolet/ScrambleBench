@@ -70,7 +70,19 @@ analysis:
         reward_intra_hbonds: null
         protonation: ligprep
         protein_preparation: protwizard
-
+        
+  virtual_hit:
+    input: glide_output
+    output: virtual_hit
+    query: 'QED >= 0.5 and glide_redocking_score <= -8 AND MW >= 300 and MW <= 500'
+    filter: PAINS
+    
+report:
+  rmsd: True
+  docking_score: True
+  virtual_hit: True
+  plot: violin
+  qed: True
 
 
 

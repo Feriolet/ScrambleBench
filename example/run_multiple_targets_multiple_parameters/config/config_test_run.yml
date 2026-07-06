@@ -76,7 +76,7 @@ analysis:
   diversity:
     input: cheminformatics_input_prepared
     output: diversity
-    conda_env: python_tsp
+    conda_env: test_diversity
     method:
     - distance: ecfp
       diversity: hamdiv

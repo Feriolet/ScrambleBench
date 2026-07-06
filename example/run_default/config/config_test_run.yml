@@ -40,11 +40,4 @@ analysis:
     conda_env: python_tsp
 
 report:
-  2d: True
-
-
-
-
-
-
-
+  rmsd: True
