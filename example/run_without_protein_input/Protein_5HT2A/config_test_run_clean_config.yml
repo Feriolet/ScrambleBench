@@ -28,3 +28,14 @@ analysis:
       diversity: hamdiv
     - distance: null
       diversity: generic_bm
+
+  virtual_hit:
+    input: glide_output
+    output: virtual_hit
+    query: 'QED >= 0.5'
+    filter: PAINS
+    
+report:
+  virtual_hit: True
+  plot: violin
+  qed: True
