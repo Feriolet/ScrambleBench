@@ -1,20 +1,20 @@
-import matplotlib.pyplot as plt
-import numpy as np
+"""This util file handles the main interface for p4_analyse_diversity.py"""
+import json
 import os
-import pandas as pd
 import sys
+import argparse
+import logging
 
+from time import time
+from pathlib import Path
 
-from tsp_diversity import diversity_all
-from glob import glob
+import numpy as np
+import rdkit
+
 from rdkit import Chem, DataStructs
 from rdkit.Chem import rdFingerprintGenerator
-from time import time
-from typing import Union, Optional, Any
-import argparse
-from pathlib import Path
-import json
-import logging
+from tsp_diversity import diversity_all
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,8 @@ def average_tanimoto_distance_ecfp(mol_list: list[Chem.Mol]) -> list[np.ndarray]
         for mol_fp_j in mol_fp_list:
             if mol_fp_i == mol_fp_j:
                 continue
-            else:
-                tanimoto_dist.append(1 - DataStructs.TanimotoSimilarity(mol_fp_i, mol_fp_j))
+
+            tanimoto_dist.append(1 - DataStructs.TanimotoSimilarity(mol_fp_i, mol_fp_j))
 
         tanimoto_dist_array = np.array(tanimoto_dist)
         average_tanimoto_dist.append(np.average(tanimoto_dist_array))
@@ -53,7 +53,15 @@ def average_tanimoto_distance_ecfp(mol_list: list[Chem.Mol]) -> list[np.ndarray]
 
 
 def calculate_cpu():
-    cpu_available = len(os.sched_getaffinity(0))
+    """claculate number of available cpu
+
+    Returns:
+        int: available cpu
+    """
+    if hasattr(os, 'sched_getaffinity'):
+        cpu_available = len(os.sched_getaffinity(0))
+    else:
+        cpu_available = os.cpu_count() or 1
     CPU_BUFFER = 50
     return max(1, int(cpu_available - CPU_BUFFER))
 
@@ -79,9 +87,9 @@ if __name__ == "__main__":
 
     if Path(args.output).suffix.lower() != '.json':
         raise ValueError(f'{args.input} must be an json file')
-    
 
-    mol_l = Chem.SDMolSupplier(args.input)    
+
+    mol_l = Chem.SDMolSupplier(args.input)
 
     distance_metric = args.distance
     diversity_metric = args.diversity
@@ -95,93 +103,17 @@ if __name__ == "__main__":
 
     elif diversity_metric == 'average' and distance_metric == 'ecfp':
         start = time()
-        result = average_tanimoto_distance_ecfp(mols=mol_l)
-        diversity_time = time() - start  
-        method = f'Average ECFP Tanimoto'
+        result = average_tanimoto_distance_ecfp(mol_list=mol_l)
+        diversity_time = time() - start
+        method = 'Average ECFP Tanimoto'
     else:
         start = time()
         result = diversity_all(mols=mol_l, mode=diversity_metric.upper())
-        diversity_time = time() - start   
-        method = diversity_metric     
-    
+        diversity_time = time() - start
+        method = diversity_metric
 
-    with open(args.output, 'w') as output_f:
+
+    with open(args.output, 'w', encoding='utf-8') as output_f:
         json.dump({'method': method,
                    'score': result,
                    'time': diversity_time}, output_f)
-
-    # if is_calculate_average_tanimoto_distance_ecfp:
-    #     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    #     axes = axes.flatten()
-
-    #     for i, protein in enumerate(protein_list):
-    #         filtered_data = diversity_df[diversity_df['Protein'] == protein]
-    #         sns.violinplot(data=filtered_data, x='num_sample', 
-    #             ax=axes[i],
-    #             y='ECFP Average Tanimoto Distance', 
-    #             hue='Model', 
-    #             palette= COLOR_PALLETE)
-    #         axes[i].set_title(protein)
-    #         axes[i].set_ylim(bottom=0)
-
-    #     plt.savefig(f'{output_suffix}_TanimotoECFP.png')
-
-    # if is_calculate_hamdiv_ecfp:
-    #     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    #     axes = axes.flatten()
-    #     for i, protein in enumerate(protein_list):
-    #         filtered_data = diversity_df[diversity_df['Protein'] == protein]
-    #         sns.lineplot(data=filtered_data, x='num_sample', 
-    #             ax=axes[i],
-    #             y='Hamiltonian Tanimoto Diversity based on ECFP', 
-    #             hue='Model', 
-    #             style='Model',
-    #             markers=True,
-    #             markersize=10,
-    #             palette= COLOR_PALLETE)
-    #         axes[i].set_title(protein)
-    #         axes[i].set_ylim(bottom=0)
-
-    #     plt.savefig(f'{output_suffix}_HamiltonianTanimotoDistanceECFP.png')
-
-
-    # if is_calculate_hamdiv_mces:
-    #     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    #     axes = axes.flatten()
-
-    #     for i, protein in enumerate(protein_list):
-    #         filtered_data = diversity_df[diversity_df['Protein'] == protein]
-    #         sns.lineplot(data=filtered_data, x='num_sample', 
-    #             ax=axes[i],
-    #             y='HamDiv MCES Tanimoto Distance', 
-    #             hue='Model', 
-    #             style='Model',
-    #             markers=True,
-    #             markersize=10,
-    #             palette= COLOR_PALLETE)
-    #         axes[i].set_title(protein)
-    #         axes[i].set_ylim(bottom=0)
-
-    #     plt.savefig(f'{output_suffix}_HamiltonianTanimotoDistanceMCES.png')
-
-    # if is_calculate_generic_bm:
-    #     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    #     axes = axes.flatten()
-
-    #     for i, protein in enumerate(protein_list):
-    #         filtered_data = diversity_df[diversity_df['Protein'] == protein]
-    #         sns.lineplot(data=filtered_data, x='num_sample', 
-    #             ax=axes[i],
-    #             y='Number of Generic BM', 
-    #             hue='Model', 
-    #             style='Model',
-    #             markers=True,
-    #             markersize=10,
-    #             palette= COLOR_PALLETE)
-    #         axes[i].set_title(protein)
-    #         axes[i].set_ylim(bottom=0)
-
-    #     plt.savefig(f'{output_suffix}_GenericBMScaffold.png')
-
-    
-

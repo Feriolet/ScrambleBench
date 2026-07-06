@@ -115,7 +115,7 @@ cd DiffSBDD
 conda env create -f environment.yaml
 mkdir checkpoints
 conda activate diffsbdd
-pip install "setuptools<11.0"
+pip install "setuptools<82.0"
 ```
 
 ### Pocket2Mol
@@ -175,6 +175,9 @@ pip install scipy==1.7.3 pandas==1.5.1 numpy==1.20.3 rdkit==2022.09.1 psutil tor
 git clone https://github.com/ci-lab-cz/easydock
 cd easydock
 conda env create -f env.yml -n benchmark_easydock
+
+# download desired ligand protonation and docking program 
+# https://easydock.readthedocs.io/en/latest/installation/
 ```
 
 ### Genbench3D
@@ -198,8 +201,8 @@ tar -xvzf LigBoundConf_geometry_values.tar.gz
 
 ### Diversity
 ```bash
-git clone https://github.com/HXYfighter/HamDiv
-cd HamDiv
+
+# HamDiv repository integrated to ScrambleBench
 conda create -n python_tsp numpy rdkit tqdm networkx -y
 conda activate python_tsp
 pip install python_tsp
@@ -212,7 +215,7 @@ As I do not own the model, you can download the corresponding model in the respe
 
 Pocket2Mol (to `Pocket2Mol/ckpt/`): [pretrained_Pocket2Mol.pt](https://drive.google.com/drive/folders/1KfdOczjUPITPhIvCuBmnj4xFTV-iI2xB)
 
-PocketFlow (to `PocketFlow/ckpt/`): [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow)
+PocketFlow (to `PocketFlow/ckpt/`): [ZINC-pretrained-255000.pt](https://github.com/Saoge123/PocketFlow) (already pre-downloaded in the repo)
 
 Lingo3DMol (to `Lingo3DMol/checkpoint/`): [contact.pkl](https://stonewise-lingo3dmol-public.s3.cn-northwest-1.amazonaws.com.cn/contact.pkl) and [gen_mol.pkl](https://stonewise-lingo3dmol-public.s3.cn-northwest-1.amazonaws.com.cn/gen_mol.pkl)
 
@@ -363,7 +366,9 @@ This key must be followed by a model name (e.g., `pocket2mol`, preferably lowerc
 
 If the `dir` and `conda` field is empty or filled with `non_applicable`, the `p2_execute_generation.py` won't run these models. This is reserved for models that have generated the molecules without using `ScrambleBench`.
 
-Note that there are differences in the `name` field and the model name (e.g., `pocket2mol`). The `name` field is essential for naming the intermediates and output files for downstream analysis, while the `pocket2mol` is essential for the `script/utils/generation_utils/generation_template.sh`
+**Note** that there are differences in the `name` field and the model name (e.g., `pocket2mol`). The `name` field is essential for naming the intermediates and output files for downstream analysis, while the `pocket2mol` is essential for the `script/utils/generation_utils/generation_template.sh`
+
+**NOTE**: For custom models, please edit the command line for your ligand generation at the `script/utils/generation_utils/generation_template.sh`. Because each model can be executed through various methods, I have decided to just combine the generation through the `bash` script instead of within the `.py` script.
 
 **Generation Key**
 

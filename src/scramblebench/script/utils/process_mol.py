@@ -1,21 +1,30 @@
-import rdkit
-from rdkit import Chem
+"""This script handles how to manipulate and fetch property of Mol objects."""
 import os
 import sys
-from rdkit.Chem import rdRascalMCES
-from enum import Enum, IntEnum
+
+from enum import Enum
 from copy import deepcopy
+
+import rdkit
 from rdkit import Chem
 from rdkit.Chem import Descriptors, Crippen, QED, RDConfig, rdRascalMCES
 
 sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
 import sascorer
 
+
 class PhysicoChemicalProperties(Enum):
+    """class entailing the physicochemical properties of Mol. This is usually coupled with the
+    MOL_PROPERTY_CALCULATORS constant.
+
+    Args:
+        Enum (Enum): Enum class
+    """
     MW = 'MW'
     LOGP = 'logP'
     QED = 'QED'
     SA_SCORE = 'SAScore'
+
 
 MOL_PROPERTY_CALCULATORS = {PhysicoChemicalProperties.MW.value: Descriptors.MolWt,
                             PhysicoChemicalProperties.LOGP.value: Crippen.MolLogP,
@@ -36,11 +45,19 @@ def calculate_physicochemical_properties(mol: Chem.Mol) -> Chem.Mol:
     """
     for physicochemical_property, property_function in MOL_PROPERTY_CALCULATORS.items():
         mol.SetProp(physicochemical_property, str(property_function(mol)))
-            
+
     return mol
 
 
-def neutralize_atoms(mol):
+def neutralize_atoms(mol: Chem.Mol) -> Chem.Mol:
+    """neutralize atoms. Function is copy-pasted from RDKit handbook.
+
+    Args:
+        mol (Chem.Mol): Mol object
+
+    Returns:
+        Chem.Mol: neutralized Mol
+    """
     pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
     at_matches = mol.GetSubstructMatches(pattern)
     at_matches_list = [y[0] for y in at_matches]
@@ -55,7 +72,16 @@ def neutralize_atoms(mol):
     return mol
 
 
-def calculate_rms(mol1, mol2):
+def calculate_rms(mol1: Chem.Mol, mol2: Chem.Mol) -> float:
+    """calculate the RMSD of two molecules
+
+    Args:
+        mol1 (Chem.Mol): first Mol
+        mol2 (Chem.Mol): second Mol
+
+    Returns:
+        float: RMSD value
+    """
 
     mol1 = neutralize_atoms(Chem.RemoveHs(mol1))
     mol2 = neutralize_atoms(Chem.RemoveHs(mol2))
@@ -76,7 +102,17 @@ def calculate_rms(mol1, mol2):
         return Chem.rdMolAlign.CalcRMS(mol1, mol2, map=[matches])
 
 
-def validate_mol_list(mol_list: list[Chem.Mol]) -> list[Chem.Mol]:
+def validate_mol_list(mol_list: list[Chem.Mol, None]) -> list[Chem.Mol]:
+    """validate if the Mol in the list is actually a molecule. Empty string still can
+    be converted to Chem.Mol (i.e., Chem.MolFromSmiles('') is valid), 
+    so you need to count the atom numbers
+
+    Args:
+        mol_list (list[Chem.Mol]): list of Mol objects
+
+    Returns:
+        list[Chem.Mol]: list of valid Mol objects
+    """
     # only filter valid and unique molecule
     validated_mol_l = []
     validated_smi_l = []
@@ -89,22 +125,46 @@ def validate_mol_list(mol_list: list[Chem.Mol]) -> list[Chem.Mol]:
         if smi != '' and mol.GetNumAtoms() > 1 and smi not in validated_smi_l:
             validated_mol_l.append(mol)
             validated_smi_l.append(smi)
-    
+
     return validated_mol_l
 
 
-def compute_uniqueness_percentage(mol_l) -> float:
+def compute_uniqueness_percentage(mol_l: list[Chem.Mol, None]) -> float:
+    """calculate the proportion of molecules that are unique (i.e., have different SMILES)
+
+    Args:
+        mol_l (list[Chem.Mol, None]): list of Mol
+
+    Returns:
+        float: uniqueness percentage ranging from 0-1
+    """
 
     smi_l = [Chem.MolToSmiles(neutralize_atoms(mol)) for mol in validate_mol_list(mol_l)]
     return len(set(smi_l)) / len(list(mol_l))
 
 
-def compute_validity2d_percentage(mol_l) -> float:
+def compute_validity2d_percentage(mol_l: list[Chem.Mol, None]) -> float:
+    """calculate the proportion of molecules that are valid (i.e., parseable by RDKit)
+
+    Args:
+        mol_l (list[Chem.Mol, None]): list of Mol
+
+    Returns:
+        float: uniqueness percentage ranging from 0-1
+    """
 
     return len(validate_mol_list(mol_l)) / len(list(mol_l))
 
 
-def compute_generation_performance(mol_l):
+def compute_generation_performance(mol_l: list[Chem.Mol, None]) -> dict[str, float]:
+    """calculate general model performance based on their generated ligands.
+
+    Args:
+        mol_l (list[Chem.Mol, None]): list of Mol objects
+
+    Returns:
+        dict[str, float]: dictionary detailing the total molecule, uniqueness and validity of mol
+    """
 
     computed_mol_l = deepcopy(list(mol_l))
 
@@ -114,4 +174,3 @@ def compute_generation_performance(mol_l):
     performance_dict['validity2d'] = compute_validity2d_percentage(computed_mol_l)
 
     return performance_dict
-
