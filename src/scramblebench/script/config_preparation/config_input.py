@@ -130,14 +130,14 @@ class InputConfig:
         return prot_seq_name, prot_seq_num
 
 
-    def fetch_residue_is_pocket(self, cutoff: int=10) -> list[list[int, str, bool]]:
+    def fetch_residue_is_pocket(self, cutoff: int=10) -> list[tuple[int, str, bool]]:
         """fetch whether each residue of protein is considered a pocket
 
         Args:
             cutoff (int, optional): distance cutoff of pocket residue from ligand. Defaults to 10.
 
         Returns:
-            list[list[int, str, bool]]: a list of pocket information:
+            list[tuple[int, str, bool]]: a list of pocket information:
                                         (protein index, protein name, is_pocket (True/False))
         """
 
