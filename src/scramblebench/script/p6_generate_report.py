@@ -61,11 +61,36 @@ class ScrambleBenchParameterReport:
         """
         self.parameter_data = parameter_data
         self.title_font_size = 18
+        self.subtitle_font_size = 15
         self.parameter_font_size = 12
 
         self.styles = getSampleStyleSheet()
         self.styles['Heading1'].alignment = TA_CENTER
         self.styles['Normal'].leading = 16
+
+        self.table_style = TableStyle([
+            # Header styling
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C3E50')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('LEFTPADDING', (0, 0), (-1, 0), 65),
+            ('RIGHTPADDING', (0, 0), (-1, 0), 65),
+            # Body styling
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+            # Alternating row colors
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#F8F9F9'), colors.white]),
+
+            # Borders
+            #('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor('#2C3E50')),
+            ('GRID', (0, 1), (-1, -1), 0.5, colors.HexColor('#BDC3C7')),
+            ('TOPPADDING', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
+        ])
 
 
     def render(self) -> list[Any]:
@@ -79,20 +104,31 @@ class ScrambleBenchParameterReport:
         story.append(Paragraph(f"<font size={self.title_font_size}>ScrambleBench Report " + \
                                f"v{importlib.metadata.version('scramblebench')}</font>",
                                self.styles['Heading1']))
-        story.append(Paragraph(f"<font size={self.parameter_font_size}>Generation Date: " + \
+        story.append(Paragraph(f"<font size={self.parameter_font_size} color='#808080'>Generation Date: " + \
                                f"{datetime.now().strftime('%d %B %Y')}</font>",
                                self.styles['Normal']))
-        story.append(Spacer(1,4))
-        parameter_txt = f"<b>Parameter</b> <br/>\
-                        Protein Name {add_space(16)}: {self.parameter_data.protein_value}<br/>\
-                        Model list  {add_space(23)}: {', '.join(self.parameter_data.model_list_value)} <br/>\
-                        Requested Num Sample: {self.parameter_data.num_sample_value}<br/>"
-        story.append(Paragraph(f"<font size= 12>{parameter_txt}</font>", self.styles['Normal']))
+        story.append(Spacer(1,6))
+
+
+        parameter_table = Table([['Parameter Name', 'Parameter Value'],
+                                 ['Protein Name', self.parameter_data.protein_value],
+                                 ['Model List', ', '.join(self.parameter_data.model_list_value)],
+                                  ['Requested num_sample', self.parameter_data.num_sample_value]],
+                                  hAlign='LEFT')
+        parameter_table.setStyle(self.table_style)
+        story.append(Paragraph(f'<font size={self.parameter_font_size}><b>Parameter Used:</b></font>', self.styles['Normal']))
+        story.append(Spacer(1,2))
+        story.append(parameter_table)
+
         story.append(Spacer(1,4))
         if self.parameter_data.batch_parameter_dict:
+
             batch_parameter_txt = 'Other parameters: <br/>'
-            batch_parameter_txt += '<br/>'.join([str(key) + ' : ' + str(val) \
-                                                 for key, val in self.parameter_data.batch_parameter_dict.items()])
+            for key, val in self.parameter_data.batch_parameter_dict.items():
+                if key != 'num_sample':
+                    batch_parameter_txt += str(key) + ' : ' + str(val) + '<br/>'
+            # batch_parameter_txt += '<br/>'.join([str(key) + ' : ' + str(val) \
+            #                                      for key, val in self.parameter_data.batch_parameter_dict.items()])
 
         story.append(Paragraph(f"<font size= 12>{batch_parameter_txt}</font>", self.styles['Normal']))
         story.append(Spacer(1,12))
@@ -618,7 +654,8 @@ class ScrambleBenchPlotReport:
             ax.get_legend().remove()
 
             ax.set_xlabel('Protein Name', fontsize=12)
-            ax.set_ylabel(' '.join([word.capitalize() for word in column.split('_')]), fontsize=12)
+            ax.set_ylabel(' '.join([word.capitalize() if word.upper() != word else word for word in column.split('_') ]),
+                          fontsize=12)
             ax.tick_params(axis='both', which='major', labelsize=12)
 
 
