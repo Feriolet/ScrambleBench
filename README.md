@@ -3,7 +3,9 @@
 ## Introduction
 
 ![Intro graphic](asset/GenAI_Abstract.png)
-Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository contains the code used for our manuscript. Our v0.1.0 version streamlined most of the features used in our manuscript. Please look out for our version 0.2.0 soon!
+Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure-based *de novo* Generative Models. This repository handles de novo ligand analysis from ligand generation, ligand analysis, and summary generation in a single PDF file. :)
+
+For a quick look, please head over to [here](example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/report.pdf) to see the final PDF output.
 
 **Note: v0.1.0 is mostly stable now. Most, if not all, features are now available in this version.However, please keep updating this repository regularly until the final package is released.**
 
