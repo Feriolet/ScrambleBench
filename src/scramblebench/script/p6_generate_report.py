@@ -295,6 +295,7 @@ class ScrambleBenchSummaryJSONReport:
         self.mini_heading_styles = getSampleStyleSheet()['Normal']
         self.mini_heading_styles.leading = 16
         self.mini_heading_styles.alignment = TA_CENTER
+        self.mini_heading_styles.fontName='Helvetica-Bold'
 
         self.paragraph_table_style = ParagraphStyle(name='CenterText', alignment=TA_CENTER)
 
@@ -459,8 +460,9 @@ class ScrambleBenchSummaryJSONReport:
 
         single_digit_dict = defaultdict(dict)
 
-        general_data = {}
+
         for model, data in self.json_data.items():
+            general_data = {}
             for data_key in data:
                 if data_key in ['virtual_hit', 'diversity']:
                     continue
