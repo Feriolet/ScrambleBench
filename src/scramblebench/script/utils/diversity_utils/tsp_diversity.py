@@ -96,7 +96,8 @@ def dist_array(smiles = None, mols = None, hamdiv_method = 'ECFP', ncpu = 1):
         dist_matrix = np.zeros((l,l))
 
         with Pool(ncpu) as p:
-            ecfp_list = list(p.imap(calculate_single_ecfp_similarity, tqdm(create_self_diversity_generator(mols), total=len(mols)**2/2),
+            total_comparison = len(mols)**2/2 - len(mols)
+            ecfp_list = list(p.imap(calculate_single_ecfp_similarity, tqdm(create_self_diversity_generator(mols), total=total_comparison),
                                     chunksize=min(1000, max(1, len(mols) // ncpu))))
 
         ecfp_index = 0

@@ -5,7 +5,7 @@ import os
 import logging
 import sys
 import subprocess
-
+import shutil
 from pathlib import Path
 
 import rdkit
@@ -348,7 +348,12 @@ class GlideProtein():
 
         subprocess.run(command, check=True)
 
-        subprocess.run(['mv', prepared_mae_filename, self.prepared_mae_filepath], check=True)
+        prepared_mae_filepath = Path(prepared_mae_filename)
+        if prepared_mae_filepath.samefile(self.prepared_mae_filepath):
+            logging.warning(f'Overwriting {self.prepared_mae_filepath}')
+            prepared_mae_filepath.replace(self.prepared_mae_filepath)
+        else:
+            prepared_mae_filepath.rename(self.prepared_mae_filepath)
 
         os.chdir(current_dir)
 

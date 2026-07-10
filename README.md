@@ -50,6 +50,7 @@ For a quick look, please head over to [here](example/run_multiple_targets_multip
   - [Data Availability](#data-availability)
   - [Reproducing Figures](#reproducing-figures)
   - [FAQ](#faq)
+  - [Changelog](#changelog)
 
 
 ## Features
@@ -1041,3 +1042,6 @@ At the very least, in the case where I moved on to other projects, I will comple
 **A:** When developing the workflow, I realized that the workflow will depend on various `conda` environment, which as we know can be a nightmare to maintain, and this kinda `scramble` my brains out hahaha. And the fact that the word `Scramble` reminds me of the scrambled eggs led me to put the egg image in the Abstract above XD.
 
 
+## Changelog
+
+Please refer to [Changelog.MD](Changelog.md) for version changes.

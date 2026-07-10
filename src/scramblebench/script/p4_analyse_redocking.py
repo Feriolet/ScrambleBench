@@ -658,7 +658,7 @@ def execute_docking_glide(docking_data: config_redocking.GlideConfig,
                     checkpoint_manager.save_state()
                     temp_output = run_plif_phase(schrodinger_dir=docking_data.dir_value,
                                                 input_data=input_data,
-                                                library_fname=temp_glide_sdf_output,
+                                                library_fname=output_glide_fname,
                                                 hypo_input=docking_data.plif_value)
 
                     unzip_sdf_gz(temp_output, output_phase_plif)
