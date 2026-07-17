@@ -5,7 +5,6 @@ import os
 import logging
 import sys
 import subprocess
-import shutil
 from pathlib import Path
 
 import rdkit

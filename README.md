@@ -7,12 +7,13 @@ Hi! Welcome to ScrambleBench, A Workflow for Comparative Assessment of Structure
 
 For a quick look, please head over to [here](example/run_multiple_targets_multiple_parameters/output/input_GPCR_5HT2C/num_sample_50/report.pdf) to see the final PDF output.
 
-**Note: v0.1.0 is mostly stable now. Most, if not all, features are now available in this version.However, please keep updating this repository regularly until the final package is released.**
+**v0.1.0 Have been released. Thank you for your patience. If you have any question or query, please post your questions in the Issues section, or email me (yapv@eddc.sg).**
 
 ## Table of Contents
 - [ScrambleBench v0.1.0](#scramblebench-v010)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
+  - [Specification](#specification)
   - [Features](#features)
   - [Installation](#installation)
     - [Method 1: Install through environment.yaml (Recommended)](#method-1-install-through-environmentyaml-recommended)
@@ -52,6 +53,27 @@ For a quick look, please head over to [here](example/run_multiple_targets_multip
   - [FAQ](#faq)
   - [Changelog](#changelog)
 
+
+## Specification
+
+This script has been tested with the following machine/device:
+
+```
+System Specification
+
+OS          : Ubuntu 20.04.6 LTS
+Last Tested : 10 July 2026
+Server      : locally, no job scheduler is used
+CPU         : ~200
+
+GPU Specification
+Type        : Quadro RTX 6000
+Node        : 0
+Memory      : 23040MiB 
+
+Schrodinger:
+version: 2025-4 and 2026-2
+```
 
 ## Features
 
