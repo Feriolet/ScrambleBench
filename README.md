@@ -52,6 +52,7 @@ For a quick look, please head over to [here](example/run_multiple_targets_multip
   - [Reproducing Figures](#reproducing-figures)
   - [FAQ](#faq)
   - [Changelog](#changelog)
+  - [Citation](#citation)
 
 
 ## Specification
@@ -1067,3 +1068,7 @@ At the very least, in the case where I moved on to other projects, I will comple
 ## Changelog
 
 Please refer to [Changelog.MD](Changelog.md) for version changes.
+
+## Citation
+
+Yap, V.; Xu, P.; Mak, F. S.; Foo, K.; Kang, C.; Anbazhagan, P.; Xu, W. ScrambleBench: a workflow for comparative assessment of structure-based de novo generative models. J Cheminform **2026**. DOI: 10.1186/s13321-026-01254-x 
