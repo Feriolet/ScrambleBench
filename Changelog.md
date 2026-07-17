@@ -3,13 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-This project does NOT adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), because of the v prefix.
+This project does **NOT** adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), because of the v prefix.
 
 ## [Unreleased]
 ## [v0.1.1]
 - None
 
-## [v0.1.0] - 2026-07-10
+## [v0.1.0] - 2026-07-17
 
 ### Added
 
@@ -19,6 +19,7 @@ This project does NOT adheres to [Semantic Versioning](https://semver.org/spec/v
 - Unify parameters as one YAML input files
 - Validate of user's input as guardrails
 - Add genbench3d `Validity3D` breakdown.
+- Add examples to run `ScrambleBench`
 - Add a subset of `POKMOL` dataset as an example without protein-ligand compelex input.
 - logger using python's `logging` module
 - Add docstring and typehints as documentation
